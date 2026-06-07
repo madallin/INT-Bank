@@ -9,8 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_libphonenumber/flutter_libphonenumber.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+
 
 import '../../../config/app_config.dart';
 import '../../../core/utils/validators.dart';
@@ -57,8 +59,10 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   Timer? _debounce;
   bool _isLoadingAutocomplete = false;
   bool _addressValidated = false;
+  bool _isGettingLocation = false;
 
   // --- Common ---
+
   String? textEroare;
   bool _loading = false;
   AnimationController? _fadeController;
@@ -270,7 +274,114 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     });
   }
 
+  // ---- Reverse Geocoding (GPS) ----
+  Future<void> _getCurrentAddress() async {
+    if (_isGettingLocation) return;
+
+    setState(() {
+      _isGettingLocation = true;
+      textEroare = null;
+    });
+
+    try {
+      // Verifică dacă serviciile de localizare sunt activate
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          textEroare = 'Activează serviciile de localizare în setări';
+          _isGettingLocation = false;
+        });
+        return;
+      }
+
+      // Solicită permisiunea de localizare
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            textEroare = 'Permisiunea de localizare a fost refuzată';
+            _isGettingLocation = false;
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          textEroare = 'Permisiunea de localizare este dezactivată permanent. Activeaz-o din setări.';
+          _isGettingLocation = false;
+        });
+        return;
+      }
+
+      // Obține poziția curentă
+      Position position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 0,
+        ),
+      );
+
+      // Trimite cerere de reverse geocoding către server
+      final client = _createHttpClient();
+      try {
+        final response = await client.get(
+          Uri.parse(
+            'https://$serverUrl/places/reverse?lat=${position.latitude}&lon=${position.longitude}',
+          ),
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final address = data['address'] as Map<String, dynamic>?;
+          if (address != null) {
+            final strada = (address['strada'] as String? ?? '').trim();
+            final numar = (address['numar'] as String? ?? '').trim();
+            final localitate = (address['localitate'] as String? ?? '').trim();
+            final judet = (address['judet'] as String? ?? '').trim();
+            final codPostal = (address['codPostal'] as String? ?? '').trim();
+            final placeId = (address['place_id'] as String? ?? '').trim();
+
+            setState(() {
+              _selectedPlaceId = placeId;
+              _streetController.text = strada;
+              _numberController.text = numar;
+              _codPostalController.text = codPostal;
+              _addressValidated = true;
+
+              // Setează și județul/localitatea pentru Step 4
+              _selectedCounty = judet.isNotEmpty ? judet : null;
+              _selectedCity = localitate.isNotEmpty ? localitate : null;
+            });
+          }
+        } else {
+          setState(() {
+            textEroare = 'Nu s-a putut găsi o adresă pentru locația ta';
+          });
+        }
+      } catch (e) {
+        debugPrint('Reverse geocode error: $e');
+        setState(() {
+          textEroare = 'Eroare la obținerea adresei de la server';
+        });
+      } finally {
+        client.close();
+      }
+    } catch (e) {
+      debugPrint('Location error: $e');
+      setState(() {
+        textEroare = 'Eroare la obținerea locației';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isGettingLocation = false);
+      }
+    }
+  }
+
   // ---- Phone Formatting ----
+
   bool _countryUsesTrunkPrefix(String countryCode) {
     const trunkPrefixCountries = [
       'RO', 'DE', 'GB', 'FR', 'IT', 'ES', 'PL', 'AT', 'CH',
@@ -963,14 +1074,64 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 6, bottom: 8),
-          child: Text(
-            'Adresă',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF6B7280),
-              letterSpacing: 0.3,
-            ),
+          child: Row(
+            children: [
+              Text(
+                'Adresă',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF6B7280),
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: _isGettingLocation ? null : _getCurrentAddress,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _isGettingLocation
+                        ? Colors.grey[200]
+                        : const Color(lightForestGreenColor).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _isGettingLocation
+                          ? Colors.grey[300]!
+                          : const Color(lightForestGreenColor).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _isGettingLocation
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(
+                              Icons.my_location_rounded,
+                              size: 16,
+                              color: Color(lightForestGreenColor),
+                            ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _isGettingLocation ? 'Se caută...' : 'Locația mea',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: _isGettingLocation
+                              ? Colors.grey[500]
+                              : const Color(lightForestGreenColor),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         Container(
@@ -1047,6 +1208,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
       ],
     );
   }
+
 
   Widget _buildCountyDropdown() {
     final items = judete.map((j) => j['judet'] as String).toList();

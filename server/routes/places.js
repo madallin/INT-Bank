@@ -1,119 +1,179 @@
 // routes/places.js
-// Google Places API proxy — autocomplete + place details
+// Geoapify Address Autocomplete API proxy — autocomplete + place details
 
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
+const GEOAPIFY_BASE = 'https://api.geoapify.com/v1/geocode';
+
 /**
  * GET /places/autocomplete?text=...&locality=...
- * Proxy către Google Places Autocomplete API.
+ * Proxy către Geoapify Address Autocomplete API.
  * Returnează sugestii de adrese cu place_id.
  */
 router.get('/autocomplete', async (req, res) => {
   const { text, locality } = req.query;
   if (!text) return res.status(400).json({ error: 'Missing text query' });
 
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'Google Maps API key not configured' });
+  const apiKey = process.env.GEOAPIFY_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Geoapify API key not configured' });
 
   try {
+    // Construim parametri pentru Geoapify Autocomplete
     const params = {
-      input: text,
-      types: 'address',
-      language: 'ro',
-      components: 'country:ro',
-      key: apiKey,
+      text,
+      type: 'street',
+      format: 'json',
+      lang: 'ro',
+      apiKey,
+      filter: 'countrycode:ro',
     };
 
-    // Dacă avem localitatea, o trimitem ca bias
+    // Dacă avem localitatea, o folosim ca bias
     if (locality) {
-      // Încercăm să obținem location + radius din textul localității
-      // Ne bazăm pe faptul că Google face geocoding pe numele localității
-      params.components = `country:ro|locality:${encodeURIComponent(locality)}`;
+      params.bias = `countrycode:ro`;
+      params.text = `${text}, ${locality}`;
     }
 
-    const googleRes = await axios.get(
-      'https://maps.googleapis.com/maps/api/place/autocomplete/json',
+    const geoapifyRes = await axios.get(
+      `${GEOAPIFY_BASE}/autocomplete`,
       { params }
     );
 
-    if (googleRes.data.status !== 'OK' && googleRes.data.status !== 'ZERO_RESULTS') {
-      console.error('Google Places API error:', googleRes.data);
-      return res.status(502).json({ error: 'Google Places API error', details: googleRes.data.status });
-    }
+    const results = geoapifyRes.data?.results || [];
 
-    const predictions = (googleRes.data.predictions || []).map((p) => ({
-      place_id: p.place_id,
-      description: p.description,
-      structured_formatting: p.structured_formatting,
-      terms: p.terms,
+    // Mapăm răspunsul Geoapify la formatul pe care îl așteaptă Flutter
+    const predictions = results.map((r) => ({
+      place_id: r.place_id,
+      description: r.formatted || r.address_line1 || '',
+      structured_formatting: {
+        main_text: r.street || r.city || r.name || '',
+        secondary_text: r.address_line2 || r.formatted?.split(',').slice(1).join(',') || '',
+      },
+      terms: [
+        ...(r.street ? [{ value: r.street }] : []),
+        ...(r.housenumber ? [{ value: r.housenumber }] : []),
+        ...(r.city ? [{ value: r.city }] : []),
+        ...(r.state ? [{ value: r.state }] : []),
+        ...(r.country ? [{ value: r.country }] : []),
+      ],
     }));
 
     return res.json({ predictions });
   } catch (err) {
-    console.error('Eroare la Google Places autocomplete:', err.response?.data || err.message);
-    return res.status(500).json({ error: 'Error fetching from Google Places' });
+    console.error('Eroare la Geoapify autocomplete:', err.response?.data || err.message);
+    return res.status(500).json({ error: 'Error fetching from Geoapify' });
   }
 });
 
 /**
  * GET /places/details?place_id=...
- * Proxy către Google Places Details API.
+ * Proxy către Geoapify Geocoding Search API (by place_id).
  * Returnează adresa structurată (stradă, număr, localitate, județ, cod poștal).
  */
 router.get('/details', async (req, res) => {
   const { place_id } = req.query;
   if (!place_id) return res.status(400).json({ error: 'Missing place_id query' });
 
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'Google Maps API key not configured' });
+  const apiKey = process.env.GEOAPIFY_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Geoapify API key not configured' });
 
   try {
-    const googleRes = await axios.get(
-      'https://maps.googleapis.com/maps/api/place/details/json',
+    const geoapifyRes = await axios.get(
+      `${GEOAPIFY_BASE}/search`,
       {
         params: {
-          place_id,
-          fields: 'address_components,formatted_address,geometry',
-          language: 'ro',
-          key: apiKey,
+          id: place_id,
+          format: 'json',
+          lang: 'ro',
+          apiKey,
         },
       }
     );
 
-    if (googleRes.data.status !== 'OK') {
-      console.error('Google Places Details API error:', googleRes.data);
-      return res.status(502).json({ error: 'Google Places Details API error', details: googleRes.data.status });
+    const results = geoapifyRes.data?.results || [];
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Place not found' });
     }
 
-    const result = googleRes.data.result;
-    const components = result.address_components || [];
+    const result = results[0];
 
-    // Extrage componentele adresei
-    const extractComponent = (types) => {
-      const comp = components.find((c) => types.some((t) => c.types.includes(t)));
-      return comp ? comp.long_name : '';
-    };
-
+    // Mapăm răspunsul Geoapify la formatul existent (stradă, număr, etc.)
     const address = {
       place_id,
-      formatted_address: result.formatted_address || '',
-      strada: extractComponent(['route']),
-      numar: extractComponent(['street_number']),
-      localitate: extractComponent(['locality', 'administrative_area_level_3', 'sublocality']),
-      judet: extractComponent(['administrative_area_level_1']),
-      codPostal: extractComponent(['postal_code']),
-      tara: extractComponent(['country']),
-      lat: result.geometry?.location?.lat || null,
-      lng: result.geometry?.location?.lng || null,
+      formatted_address: result.formatted || '',
+      strada: result.street || result.address_line1?.split(',')[0]?.trim() || '',
+      numar: result.housenumber || '',
+      localitate: result.city || result.county || '',
+      judet: result.state || '',
+      codPostal: result.postcode || '',
+      tara: result.country || '',
+      lat: result.lat || null,
+      lng: result.lon || null,
     };
 
     return res.json({ address });
   } catch (err) {
-    console.error('Eroare la Google Places details:', err.response?.data || err.message);
-    return res.status(500).json({ error: 'Error fetching place details from Google' });
+    console.error('Eroare la Geoapify details:', err.response?.data || err.message);
+    return res.status(500).json({ error: 'Error fetching place details from Geoapify' });
+  }
+});
+
+/**
+ * GET /places/reverse?lat=...&lon=...
+ * Proxy către Geoapify Reverse Geocoding API.
+ * Primește coordonate GPS și returnează adresa structurată.
+ */
+router.get('/reverse', async (req, res) => {
+  const { lat, lon } = req.query;
+  if (!lat || !lon) return res.status(400).json({ error: 'Missing lat/lon query' });
+
+  const apiKey = process.env.GEOAPIFY_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Geoapify API key not configured' });
+
+  try {
+    const geoapifyRes = await axios.get(
+      `${GEOAPIFY_BASE}/reverse`,
+      {
+        params: {
+          lat,
+          lon,
+          format: 'json',
+          lang: 'ro',
+          limit: 1,
+          apiKey,
+        },
+      }
+    );
+
+    const results = geoapifyRes.data?.results || [];
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'No address found for these coordinates' });
+    }
+
+    const result = results[0];
+
+    const address = {
+      place_id: result.place_id || '',
+      formatted_address: result.formatted || '',
+      strada: result.street || result.address_line1?.split(',')[0]?.trim() || '',
+      numar: result.housenumber || '',
+      localitate: result.city || result.county || '',
+      judet: result.state || '',
+      codPostal: result.postcode || '',
+      tara: result.country || '',
+      lat: result.lat || null,
+      lng: result.lon || null,
+    };
+
+    return res.json({ address });
+  } catch (err) {
+    console.error('Eroare la Geoapify reverse:', err.response?.data || err.message);
+    return res.status(500).json({ error: 'Error fetching reverse geocode from Geoapify' });
   }
 });
 
 module.exports = router;
+
+

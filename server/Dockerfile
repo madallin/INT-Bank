@@ -17,24 +17,15 @@ WORKDIR /app
 # Create non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Copy production dependencies
-COPY --from=builder /app/node_modules ./node_modules
+# Copy production dependencies (și le dăm direct drepturi utilizatorului non-root)
+COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
 
-# Copy application source code
-COPY . .
-
-# Set proper ownership
-RUN chown -R appuser:appgroup /app
+# Copy application source code (și le dăm direct drepturi utilizatorului non-root)
+COPY --chown=appuser:appgroup . .
 
 # Use non-root user
 USER appuser
 
-# Expose API port
-EXPOSE 8443
+EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget --no-check-certificate --spider https://localhost:8443/health || exit 1
-
-# Start the server
 CMD ["node", "index.js"]

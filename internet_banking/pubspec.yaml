@@ -1,0 +1,52 @@
+name: internet_banking
+description: "Proiect de disertatie - Aplicatie de Internet Banking"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.3.2
+  http: ^1.5.0
+  device_info_plus: ^12.1.0
+  flutter_secure_storage: ^9.2.4
+  flutter_libphonenumber: ^2.5.1
+  flutter_native_splash: ^2.4.7
+  web_socket_channel: ^3.0.3
+  shared_preferences: ^2.5.3
+  rename_app: ^1.6.5
+  flutter_launcher_icons: ^0.14.4
+  flutter_dotenv: ^6.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/judete.json
+    - assets/images/foreground.png
+    - assets/images/logo.png
+    - assets/images/logo_full_white.png
+    - assets/images/visa.png
+    - .env
+  fonts:
+    - family: OCRA
+      fonts:
+        - asset: assets/fonts/OCRA.otf
+    - family: OCRB
+      fonts:
+        - asset: assets/fonts/OCRB.otf
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/icon_little.png" 
+  adaptive_icon_background: "#00695C"
+  adaptive_icon_foreground: "assets/images/icon_little.png"

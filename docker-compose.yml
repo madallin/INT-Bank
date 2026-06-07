@@ -1,0 +1,92 @@
+# docker-compose.yml
+# INT Bank - Full Stack Application
+# Run: docker compose up -d --build
+
+version: '3.8'
+
+services:
+  # --- PostgreSQL Database ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: intbank-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: intbank
+      POSTGRES_USER: intbank_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme_in_prod}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intbank_user -d intbank"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - intbank-network
+
+  # --- Redis Cache ---
+  redis:
+    image: redis:7-alpine
+    container_name: intbank-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - intbank-network
+
+  # --- Node.js Backend ---
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: intbank-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: intbank
+      DB_USER: intbank_user
+      DB_PASSWORD: ${DB_PASSWORD:-changeme_in_prod}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 8443
+      # Add any other env vars your server needs
+    env_file:
+      - ./server/.env
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./server/certs:/app/certs:ro
+      - server_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "--spider", "https://localhost:8443/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - intbank-network
+
+networks:
+  intbank-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  server_logs:
+    driver: local

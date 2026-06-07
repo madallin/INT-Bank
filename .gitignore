@@ -1,0 +1,38 @@
+# --- Secrets & Environment ---
+.env
+.server.env
+
+# --- Node.js ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Server certs (private keys) ---
+server/certs/*.pem
+server/certs/*.key
+
+# --- Logs ---
+logs/
+*.log
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# --- Docker ---
+.docker/
+
+# --- Miscellaneous ---
+*.class
+*.pyc
+build/

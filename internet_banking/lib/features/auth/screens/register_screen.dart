@@ -268,14 +268,23 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
             _suggestions = [];
             _showAddressDetails = true;
           });
+        } else {
+          debugPrint('Place details response missing address field');
+          setState(() => textEroare = 'Eroare: răspuns invalid de la server pentru detaliile adresei');
         }
+      } else {
+        final errorBody = response.body.isNotEmpty ? response.body : 'fără răspuns';
+        debugPrint('Place details error (${response.statusCode}): $errorBody');
+        setState(() => textEroare = 'Eroare la obținerea detaliilor adresei (cod: ${response.statusCode})');
       }
     } catch (e) {
       debugPrint('Place details error: $e');
+      setState(() => textEroare = 'Eroare de rețea la obținerea detaliilor adresei');
     } finally {
       client.close();
       setState(() => _isLoadingAutocomplete = false);
     }
+
   }
 
   void _onAddressChanged(String value) {

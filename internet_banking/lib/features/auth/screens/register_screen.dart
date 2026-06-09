@@ -48,9 +48,10 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   String? _selectedCounty;
   String? _selectedCity;
 
-  // --- Address Autocomplete (Google Places) ---
+  // --- Step 4: Address Autocomplete (Geoapify) ---
   final TextEditingController _streetController = TextEditingController();
   final TextEditingController _numberController = TextEditingController();
+  final TextEditingController _stairApartmentController = TextEditingController();
   final TextEditingController _codPostalController = TextEditingController();
 
   String? _selectedPlaceId;
@@ -60,6 +61,8 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   bool _isLoadingAutocomplete = false;
   bool _addressValidated = false;
   bool _isGettingLocation = false;
+  bool _showAddressDetails = false;
+  String _confirmedStreet = '';
 
   // --- Common ---
 
@@ -127,6 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     _emailController.dispose();
     _streetController.dispose();
     _numberController.dispose();
+    _stairApartmentController.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -175,24 +179,24 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
       setState(() => textEroare = 'Adresa de email nu este validă');
       return false;
     }
-    if (_streetController.text.trim().isEmpty) {
-      setState(() => textEroare = 'Introdu strada');
-      return false;
-    }
-    if (!_addressValidated) {
-      setState(() => textEroare = 'Selectează o adresă validă din sugestii');
-      return false;
-    }
-    return true;
-  }
-
-  bool _validateStep4() {
     if (_selectedCounty == null) {
       setState(() => textEroare = 'Selectează județul');
       return false;
     }
     if (_selectedCity == null) {
       setState(() => textEroare = 'Selectează localitatea');
+      return false;
+    }
+    return true;
+  }
+
+  bool _validateStep4() {
+    if (_streetController.text.trim().isEmpty) {
+      setState(() => textEroare = 'Introdu strada');
+      return false;
+    }
+    if (!_addressValidated) {
+      setState(() => textEroare = 'Selectează o adresă validă din sugestii');
       return false;
     }
     return true;
@@ -251,11 +255,18 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         if (address != null) {
           setState(() {
             _selectedPlaceId = placeId;
+            _confirmedStreet = suggestion['description'] ?? (address['strada'] as String? ?? '').trim();
             _streetController.text = (address['strada'] as String? ?? '').trim();
             _numberController.text = (address['numar'] as String? ?? '').trim();
             _codPostalController.text = (address['codPostal'] as String? ?? '').trim();
+            // Auto-completează județul și localitatea din detaliile adresei
+            final judet = (address['judet'] as String? ?? '').trim();
+            final localitate = (address['localitate'] as String? ?? '').trim();
+            if (judet.isNotEmpty) _selectedCounty = judet;
+            if (localitate.isNotEmpty) _selectedCity = localitate;
             _addressValidated = true;
             _suggestions = [];
+            _showAddressDetails = true;
           });
         }
       }
@@ -345,14 +356,19 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
 
             setState(() {
               _selectedPlaceId = placeId;
+              _confirmedStreet = strada.isNotEmpty ? strada : 'Adresă selectată';
               _streetController.text = strada;
               _numberController.text = numar;
               _codPostalController.text = codPostal;
               _addressValidated = true;
+              _showAddressDetails = true;
 
-              // Setează și județul/localitatea pentru Step 4
-              _selectedCounty = judet.isNotEmpty ? judet : null;
-              _selectedCity = localitate.isNotEmpty ? localitate : null;
+              // Dacă suntem pe Step 3 (county/city necompletate) sau orice alt pas,
+              // setăm automat județul și localitatea din locația GPS
+              if (_selectedCounty == null || _selectedCity == null) {
+                _selectedCounty = judet.isNotEmpty ? judet : null;
+                _selectedCity = localitate.isNotEmpty ? localitate : null;
+              }
             });
           }
         } else {
@@ -502,6 +518,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         'localitate': _selectedCity,
         'strada': _streetController.text.trim(),
         'numar': _numberController.text.trim(),
+        'scaraEtajAp': _stairApartmentController.text.trim(),
         'codPostal': _codPostalController.text.trim(),
         'placeId': _selectedPlaceId ?? '',
       };
@@ -704,7 +721,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Email și adresă',
+          'Email și domiciliu',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -713,7 +730,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         ),
         const SizedBox(height: 8),
         Text(
-          'Date de contact și domiciliu',
+          'Date de contact și județul/localitatea de domiciliu',
           style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
         ),
         const SizedBox(height: 20),
@@ -724,7 +741,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 16),
-        _buildAutocompleteField(),
+        _buildCountyDropdown(),
+        const SizedBox(height: 16),
+        _buildCityDropdown(),
       ],
     );
   }
@@ -734,7 +753,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Domiciliu',
+          'Adresa completă',
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -743,13 +762,83 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         ),
         const SizedBox(height: 8),
         Text(
-          'Ultimele detalii despre adresa ta',
+          'Caută-ți strada, apoi completează detaliile',
           style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
         ),
         const SizedBox(height: 20),
-        _buildCountyDropdown(),
+        _buildAutocompleteField(),
+        const SizedBox(height: 8),
+        AnimatedCrossFade(
+          firstChild: const SizedBox.shrink(),
+          secondChild: _buildAddressDetails(),
+          crossFadeState: _showAddressDetails
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 300),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddressDetails() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        // Street (read-only after selection)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[200]!, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.location_on_outlined, size: 18, color: Colors.grey[500]),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _confirmedStreet,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(darkGreyColor),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
-        _buildCityDropdown(),
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: _buildField(
+                controller: _numberController,
+                label: 'Număr / Bloc',
+                hint: 'Nr. 4, Bl. G2',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 3,
+              child: _buildField(
+                controller: _stairApartmentController,
+                label: 'Scară / Etaj / Apartament',
+                hint: 'Sc. B, Ap. 12',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildField(
+          controller: _codPostalController,
+          label: 'Cod Poștal',
+          hint: '600339',
+        ),
       ],
     );
   }

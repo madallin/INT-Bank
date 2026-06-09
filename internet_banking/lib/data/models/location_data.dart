@@ -16,6 +16,6 @@ Future<void> loadJudete() async {
 
   mapLocalitati = {
     for (final item in judete)
-      item['judet'] as String: List<String>.from(item['localitati']),
+      item['judet'] as String: (List<String>.from(item['localitati'])..sort()),
   };
 }

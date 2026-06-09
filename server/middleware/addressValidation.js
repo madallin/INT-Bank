@@ -10,7 +10,7 @@ const GEOAPIFY_BASE = 'https://api.geoapify.com/v1/geocode';
 
 /**
  * Middleware de validare a adresei.
- * Așteaptă în req.body: { placeId, strada, numar, localitate, judet, codPostal }
+ * Așteaptă în req.body: { placeId, strada, numar, scaraEtajAp, localitate, judet, codPostal }
  * La succes, adaugă req.addressValidated = { ... } (obiectul standardizat).
  * La eșec, returnează 400 cu eroarea.
  */
@@ -19,6 +19,7 @@ async function validateAddress(req, res, next) {
     placeId,
     strada,
     numar,
+    scaraEtajAp,
     localitate,
     judet,
     codPostal,
@@ -117,6 +118,7 @@ async function validateAddress(req, res, next) {
       placeId: placeId,
       strada: strada.trim(),
       numar: (numar || '').trim(),
+      scaraEtajAp: (scaraEtajAp || '').trim(),
       localitate: localitate.trim(),
       judet: judet.trim(),
       codPostal: (codPostal || geoCodPostal || '').trim(),

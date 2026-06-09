@@ -35,7 +35,8 @@ router.post('/', validateAddress, async (req, res) => {
       RETURNING id`,
       [
         nume, prenume, email, nrtelefon, sex, datanasterii, cnp,
-        addr.judet, addr.localitate, addr.strada + ', ' + addr.numar,
+        addr.judet, addr.localitate,
+        [addr.strada, addr.numar, addr.scaraEtajAp].filter(Boolean).join(', '),
         addr.codPostal, addr.placeId, addr.lat, addr.lng,
       ]
     );

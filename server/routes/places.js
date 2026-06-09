@@ -30,9 +30,8 @@ router.get('/autocomplete', async (req, res) => {
       filter: 'countrycode:ro',
     };
 
-    // Dacă avem localitatea, o folosim ca bias
+    // Dacă avem localitatea, o concatenăm în text pentru sugestii mai precise
     if (locality) {
-      params.bias = `countrycode:ro`;
       params.text = `${text}, ${locality}`;
     }
 
@@ -46,7 +45,12 @@ router.get('/autocomplete', async (req, res) => {
     // Mapăm răspunsul Geoapify la formatul pe care îl așteaptă Flutter
     const predictions = results.map((r) => ({
       place_id: r.place_id,
-      description: r.formatted || r.address_line1 || '',
+      // description = doar strada (+ număr, dacă există) — restul detaliilor se încarcă din /details
+      // Dacă Geoapify nu returnează separat street/housenumber, extragem doar prima parte (înainte de prima virgulă)
+      // din address_line1 (ex: "Aleea Oțelarilor" din "Aleea Oțelarilor, 600302 Bacău, România")
+      description: r.street
+        ? [r.street, r.housenumber].filter(Boolean).join(', ')
+        : (r.address_line1 || r.formatted || '').split(',')[0]?.trim() || '',
       structured_formatting: {
         main_text: r.street || r.city || r.name || '',
         secondary_text: r.address_line2 || r.formatted?.split(',').slice(1).join(',') || '',

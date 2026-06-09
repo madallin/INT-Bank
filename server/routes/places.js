@@ -47,25 +47,22 @@ router.get('/autocomplete', async (req, res) => {
       place_id: r.place_id,
       // description = strada (+ număr, dacă există) + cod poștal în paranteză pentru diferențiere
       // (ex: "Aleea Oțelarilor (600302)" sau "Strada X, Nr. 5 (123456)")
-      description: (() => {
-        const streetPart = r.street
-          ? [r.street, r.housenumber].filter(Boolean).join(', ')
-          : (r.address_line1 || r.formatted || '').split(',')[0]?.trim() || '';
-        const postcode = r.postcode ? ` (${r.postcode})` : '';
-        return streetPart + postcode || r.formatted || '';
-      })(),
-
-      structured_formatting: {
-        main_text: r.street || r.city || r.name || '',
-        secondary_text: r.address_line2 || r.formatted?.split(',').slice(1).join(',') || '',
-      },
-      terms: [
-        ...(r.street ? [{ value: r.street }] : []),
-        ...(r.housenumber ? [{ value: r.housenumber }] : []),
-        ...(r.city ? [{ value: r.city }] : []),
-        ...(r.state ? [{ value: r.state }] : []),
-        ...(r.country ? [{ value: r.country }] : []),
-      ],
+      description: r.place_id
+        ? (() => {
+            const streetPart = r.street
+              ? [r.street, r.housenumber].filter(Boolean).join(', ')
+              : (r.address_line1 || r.formatted || '').split(',')[0]?.trim() || '';
+            const postcode = r.postcode ? ` (${r.postcode})` : '';
+            return streetPart + postcode || r.formatted || '';
+          })()
+        : '',
+      // Toate detaliile structurate ale adresei — fără a mai fi nevoie de un al doilea API call (/details)
+      strada: r.street || (r.address_line1 || '').split(',')[0]?.trim() || '',
+      numar: r.housenumber || '',
+      localitate: r.city || r.county || '',
+      judet: r.state || '',
+      codPostal: r.postcode || '',
+      tara: r.country || '',
     }));
 
     return res.json({ predictions });

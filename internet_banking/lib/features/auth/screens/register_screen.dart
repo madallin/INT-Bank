@@ -224,6 +224,12 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
             _suggestions = predictions.map<Map<String, String>>((p) => {
               'place_id': (p['place_id'] as String? ?? ''),
               'description': (p['description'] as String? ?? ''),
+              'strada': (p['strada'] as String? ?? ''),
+              'numar': (p['numar'] as String? ?? ''),
+              'localitate': (p['localitate'] as String? ?? ''),
+              'judet': (p['judet'] as String? ?? ''),
+              'codPostal': (p['codPostal'] as String? ?? ''),
+              'tara': (p['tara'] as String? ?? ''),
             }).where((m) => m['description']!.isNotEmpty).toList();
           });
         }
@@ -236,55 +242,25 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     }
   }
 
-  /// După selectarea unei sugestii, obținem detaliile complete ale adresei.
+  /// După selectarea unei sugestii, folosește detaliile adresei deja incluse în predicție.
   Future<void> _onAddressSelected(Map<String, String> suggestion) async {
     final placeId = suggestion['place_id'] ?? '';
     if (placeId.isEmpty) return;
 
-    setState(() => _isLoadingAutocomplete = true);
-    final client = _createHttpClient();
-    try {
-      final response = await client.get(
-        Uri.parse(
-          'https://$serverUrl/places/details?place_id=${Uri.encodeComponent(placeId)}',
-        ),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final address = data['address'] as Map<String, dynamic>?;
-        if (address != null) {
-          setState(() {
-            _selectedPlaceId = placeId;
-            _confirmedStreet = suggestion['description'] ?? (address['strada'] as String? ?? '').trim();
-            _streetController.text = (address['strada'] as String? ?? '').trim();
-            _numberController.text = (address['numar'] as String? ?? '').trim();
-            _codPostalController.text = (address['codPostal'] as String? ?? '').trim();
-            // Auto-completează județul și localitatea din detaliile adresei
-            final judet = (address['judet'] as String? ?? '').trim();
-            final localitate = (address['localitate'] as String? ?? '').trim();
-            if (judet.isNotEmpty) _selectedCounty = judet;
-            if (localitate.isNotEmpty) _selectedCity = localitate;
-            _addressValidated = true;
-            _suggestions = [];
-            _showAddressDetails = true;
-          });
-        } else {
-          debugPrint('Place details response missing address field');
-          setState(() => textEroare = 'Eroare: răspuns invalid de la server pentru detaliile adresei');
-        }
-      } else {
-        final errorBody = response.body.isNotEmpty ? response.body : 'fără răspuns';
-        debugPrint('Place details error (${response.statusCode}): $errorBody');
-        setState(() => textEroare = 'Eroare la obținerea detaliilor adresei (cod: ${response.statusCode})');
-      }
-    } catch (e) {
-      debugPrint('Place details error: $e');
-      setState(() => textEroare = 'Eroare de rețea la obținerea detaliilor adresei');
-    } finally {
-      client.close();
-      setState(() => _isLoadingAutocomplete = false);
-    }
-
+    setState(() {
+      _selectedPlaceId = placeId;
+      _confirmedStreet = suggestion['description'] ?? '';
+      _streetController.text = (suggestion['strada'] ?? '').trim();
+      _numberController.text = (suggestion['numar'] ?? '').trim();
+      _codPostalController.text = (suggestion['codPostal'] ?? '').trim();
+      final judet = (suggestion['judet'] ?? '').trim();
+      final localitate = (suggestion['localitate'] ?? '').trim();
+      if (judet.isNotEmpty) _selectedCounty = judet;
+      if (localitate.isNotEmpty) _selectedCity = localitate;
+      _addressValidated = true;
+      _suggestions = [];
+      _showAddressDetails = true;
+    });
   }
 
   void _onAddressChanged(String value) {

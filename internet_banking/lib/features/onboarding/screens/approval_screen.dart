@@ -33,12 +33,27 @@ class _ApprovalScreenState extends State<ApprovalScreen>
   Timer? _pollTimer;
   WebSocket? _ws;
 
+  // ========== Lifecycle ==========
+
   @override
   void initState() {
     super.initState();
     _initAnimations();
     _connectWebSocket();
+    _startPolling();
   }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    _pulseController.dispose();
+    _checkController.dispose();
+    _fadeController.dispose();
+    _ws?.close();
+    super.dispose();
+  }
+
+  // ========== WebSocket ==========
 
   void _connectWebSocket() async {
     try {
@@ -47,7 +62,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
             (X509Certificate cert, String host, int port) => true;
 
       final uri = 'wss://$serverUrl';
-      debugPrint('Încerc conexiune WS la: $uri');
+      debugPrint('Incerc conexiune WS la: $uri');
 
       _ws = await WebSocket.connect(uri, customClient: client);
       debugPrint('WebSocket conectat!');
@@ -73,7 +88,9 @@ class _ApprovalScreenState extends State<ApprovalScreen>
 
           final messageType = data['type'];
           final incomingId = data['id'];
-          final incomingIdInt = incomingId is int ? incomingId : int.tryParse(incomingId?.toString() ?? '');
+          final incomingIdInt = incomingId is int
+              ? incomingId
+              : int.tryParse(incomingId?.toString() ?? '');
 
           if ((messageType == 'contAprobat' || messageType == null) &&
               incomingIdInt == widget.userId) {
@@ -82,7 +99,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
           }
         },
         onDone: () {
-          debugPrint('WebSocket închis');
+          debugPrint('WebSocket inchis');
         },
         onError: (err) {
           debugPrint('Eroare WebSocket: $err');
@@ -94,26 +111,36 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     }
   }
 
-  void _initAnimations() {
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat(reverse: true);
-    _pulseAnimation =
-        Tween<double>(begin: 0.95, end: 1.05).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+  // ========== Polling fallback ==========
 
-    _checkController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-    _checkAnimation = CurvedAnimation(parent: _checkController, curve: Curves.elasticOut);
-
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
+  void _startPolling() {
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      if (_isApproved) {
+        _pollTimer?.cancel();
+        return;
+      }
+      try {
+        final client = HttpClient()
+          ..badCertificateCallback =
+              (X509Certificate cert, String host, int port) => true;
+        final request = await client.getUrl(
+          Uri.parse('https://$serverUrl/users/${widget.userId}/has-approved'),
+        );
+        final response = await request.close();
+        final body = await response.transform(utf8.decoder).join();
+        final data = jsonDecode(body);
+        final isApproved = data['contaprobat'] ?? false;
+        if (isApproved) {
+          debugPrint('Polling: cont aprobat pentru user ${widget.userId}');
+          _onApprovalReceived();
+        }
+      } catch (e) {
+        debugPrint('Polling error: $e');
+      }
+    });
   }
+
+  // ========== Approval handler ==========
 
   void _onApprovalReceived() {
     _ws?.close();
@@ -144,15 +171,37 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     });
   }
 
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    _pulseController.dispose();
-    _checkController.dispose();
-    _fadeController.dispose();
-    _ws?.close();
-    super.dispose();
+  // ========== Animations ==========
+
+  void _initAnimations() {
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _checkController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _checkAnimation = CurvedAnimation(
+      parent: _checkController,
+      curve: Curves.elasticOut,
+    );
+
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    );
   }
+
+  // ========== Build ==========
 
   @override
   Widget build(BuildContext context) {
@@ -170,12 +219,16 @@ class _ApprovalScreenState extends State<ApprovalScreen>
                     children: [
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 500),
-                        child: _isApproved ? _buildSuccessIcon() : _buildWaitingIcon(),
+                        child: _isApproved
+                            ? _buildSuccessIcon()
+                            : _buildWaitingIcon(),
                       ),
                       const SizedBox(height: 58),
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 500),
-                        child: _showSuccessMessage ? _buildSuccessMessage() : _buildWaitingMessage(),
+                        child: _showSuccessMessage
+                            ? _buildSuccessMessage()
+                            : _buildWaitingMessage(),
                       ),
                     ],
                   ),
@@ -200,7 +253,10 @@ class _ApprovalScreenState extends State<ApprovalScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [const Color(lightForestGreenColor), const Color(darkForestGreenColor)],
+            colors: [
+              const Color(lightForestGreenColor),
+              const Color(darkForestGreenColor),
+            ],
           ),
           boxShadow: [
             BoxShadow(
@@ -218,7 +274,10 @@ class _ApprovalScreenState extends State<ApprovalScreen>
               height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(lightForestGreenColor).withOpacity(0.3), width: 4),
+                border: Border.all(
+                  color: const Color(lightForestGreenColor).withOpacity(0.3),
+                  width: 4,
+                ),
               ),
             ),
             const Icon(Icons.person_search_rounded, size: 85, color: Colors.white),
@@ -240,7 +299,10 @@ class _ApprovalScreenState extends State<ApprovalScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [const Color(lightForestGreenColor), const Color(darkForestGreenColor)],
+            colors: [
+              const Color(lightForestGreenColor),
+              const Color(darkForestGreenColor),
+            ],
           ),
           boxShadow: [
             BoxShadow(
@@ -258,7 +320,10 @@ class _ApprovalScreenState extends State<ApprovalScreen>
               height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(lightForestGreenColor).withOpacity(0.3), width: 4),
+                border: Border.all(
+                  color: const Color(lightForestGreenColor).withOpacity(0.3),
+                  width: 4,
+                ),
               ),
             ),
             const Icon(Icons.check_rounded, size: 80, color: Colors.white),
@@ -273,14 +338,24 @@ class _ApprovalScreenState extends State<ApprovalScreen>
       key: const ValueKey('waiting_text'),
       children: [
         Text(
-          'Verificare în curs',
-          style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.w600, color: const Color(darkForestGreenColor), letterSpacing: -0.5),
+          'Verificare in curs',
+          style: GoogleFonts.poppins(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: const Color(darkForestGreenColor),
+            letterSpacing: -0.5,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
         Text(
-          'Un operator verifică datele tale în acest moment',
-          style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w400, height: 1.6),
+          'Un operator verifica datele tale in acest moment',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w400,
+            height: 1.6,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -288,7 +363,10 @@ class _ApprovalScreenState extends State<ApprovalScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [const Color(lightForestGreenColor), const Color(darkForestGreenColor)],
+              colors: [
+                const Color(lightForestGreenColor),
+                const Color(darkForestGreenColor),
+              ],
             ),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
@@ -302,9 +380,23 @@ class _ApprovalScreenState extends State<ApprovalScreen>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white))),
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
               const SizedBox(width: 12),
-              Text('Aprobare în câteva momente...', style: GoogleFonts.poppins(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500)),
+              Text(
+                'Aprobare in cateva momente...',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
@@ -318,15 +410,36 @@ class _ApprovalScreenState extends State<ApprovalScreen>
       opacity: _fadeAnimation,
       child: Column(
         children: [
-          Text('Cont verificat cu succes!', style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.w600, color: const Color(darkForestGreenColor), letterSpacing: -0.5), textAlign: TextAlign.center),
+          Text(
+            'Cont verificat cu succes!',
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: const Color(darkForestGreenColor),
+              letterSpacing: -0.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 16),
-          Text('Datele tale au fost aprobate.\nVei fi redirecționat în 5 secunde.', style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w400, height: 1.6), textAlign: TextAlign.center),
+          Text(
+            'Datele tale au fost aprobate.\nVei fi redirectionat in 5 secunde.',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w400,
+              height: 1.6,
+            ),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 32),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [const Color(lightForestGreenColor), const Color(darkForestGreenColor)],
+                colors: [
+                  const Color(lightForestGreenColor),
+                  const Color(darkForestGreenColor),
+                ],
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
@@ -342,7 +455,14 @@ class _ApprovalScreenState extends State<ApprovalScreen>
               children: [
                 const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 12),
-                Text('Verificare completă', style: GoogleFonts.poppins(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w500)),
+                Text(
+                  'Verificare completa',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ),

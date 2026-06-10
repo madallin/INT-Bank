@@ -77,6 +77,56 @@ CREATE TABLE IF NOT EXISTS transferuri (
     dataTransfer TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ==================== MIGRATIONS ====================
+
+-- Adăugare coloane lipsă în cazul în care tabela utilizatori există deja
+-- (CREATE TABLE IF NOT EXISTS nu modifică o tabelă existentă)
+-- IMPORTANT: Migrările trebuie să fie ÎNAINTEA index-urilor!
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'utilizatori' AND column_name = 'place_id'
+    ) THEN
+        ALTER TABLE utilizatori ADD COLUMN place_id VARCHAR(255);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'utilizatori' AND column_name = 'lat'
+    ) THEN
+        ALTER TABLE utilizatori ADD COLUMN lat DOUBLE PRECISION;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'utilizatori' AND column_name = 'lng'
+    ) THEN
+        ALTER TABLE utilizatori ADD COLUMN lng DOUBLE PRECISION;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'utilizatori' AND column_name = 'bloc'
+    ) THEN
+        ALTER TABLE utilizatori ADD COLUMN bloc VARCHAR(50);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'utilizatori' AND column_name = 'scara'
+    ) THEN
+        ALTER TABLE utilizatori ADD COLUMN scara VARCHAR(10);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'utilizatori' AND column_name = 'apartament'
+    ) THEN
+        ALTER TABLE utilizatori ADD COLUMN apartament VARCHAR(50);
+    END IF;
+END $$;
+
 -- ==================== INDEXES ====================
 
 CREATE INDEX IF NOT EXISTS idx_utilizatori_nrtelefon ON utilizatori(nrtelefon);

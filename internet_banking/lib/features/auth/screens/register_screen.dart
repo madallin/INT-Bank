@@ -16,6 +16,7 @@ import 'package:http/io_client.dart';
 
 import '../../../config/app_config.dart';
 import '../../../core/utils/validators.dart';
+import '../../../core/utils/input_formatters.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../data/models/location_data.dart';
 import '../../onboarding/screens/tos_screen.dart';
@@ -51,7 +52,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   // --- Step 4: Address Autocomplete (Geoapify) ---
   final TextEditingController _streetController = TextEditingController();
   final TextEditingController _numberController = TextEditingController();
-  final TextEditingController _stairApartmentController = TextEditingController();
+  final TextEditingController _blocController = TextEditingController();
+  final TextEditingController _scaraController = TextEditingController();
+  final TextEditingController _apartmentController = TextEditingController();
   final TextEditingController _codPostalController = TextEditingController();
 
   String? _selectedPlaceId;
@@ -130,7 +133,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     _emailController.dispose();
     _streetController.dispose();
     _numberController.dispose();
-    _stairApartmentController.dispose();
+    _blocController.dispose();
+    _scaraController.dispose();
+    _apartmentController.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -503,7 +508,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         'localitate': _selectedCity,
         'strada': _streetController.text.trim(),
         'numar': _numberController.text.trim(),
-        'scaraEtajAp': _stairApartmentController.text.trim(),
+        'bloc': _blocController.text.trim(),
+        'scara': _scaraController.text.trim(),
+        'apartament': _apartmentController.text.trim(),
         'codPostal': _codPostalController.text.trim(),
         'placeId': _selectedPlaceId ?? '',
       };
@@ -634,6 +641,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                 controller: _lastNameController,
                 label: 'Nume de familie',
                 hint: 'Popescu',
+                inputFormatters: [LastNameFormatter()],
               ),
             ),
             const SizedBox(width: 12),
@@ -642,6 +650,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                 controller: _firstNameController,
                 label: 'Prenume',
                 hint: 'Ion',
+                inputFormatters: [FirstNameFormatter()],
               ),
             ),
           ],
@@ -655,6 +664,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
           hint: '1234567890123',
           keyboardType: TextInputType.number,
           maxLength: 13,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           suffix: GestureDetector(
             onTap: _autoFillFromCNP,
             child: Container(
@@ -724,6 +734,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
           label: 'Email',
           hint: 'exemplu@email.com',
           keyboardType: TextInputType.emailAddress,
+          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@._\-]'))],
         ),
         const SizedBox(height: 16),
         _buildCountyDropdown(),
@@ -803,17 +814,39 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
               flex: 2,
               child: _buildField(
                 controller: _numberController,
-                label: 'Număr / Bloc',
+                label: 'Număr',
                 hint: 'Nr. 4, Bl. G2',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
-              flex: 3,
               child: _buildField(
-                controller: _stairApartmentController,
-                label: 'Scară / Etaj / Apartament',
-                hint: 'Sc. B, Ap. 12',
+                controller: _blocController,
+                label: 'Bloc',
+                hint: 'ex: G2',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildField(
+                controller: _scaraController,
+                label: 'Scară',
+                hint: 'ex: A',
+                inputFormatters: [SingleLetterFormatter()],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _buildField(
+                controller: _apartmentController,
+                label: 'Apartament',
+                hint: 'ex: 12',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
             ),
           ],
@@ -837,6 +870,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     TextInputType? keyboardType,
     int? maxLength,
     Widget? suffix,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -869,6 +903,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
             obscureText: obscureText,
             keyboardType: keyboardType,
             maxLength: maxLength,
+            inputFormatters: inputFormatters,
             style: GoogleFonts.inter(
               fontSize: 15,
               fontWeight: FontWeight.w500,

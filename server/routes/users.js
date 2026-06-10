@@ -106,6 +106,31 @@ router.post('/:userId/verify-pin', async (req, res) => {
   }
 });
 
+router.get('/:userId/has-pin', async (req, res) => {
+  const { userId } = req.params;
+
+  let clientDb;
+  try {
+    clientDb = await req.pool.connect();
+    const result = await clientDb.query(
+      'SELECT pincont FROM utilizatori WHERE id = $1',
+      [userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Utilizatorul nu a fost găsit' });
+    }
+
+    const hasPin = result.rows[0].pincont !== null && result.rows[0].pincont !== '';
+    return res.status(200).json({ hasPin });
+  } catch (err) {
+    console.error('Eroare la baza de date (has-pin):', err);
+    return res.status(500).json({ error: 'Eroare la comunicarea cu serverul' });
+  } finally {
+    if (clientDb) clientDb.release();
+  }
+});
+
 router.put('/:userId/set-pin', async (req, res) => {
   const { userId } = req.params;
   const { codPin } = req.body;

@@ -230,13 +230,13 @@ class _PinScreenState extends State<PinScreen>
     setState(() => isVerifying = true);
     final client = _createHttpClient();
     try {
-      final response = await client.post(
+      final response = await client.put(
         Uri.parse('https://$serverUrl/users/${widget.userId}/set-pin'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',
         },
-        body: jsonEncode({'pin': pin}),
+        body: jsonEncode({'codPin': pin}),
       );
 
       if (response.statusCode == 401) {

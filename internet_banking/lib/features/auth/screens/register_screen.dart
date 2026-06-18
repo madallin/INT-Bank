@@ -815,7 +815,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
               child: _buildField(
                 controller: _numberController,
                 label: 'Număr',
-                hint: 'Nr. 4, Bl. G2',
+                hint: 'ex: 4',
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
@@ -825,7 +825,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
               child: _buildField(
                 controller: _blocController,
                 label: 'Bloc',
-                hint: 'ex: G2',
+                hint: 'ex: 2',
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),

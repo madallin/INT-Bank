@@ -12,6 +12,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 import '../../../config/app_config.dart';
 import '../../../core/utils/helpers.dart';
+import '../../../core/storage/secure_session_manager.dart';
 import 'pin_screen.dart';
 
 class TwoFactorScreen extends StatefulWidget {
@@ -235,12 +236,20 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
           setPin = !(hasPinData['hasPin'] ?? false);
         }
 
+        // Salvează telefonul în secure storage pentru login JWT
+        await SecureSessionManager.savePhone(widget.phoneNumber);
+
         Future.delayed(const Duration(seconds: 3), () {
           if (!mounted) return;
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (_) => PinScreen(userId: _userId, set: setPin),
+              builder: (_) => PinScreen(
+                userId: _userId,
+                set: setPin,
+                useJwtLogin: true,
+                phoneNumber: widget.phoneNumber,
+              ),
             ),
             (route) => false,
           );

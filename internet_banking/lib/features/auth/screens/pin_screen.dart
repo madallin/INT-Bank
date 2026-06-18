@@ -12,18 +12,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 import '../../../config/app_config.dart';
+import '../../../services/jwt_api_service.dart';
+import '../../../core/storage/secure_session_manager.dart';
 import '../../home/screens/home_screen.dart';
 
 class PinScreen extends StatefulWidget {
   final int userId;
   final bool set; // true = creează PIN, false = verifică PIN
   final bool popOnSuccess;
+  final bool useJwtLogin; // Dacă true, face login JWT după verificare PIN
+  final String? phoneNumber; // Necesar pentru login JWT
 
   const PinScreen({
     super.key,
     required this.userId,
     required this.set,
     this.popOnSuccess = true,
+    this.useJwtLogin = false,
+    this.phoneNumber,
   });
 
   @override
@@ -192,6 +198,17 @@ class _PinScreenState extends State<PinScreen>
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
+        // PIN verificat cu succes
+        if (widget.useJwtLogin) {
+          // Facem login JWT
+          final success = await _performJwtLogin();
+          if (!success) {
+            _showError('Eroare la autentificare. Încearcă din nou.');
+            setState(() => pin = '');
+            return;
+          }
+        }
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('loggedUserId', widget.userId);
         if (mounted) {
@@ -213,6 +230,26 @@ class _PinScreenState extends State<PinScreen>
     } finally {
       client.close();
       if (mounted) setState(() => isVerifying = false);
+    }
+  }
+
+  /// Efectuează login JWT după verificarea PIN-ului
+  Future<bool> _performJwtLogin() async {
+    try {
+      // Încercăm să obținem telefonul din parametru sau din secure storage
+      String? phone = widget.phoneNumber;
+      if (phone == null || phone.isEmpty) {
+        phone = await SecureSessionManager.getPhone();
+      }
+      if (phone == null || phone.isEmpty) {
+        // Dacă niciun telefon disponibil, folosim login-ul fără JWT
+        return true;
+      }
+
+      final result = await JwtApiService.login(phone, pin);
+      return result != null;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -249,6 +286,11 @@ class _PinScreenState extends State<PinScreen>
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
+        // PIN setat cu succes — facem login JWT dacă e cazul
+        if (widget.useJwtLogin) {
+          await _performJwtLogin();
+        }
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('loggedUserId', widget.userId);
         if (mounted) {

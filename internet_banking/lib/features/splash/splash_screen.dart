@@ -2,11 +2,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 
 import '../../config/app_config.dart';
+import '../../services/jwt_api_service.dart';
 import '../welcome/welcome_screen.dart';
 import '../auth/screens/pin_screen.dart';
 import '../error/screens/error_screen.dart';
@@ -26,9 +26,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   http.Client _createHttpClient() {
-    final ioc = HttpClient();
-    ioc.badCertificateCallback =
-        (X509Certificate cert, String host, int port) => true;
+    final ioc = HttpClient()
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
     return IOClient(ioc);
   }
 
@@ -38,9 +37,7 @@ class _SplashScreenState extends State<SplashScreen> {
       final uri = Uri.parse('https://$serverUrl/express_status');
       final response = await client.get(uri).timeout(
         const Duration(seconds: 8),
-        onTimeout: () {
-          throw Exception('Timeout');
-        },
+        onTimeout: () => throw Exception('Timeout'),
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -77,21 +74,22 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final loggedUserId = prefs.getInt('loggedUserId') ?? 0;
+    // Încercăm să reîmprospătăm sesiunea JWT
+    final userId = await JwtApiService.tryRefreshSession();
     if (!mounted) return;
 
-    if (loggedUserId != 0) {
+    if (userId != null) {
+      // Sesiune JWT validă — mergem la PinScreen pentru verificare PIN
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (_) =>
-              PinScreen(userId: loggedUserId, set: false, popOnSuccess: false),
+          builder: (_) => PinScreen(userId: userId, set: false, popOnSuccess: false, useJwtLogin: true),
         ),
         (route) => false,
       );
       return;
     }
 
+    // Niciun refresh token valid — mergem la WelcomeScreen
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const WelcomeScreen()),
       (route) => false,

@@ -36,6 +36,7 @@ const placesRoute = require('./routes/places');
 const registerRoute = require('./routes/register');
 const usersRouter = require('./routes/users');
 const currencyRoute = require('./routes/currency');
+const authSessionRoute = require('./routes/auth_session');
 const verifyClientToken = require('./middleware/verifyClientToken');
 const {
   loginLimiter,
@@ -55,6 +56,7 @@ app.use('/2fa', verifyClientToken, (req, res, next) => {
 app.use('/places', placesRoute);
 app.use('/register', registerRoute);
 app.use('/users', verifyClientToken, usersLimiter, usersRouter);
+app.use('/auth-session', authSessionRoute);
 app.use('/currency', currencyRoute);
 
 module.exports = app;

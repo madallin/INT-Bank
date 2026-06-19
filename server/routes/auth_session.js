@@ -55,7 +55,8 @@ router.post('/login', async (req, res) => {
     const refreshTokenHash = await bcrypt.hash(refreshToken, SALT_ROUNDS);
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
-    // Salvează sesiunea în DB
+    // Șterge sesiunile vechi și salvează sesiunea nouă în DB
+    await client.query('DELETE FROM sesiuni WHERE user_id = $1', [user.id]);
     await client.query(
       'INSERT INTO sesiuni (user_id, refresh_token_hash, expires_at) VALUES ($1, $2, $3)',
       [user.id, refreshTokenHash, expiresAt]

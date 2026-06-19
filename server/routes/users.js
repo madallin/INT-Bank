@@ -216,7 +216,8 @@ router.post('/:userId/create-account-and-card', async (req, res) => {
         id: result.card.id,
         token: result.card.token,
         last4: result.card.last4,
-        expiry: result.card.expiryMMYY
+        expiry: result.card.expiryMMYY,
+        accountId: result.card.accountId
       }
     });
   } catch (err) {
@@ -247,6 +248,19 @@ router.get('/:userId/cards', async (req, res) => {
       return res.status(200).json({ success: true, cards: [] });
     }
 
+    // Dacă vreun card are accountid NULL, găsim primul cont al userului
+    let fallbackAccountId = null;
+    const hasNullAccountId = result.rows.some(row => row.accountid == null);
+    if (hasNullAccountId) {
+      const accountRes = await client.query(
+        'SELECT id FROM conturiBancare WHERE userid = $1 ORDER BY id LIMIT 1',
+        [userId]
+      );
+      if (accountRes.rowCount > 0) {
+        fallbackAccountId = accountRes.rows[0].id;
+      }
+    }
+
     const cards = result.rows.map(row => {
       const last4 = safeExtractLast4(row.numarcard) || '****';
       let expiry = null;
@@ -262,7 +276,7 @@ router.get('/:userId/cards', async (req, res) => {
         detinator: row.detinator,
         last4,
         expiry,
-        accountId: row.accountid || null, // ✅ aici adăugăm legătura cu contul
+        accountId: row.accountid || fallbackAccountId,
       };
     });
 

@@ -234,8 +234,8 @@ class _HomeScreenState extends State<HomeScreen>
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['balance'] != null) {
-          setState(() => _balance = (data['balance'] as num).toDouble());
+        if (data['account'] != null && data['account']['sold'] != null) {
+          setState(() => _balance = (data['account']['sold'] as num).toDouble());
         }
       } else if (response.statusCode == 401) {
         final refreshed = await _refreshClientToken();
@@ -263,12 +263,12 @@ class _HomeScreenState extends State<HomeScreen>
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (mounted) {
+        if (mounted && data['card'] != null) {
           setState(() {
             _selectedCard = card.copyWith(
-              fullNumber: data['fullNumber'] ?? card.fullNumber,
-              cvv: data['cvv'] ?? card.cvv,
-              expiry: data['expiry'] ?? card.expiry,
+              fullNumber: data['card']['pan'] ?? card.fullNumber,
+              cvv: data['card']['cvv'] ?? card.cvv,
+              expiry: data['card']['expiry'] ?? card.expiry,
             );
           });
         }
@@ -581,7 +581,7 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           const SizedBox(height: 32),
           Text(
-            _selectedCard!.token.isNotEmpty ? _selectedCard!.token : '**** **** **** ${_selectedCard!.last4}',
+            '**** **** **** ${_selectedCard!.last4}',
             style: GoogleFonts.spaceMono(fontSize: 18, color: Colors.white, letterSpacing: 3),
           ),
           const SizedBox(height: 24),
@@ -601,7 +601,7 @@ class _HomeScreenState extends State<HomeScreen>
                 children: [
                   Text('EXPIRĂ', style: GoogleFonts.inter(fontSize: 9, color: Colors.white70, letterSpacing: 1.5)),
                   const SizedBox(height: 4),
-                  Text('12/28', style: GoogleFonts.inter(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600)),
+                  Text(_selectedCard!.expiry ?? '12/28', style: GoogleFonts.inter(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w600)),
                 ],
               ),
             ],

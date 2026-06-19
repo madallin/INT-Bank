@@ -247,8 +247,8 @@ async function createAccountAndCard(
         );
 
         const cardRes = await client.query(
-          `INSERT INTO carduri(userid, numarCard, CVV, dataExpirare, detinator, token)
-           VALUES($1,$2,$3,$4,$5,$6)
+          `INSERT INTO carduri(userid, numarCard, CVV, dataExpirare, detinator, token, accountid)
+           VALUES($1,$2,$3,$4,$5,$6,$7)
            RETURNING id, token`,
           [
             userId,
@@ -257,6 +257,7 @@ async function createAccountAndCard(
             encrypted_expiry,
             holderName,
             token,
+            accountRes.rows[0].id,
           ]
         );
 
@@ -269,6 +270,7 @@ async function createAccountAndCard(
             token: cardRes.rows[0].token,
             last4: pan.slice(-4),
             expiryMMYY,
+            accountId: accountRes.rows[0].id,
           },
         };
       } catch (err) {

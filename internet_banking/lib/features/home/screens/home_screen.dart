@@ -15,6 +15,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 import '../../../config/app_config.dart';
 import '../../../data/models/card_model.dart';
+import '../../../services/currency_service.dart';
 import '../../transfer/screens/transfer_screen.dart';
 import '../../transactions/screens/transaction_history_screen.dart';
 import '../../exchange/screens/exchange_screen.dart';
@@ -102,6 +103,9 @@ class _HomeScreenState extends State<HomeScreen>
     await _initDeviceId();
     await _getClientToken();
     await _fetchCardsAndAccounts();
+
+    // Fetch exchange rates in background
+    CurrencyService.instance.fetchRates();
   }
 
   Future<void> _initDeviceId() async {
@@ -422,6 +426,8 @@ class _HomeScreenState extends State<HomeScreen>
                         const SizedBox(height: 24),
                         _buildBalanceSection(),
                         const SizedBox(height: 24),
+                        _buildExchangeRatesCard(),
+                        const SizedBox(height: 24),
                         _buildActionButtons(),
                         const SizedBox(height: 24),
                       ],
@@ -724,6 +730,135 @@ class _HomeScreenState extends State<HomeScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildExchangeRatesCard() {
+    final service = CurrencyService.instance;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey[200]!, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.currency_exchange_rounded, size: 20, color: const Color(lightForestGreenColor)),
+              const SizedBox(width: 8),
+              Text('Curs valutar', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
+              const Spacer(),
+              if (service.hasRates)
+                Text('1 RON', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey[500])),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (!service.hasRates)
+            SizedBox(
+              height: 60,
+              child: Center(
+                child: Text('Se încarcă...', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[400])),
+              ),
+            )
+          else
+            ...service.rates!.entries.map((entry) {
+              final currency = entry.key;
+              final rate = entry.value;
+
+              String symbol;
+              String name;
+              switch (currency) {
+                case 'EUR':
+                  symbol = '€';
+                  name = 'Euro';
+                  break;
+                case 'USD':
+                  symbol = r'$';
+                  name = 'Dolar american';
+                  break;
+                case 'GBP':
+                  symbol = '£';
+                  name = 'Liră sterlină';
+                  break;
+                default:
+                  symbol = '';
+                  name = currency;
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(lightForestGreenColor).withOpacity(0.08),
+                      ),
+                      child: Center(
+                        child: Text(symbol, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(darkForestGreenColor))),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(currency, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
+                          Text(name, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500])),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      rate.toStringAsFixed(4),
+                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(darkGreyColor)),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          if (service.hasRates && service.lastCached.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.access_time_rounded, size: 12, color: Colors.grey[400]),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Actualizat: ${_formatLastCached(service.lastCached)}',
+                    style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400]),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _formatLastCached(String isoDate) {
+    try {
+      final dt = DateTime.parse(isoDate).toLocal();
+      final day = dt.day.toString().padLeft(2, '0');
+      final month = dt.month.toString().padLeft(2, '0');
+      final hour = dt.hour.toString().padLeft(2, '0');
+      final minute = dt.minute.toString().padLeft(2, '0');
+      return '$day.$month.$hour:$minute';
+    } catch (_) {
+      return isoDate;
+    }
   }
 
   Widget _buildActionButtons() {

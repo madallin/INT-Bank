@@ -1,11 +1,14 @@
 // lib/features/exchange/screens/exchange_screen.dart
 // ignore_for_file: curly_braces_in_flow_control_structures
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../config/app_config.dart';
+import '../../../services/currency_service.dart';
 
 class ExchangeScreen extends StatefulWidget {
   final int userId;
@@ -23,32 +26,26 @@ class _ExchangeScreenState extends State<ExchangeScreen>
 
   String _fromCurrency = 'RON';
   String _toCurrency = 'EUR';
-  final bool _loading = false;
+
+  // Live rate data (computed from CurrencyService)
+  double _originalRate = 0.0;
+  double _rateWithCommission = 0.0;
+  double _commissionAmount = 0.0;
+  bool _hasRate = false;
+
   AnimationController? _fadeController;
   Animation<double>? _fadeAnimation;
   AnimationController? _swapController;
   Animation<double>? _swapAnimation;
+
+  // Debounce timer for amount changes
+  Timer? _debounce;
 
   final Map<String, String> _currencySymbols = {
     'RON': 'lei',
     'EUR': '€',
     'USD': r'$',
     'GBP': '£',
-  };
-
-  final Map<String, double> _exchangeRates = {
-    'RON_EUR': 0.20,
-    'RON_USD': 0.22,
-    'RON_GBP': 0.17,
-    'EUR_RON': 4.97,
-    'EUR_USD': 1.09,
-    'EUR_GBP': 0.85,
-    'USD_RON': 4.56,
-    'USD_EUR': 0.92,
-    'USD_GBP': 0.78,
-    'GBP_RON': 5.88,
-    'GBP_EUR': 1.18,
-    'GBP_USD': 1.28,
   };
 
   @override
@@ -66,15 +63,56 @@ class _ExchangeScreenState extends State<ExchangeScreen>
       vsync: this,
     );
     _swapAnimation = CurvedAnimation(parent: _swapController!, curve: Curves.easeInOut);
+
+    // If rates haven't been fetched yet, fetch them
+    if (!CurrencyService.instance.hasRates) {
+      CurrencyService.instance.fetchRates().then((_) {
+        if (mounted) _recalculate();
+      });
+    } else {
+      _recalculate();
+    }
+
+    _fromAmountController.addListener(_onFromAmountChanged);
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _fadeController?.dispose();
     _swapController?.dispose();
     _fromAmountController.dispose();
     _toAmountController.dispose();
     super.dispose();
+  }
+
+  void _onFromAmountChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _recalculate();
+    });
+  }
+
+  void _recalculate() {
+    final service = CurrencyService.instance;
+    final rate = service.getRate(_fromCurrency, _toCurrency);
+
+    if (rate == null) {
+      setState(() => _hasRate = false);
+      return;
+    }
+
+    final amount = double.tryParse(_fromAmountController.text.replaceAll(',', '')) ?? 0;
+
+    setState(() {
+      _originalRate = rate;
+      _rateWithCommission = rate * (1 - service.commissionPercent / 100);
+      _commissionAmount = amount * rate * (service.commissionPercent / 100);
+      _hasRate = true;
+
+      final result = amount * _rateWithCommission;
+      _toAmountController.text = _formatAmount(result.toStringAsFixed(2));
+    });
   }
 
   void _swapCurrencies() {
@@ -88,8 +126,21 @@ class _ExchangeScreenState extends State<ExchangeScreen>
         _fromAmountController.text = _toAmountController.text;
         _toAmountController.text = tempAmount;
       });
+      _recalculate();
       _swapController!.reverse();
     });
+  }
+
+  void _onFromCurrencyChanged(String? value) {
+    if (value == null) return;
+    setState(() => _fromCurrency = value);
+    _recalculate();
+  }
+
+  void _onToCurrencyChanged(String? value) {
+    if (value == null) return;
+    setState(() => _toCurrency = value);
+    _recalculate();
   }
 
   String _formatAmount(String input) {
@@ -111,12 +162,6 @@ class _ExchangeScreenState extends State<ExchangeScreen>
       return '$intPart.${parts[1]}';
     }
     return intPart;
-  }
-
-  double _getExchangeRate(String from, String to) {
-    if (from == to) return 1.0;
-    final key = '${from}_$to';
-    return _exchangeRates[key] ?? 1.0;
   }
 
   Widget _buildCurrencyInput({
@@ -203,6 +248,8 @@ class _ExchangeScreenState extends State<ExchangeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final service = CurrencyService.instance;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -253,9 +300,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                               label: 'Din valuta',
                               controller: _fromAmountController,
                               currency: _fromCurrency,
-                              onCurrencyChanged: (value) {
-                                if (value != null) setState(() => _fromCurrency = value);
-                              },
+                              onCurrencyChanged: _onFromCurrencyChanged,
                             ),
                             const SizedBox(height: 22),
                             Center(
@@ -280,31 +325,95 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                               label: 'În valuta',
                               controller: _toAmountController,
                               currency: _toCurrency,
-                              onCurrencyChanged: (value) {
-                                if (value != null) setState(() => _toCurrency = value);
-                              },
+                              onCurrencyChanged: _onToCurrencyChanged,
                             ),
-                            const SizedBox(height: 42),
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: const Color(lightForestGreenColor).withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(lightForestGreenColor).withOpacity(0.2), width: 1),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.info_outline_rounded, color: const Color(lightForestGreenColor), size: 20),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Curs: 1 $_fromCurrency = ${_getExchangeRate(_fromCurrency, _toCurrency).toStringAsFixed(4)} $_toCurrency',
-                                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(darkGreyColor)),
+                            const SizedBox(height: 20),
+
+                            // ── Rate info card with commission ──
+                            if (!service.hasRates)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                                ),
+                              )
+                            else if (!_hasRate)
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.error_outline_rounded, color: Colors.red, size: 18),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Cursul valutar nu este disponibil',
+                                        style: GoogleFonts.inter(fontSize: 13, color: Colors.red[700], fontWeight: FontWeight.w500),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: const Color(lightForestGreenColor).withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(lightForestGreenColor).withOpacity(0.2), width: 1),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Current rate
+                                    Row(
+                                      children: [
+                                        Icon(Icons.info_outline_rounded, color: const Color(lightForestGreenColor), size: 18),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            '1 $_fromCurrency = ${_originalRate.toStringAsFixed(4)} $_toCurrency',
+                                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(darkGreyColor)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Commission info
+                                    Row(
+                                      children: [
+                                        const SizedBox(width: 26),
+                                        Expanded(
+                                          child: Text(
+                                            'Comision ${service.commissionPercent}%: ${_commissionAmount.toStringAsFixed(2)} ${_currencySymbols[_fromCurrency] ?? _fromCurrency}',
+                                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.grey[600]),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    // Effective rate
+                                    Row(
+                                      children: [
+                                        const SizedBox(width: 26),
+                                        Expanded(
+                                          child: Text(
+                                            'Rată efectivă: 1 $_fromCurrency = ${_rateWithCommission.toStringAsFixed(4)} $_toCurrency',
+                                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(darkForestGreenColor)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+
                             const SizedBox(height: 48),
                           ],
                         ),
@@ -325,7 +434,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: _loading ? null : () {},
+                    onTap: (!service.hasRates || !_hasRate) ? null : () {},
                     borderRadius: BorderRadius.circular(20),
                     child: Center(
                       child: Text('Schimbă valuta', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.5, color: Colors.white)),

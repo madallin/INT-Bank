@@ -6,6 +6,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { createAccountAndCard } = require('../services/banking');
 
 const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -59,6 +60,23 @@ router.post('/login', async (req, res) => {
       'INSERT INTO sesiuni (user_id, refresh_token_hash, expires_at) VALUES ($1, $2, $3)',
       [user.id, refreshTokenHash, expiresAt]
     );
+
+    // Verifică dacă utilizatorul are deja conturi bancare; dacă nu, creează unul automat
+    const accountCheck = await client.query(
+      'SELECT COUNT(*) AS cnt FROM conturiBancare WHERE userid = $1',
+      [user.id]
+    );
+    const hasAccounts = parseInt(accountCheck.rows[0].cnt, 10) > 0;
+
+    if (!hasAccounts) {
+      // Eliberăm conexiunea înainte de a apela createAccountAndCard (care are propria conexiune)
+      client.release();
+      client = null;
+
+      console.log(`Creare automată cont+card pentru user ${user.id}...`);
+      await createAccountAndCard(user.id, 'RON', 'RO');
+      console.log(`Cont+card creat automat pentru user ${user.id}`);
+    }
 
     return res.json({ accessToken, refreshToken, userId: user.id });
   } catch (err) {

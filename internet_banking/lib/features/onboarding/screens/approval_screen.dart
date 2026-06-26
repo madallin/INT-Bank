@@ -1,5 +1,3 @@
-// lib/features/onboarding/screens/approval_screen.dart
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show HttpClient, X509Certificate, WebSocket;
@@ -11,7 +9,8 @@ import '../../../config/app_config.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../welcome/welcome_screen.dart';
 
-class ApprovalScreen extends StatefulWidget {
+class ApprovalScreen extends StatefulWidget
+{
   final int userId;
 
   const ApprovalScreen({super.key, required this.userId});
@@ -21,7 +20,8 @@ class ApprovalScreen extends StatefulWidget {
 }
 
 class _ApprovalScreenState extends State<ApprovalScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin
+{
   bool _isApproved = false;
   bool _showSuccessMessage = false;
   late AnimationController _pulseController;
@@ -33,10 +33,9 @@ class _ApprovalScreenState extends State<ApprovalScreen>
   Timer? _pollTimer;
   WebSocket? _ws;
 
-  // ========== Lifecycle ==========
-
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     _initAnimations();
     _connectWebSocket();
@@ -44,7 +43,8 @@ class _ApprovalScreenState extends State<ApprovalScreen>
   }
 
   @override
-  void dispose() {
+  void dispose()
+  {
     _pollTimer?.cancel();
     _pulseController.dispose();
     _checkController.dispose();
@@ -53,10 +53,10 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     super.dispose();
   }
 
-  // ========== WebSocket ==========
-
-  void _connectWebSocket() async {
-    try {
+  void _connectWebSocket() async
+  {
+    try
+    {
       final client = HttpClient()
         ..badCertificateCallback =
             (X509Certificate cert, String host, int port) => true;
@@ -68,20 +68,27 @@ class _ApprovalScreenState extends State<ApprovalScreen>
       debugPrint('WebSocket conectat!');
 
       final registerMsg = jsonEncode({'userId': widget.userId});
-      try {
+      try
+      {
         _ws!.add(registerMsg);
         debugPrint('Trimis userId la server: ${widget.userId}');
-      } catch (e) {
+      }
+      catch (e)
+      {
         debugPrint('Eroare la trimiterea userId: $e');
       }
 
       _ws!.listen(
-        (message) {
+        (message)
+        {
           debugPrint('WS message: $message');
           dynamic data;
-          try {
+          try
+          {
             data = jsonDecode(message);
-          } catch (e) {
+          }
+          catch (e)
+          {
             debugPrint('Nu s-a putut decoda JSON: $e');
             return;
           }
@@ -92,34 +99,41 @@ class _ApprovalScreenState extends State<ApprovalScreen>
               ? incomingId
               : int.tryParse(incomingId?.toString() ?? '');
 
-          if ((messageType == 'contAprobat' || messageType == null) &&
-              incomingIdInt == widget.userId) {
+          if((messageType == 'contAprobat' || messageType == null) &&
+              incomingIdInt == widget.userId)
+          {
             debugPrint('Approval matched for user ${widget.userId}');
             _onApprovalReceived();
           }
         },
-        onDone: () {
+        onDone: ()
+        {
           debugPrint('WebSocket inchis');
         },
-        onError: (err) {
+        onError: (err)
+        {
           debugPrint('Eroare WebSocket: $err');
         },
         cancelOnError: true,
       );
-    } catch (e, st) {
+    }
+    catch (e, st)
+    {
       debugPrint('Eroare la conectarea WebSocket: $e\n$st');
     }
   }
 
-  // ========== Polling fallback ==========
-
-  void _startPolling() {
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-      if (_isApproved) {
+  void _startPolling()
+  {
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async
+    {
+      if(_isApproved)
+      {
         _pollTimer?.cancel();
         return;
       }
-      try {
+      try
+      {
         final client = HttpClient()
           ..badCertificateCallback =
               (X509Certificate cert, String host, int port) => true;
@@ -130,32 +144,38 @@ class _ApprovalScreenState extends State<ApprovalScreen>
         final body = await response.transform(utf8.decoder).join();
         final data = jsonDecode(body);
         final isApproved = data['contaprobat'] ?? false;
-        if (isApproved) {
+        if(isApproved)
+        {
           debugPrint('Polling: cont aprobat pentru user ${widget.userId}');
           _onApprovalReceived();
         }
-      } catch (e) {
+      }
+      catch (e)
+      {
         debugPrint('Polling error: $e');
       }
     });
   }
 
-  // ========== Approval handler ==========
-
-  void _onApprovalReceived() {
+  void _onApprovalReceived()
+  {
     _ws?.close();
     _pollTimer?.cancel();
     setState(() => _isApproved = true);
     _pulseController.stop();
     _checkController.forward();
 
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted) {
+    Future.delayed(const Duration(milliseconds: 1000), ()
+    {
+      if(mounted)
+      {
         setState(() => _showSuccessMessage = true);
         _fadeController.forward();
 
-        Future.delayed(const Duration(seconds: 5), () {
-          if (mounted) {
+        Future.delayed(const Duration(seconds: 5), ()
+        {
+          if(mounted)
+          {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const WelcomeScreen()),
@@ -171,9 +191,8 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     });
   }
 
-  // ========== Animations ==========
-
-  void _initAnimations() {
+  void _initAnimations()
+  {
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -201,10 +220,9 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     );
   }
 
-  // ========== Build ==========
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -241,7 +259,8 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     );
   }
 
-  Widget _buildWaitingIcon() {
+  Widget _buildWaitingIcon()
+  {
     return ScaleTransition(
       key: const ValueKey('waiting'),
       scale: _pulseAnimation,
@@ -287,7 +306,8 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     );
   }
 
-  Widget _buildSuccessIcon() {
+  Widget _buildSuccessIcon()
+  {
     return ScaleTransition(
       key: const ValueKey('success'),
       scale: _checkAnimation,
@@ -333,7 +353,8 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     );
   }
 
-  Widget _buildWaitingMessage() {
+  Widget _buildWaitingMessage()
+  {
     return Column(
       key: const ValueKey('waiting_text'),
       children: [
@@ -404,7 +425,8 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     );
   }
 
-  Widget _buildSuccessMessage() {
+  Widget _buildSuccessMessage()
+  {
     return FadeTransition(
       key: const ValueKey('success_text'),
       opacity: _fadeAnimation,

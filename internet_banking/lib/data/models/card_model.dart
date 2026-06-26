@@ -1,63 +1,121 @@
-// lib/data/models/card_model.dart
-// Data model for bank cards
-
-class CardModel {
+class CardModel
+{
   final int id;
-  final String token;
-  final String detinator;
-  final String last4;
-  final String? expiry;
-  final int? accountId;
-  final String? fullNumber;
-  final String? cvv;
+  final int accountId;
+  final String cardNumber;
+  final String cardHolder;
+  final String expiryDate;
+  final String cvv;
+  final String cardType;
+  final double spendingLimit;
+  final bool isBlocked;
+  final String status;
+  final String? pin;
 
   CardModel({
     required this.id,
-    required this.token,
-    required this.detinator,
-    required this.last4,
-    this.expiry,
-    this.accountId,
-    this.fullNumber,
-    this.cvv,
+    required this.accountId,
+    required this.cardNumber,
+    required this.cardHolder,
+    required this.expiryDate,
+    required this.cvv,
+    required this.cardType,
+    this.spendingLimit = 0,
+    this.isBlocked = false,
+    this.status = 'active',
+    this.pin,
   });
 
-  factory CardModel.fromJson(Map<String, dynamic> json) {
+  factory CardModel.fromJson(Map<String, dynamic> json)
+  {
     return CardModel(
-      id: json['id'] as int,
-      token: json['token'] as String,
-      detinator: json['detinator'] as String,
-      last4: (json['last4'] as String?) ?? '****',
-      expiry: json['expiry'] as String?,
-      accountId: json['accountId'] as int?,
-      fullNumber: json['fullNumber'] as String?,
-      cvv: json['cvv'] as String?,
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      accountId: json['accountId'] is int
+          ? json['accountId']
+          : int.parse(json['accountId'].toString()),
+      cardNumber: json['cardNumber'] ?? '',
+      cardHolder: json['cardHolder'] ?? '',
+      expiryDate: json['expiryDate'] ?? '',
+      cvv: json['cvv'] ?? '',
+      cardType: json['cardType'] ?? 'debit',
+      spendingLimit: (json['spendingLimit'] as num?)?.toDouble() ?? 0,
+      isBlocked: json['isBlocked'] ?? false,
+      status: json['status'] ?? 'active',
+      pin: json['pin'],
     );
   }
 
-  CardModel copyWith({String? fullNumber, String? cvv, String? expiry}) {
+  CardModel copyWith({
+    int? id,
+    int? accountId,
+    String? cardNumber,
+    String? cardHolder,
+    String? expiryDate,
+    String? cvv,
+    String? cardType,
+    double? spendingLimit,
+    bool? isBlocked,
+    String? status,
+    String? pin,
+    String? fullNumber,
+    String? expiry,
+  })
+  {
     return CardModel(
-      id: id,
-      token: token,
-      detinator: detinator,
-      last4: last4,
-      expiry: expiry ?? this.expiry,
-      accountId: accountId,
-      fullNumber: fullNumber,
-      cvv: cvv,
+      id: id ?? this.id,
+      accountId: accountId ?? this.accountId,
+      cardNumber: fullNumber ?? cardNumber ?? this.cardNumber,
+      cardHolder: cardHolder ?? this.cardHolder,
+      expiryDate: expiry ?? expiryDate ?? this.expiryDate,
+      cvv: cvv ?? this.cvv,
+      cardType: cardType ?? this.cardType,
+      spendingLimit: spendingLimit ?? this.spendingLimit,
+      isBlocked: isBlocked ?? this.isBlocked,
+      status: status ?? this.status,
+      pin: pin ?? this.pin,
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toJson()
+  {
     return {
       'id': id,
-      'token': token,
-      'detinator': detinator,
-      'last4': last4,
-      'expiry': expiry,
       'accountId': accountId,
-      'fullNumber': fullNumber,
+      'cardNumber': cardNumber,
+      'cardHolder': cardHolder,
+      'expiryDate': expiryDate,
       'cvv': cvv,
+      'cardType': cardType,
+      'spendingLimit': spendingLimit,
+      'isBlocked': isBlocked,
+      'status': status,
+      'pin': pin,
     };
   }
+
+  String get fullNumber => cardNumber;
+
+  String get last4
+  {
+    if(cardNumber.length >= 4)
+    {
+      return cardNumber.substring(cardNumber.length - 4);
+    }
+    return cardNumber;
+  }
+
+  String get expiry => expiryDate;
+
+  String get detinator => cardHolder;
+
+  String get maskedCardNumber
+  {
+    if(cardNumber.length >= 8)
+    {
+      return '**** **** **** ${cardNumber.substring(cardNumber.length - 4)}';
+    }
+    return cardNumber;
+  }
+
+  String get maskedCVV => '***';
 }

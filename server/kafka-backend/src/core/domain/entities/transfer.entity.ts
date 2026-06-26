@@ -1,14 +1,9 @@
-// ============================================================
-// Domain Entity: Transfer
-// Hexagonal Architecture — Core Domain Layer
-// Pure domain entity with NO framework or ORM dependencies.
-// ============================================================
-
 import { Money } from '../value-objects/money.vo';
 import { Iban } from '../value-objects/iban.vo';
 import { TransferStatus, isValidTransition } from '../value-objects/transfer-status.vo';
 
-export class Transfer {
+export class Transfer
+{
   private constructor(
     private readonly _id: string,
     private readonly _fromAccountId: string,
@@ -31,8 +26,10 @@ export class Transfer {
     toIban: Iban,
     amount: Money,
     description: string = '',
-  ): Transfer {
-    if (fromIban.equals(toIban)) {
+  ): Transfer
+  {
+    if(fromIban.equals(toIban))
+    {
       throw new Error('Cannot transfer to the same account');
     }
 
@@ -63,7 +60,8 @@ export class Transfer {
     failureReason: string | null,
     createdAt: Date,
     updatedAt: Date,
-  ): Transfer {
+  ): Transfer
+  {
     return new Transfer(
       id,
       fromAccountId,
@@ -79,56 +77,65 @@ export class Transfer {
     );
   }
 
-  // ---- Getters ----
-
-  get id(): string {
+  get id(): string
+  {
     return this._id;
   }
 
-  get fromAccountId(): string {
+  get fromAccountId(): string
+  {
     return this._fromAccountId;
   }
 
-  get toAccountId(): string {
+  get toAccountId(): string
+  {
     return this._toAccountId;
   }
 
-  get fromIban(): Iban {
+  get fromIban(): Iban
+  {
     return this._fromIban;
   }
 
-  get toIban(): Iban {
+  get toIban(): Iban
+  {
     return this._toIban;
   }
 
-  get amount(): Money {
+  get amount(): Money
+  {
     return this._amount;
   }
 
-  get description(): string {
+  get description(): string
+  {
     return this._description;
   }
 
-  get status(): TransferStatus {
+  get status(): TransferStatus
+  {
     return this._status;
   }
 
-  get failureReason(): string | null {
+  get failureReason(): string | null
+  {
     return this._failureReason;
   }
 
-  get createdAt(): Date {
+  get createdAt(): Date
+  {
     return this._createdAt;
   }
 
-  get updatedAt(): Date {
+  get updatedAt(): Date
+  {
     return this._updatedAt;
   }
 
-  // ---- Behaviour ----
-
-  complete(): void {
-    if (!isValidTransition(this._status, TransferStatus.COMPLETED)) {
+  complete(): void
+  {
+    if(!isValidTransition(this._status, TransferStatus.COMPLETED))
+    {
       throw new Error(
         `Cannot complete transfer in status: ${this._status}`,
       );
@@ -137,8 +144,10 @@ export class Transfer {
     this._updatedAt = new Date();
   }
 
-  fail(reason: string): void {
-    if (!isValidTransition(this._status, TransferStatus.FAILED)) {
+  fail(reason: string): void
+  {
+    if(!isValidTransition(this._status, TransferStatus.FAILED))
+    {
       throw new Error(
         `Cannot fail transfer in status: ${this._status}`,
       );
@@ -148,14 +157,16 @@ export class Transfer {
     this._updatedAt = new Date();
   }
 
-  isTerminal(): boolean {
+  isTerminal(): boolean
+  {
     return (
       this._status === TransferStatus.COMPLETED ||
       this._status === TransferStatus.FAILED
     );
   }
 
-  toJSON() {
+  toJSON()
+  {
     return {
       id: this._id,
       fromAccountId: this._fromAccountId,

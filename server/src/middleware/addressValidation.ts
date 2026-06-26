@@ -1,18 +1,8 @@
-// ============================================================
-// Middleware: Address Validation
-// Validates the address received from the frontend.
-//   a) Checks required fields
-//   b) Compares locality + county against the SQL reference table
-//   c) Returns the standardized address object
-// ============================================================
-
 import { Request, Response, NextFunction } from 'express';
 import { Pool } from 'pg';
 
-/**
- * Validated address object attached to the request.
- */
-export interface ValidatedAddress {
+export interface ValidatedAddress
+{
   placeId: string;
   strada: string;
   numar: string;
@@ -27,23 +17,18 @@ export interface ValidatedAddress {
   lng: null;
 }
 
-/** Extends Express Request to include the validated address. */
-export interface AddressValidationRequest extends Request {
+export interface AddressValidationRequest extends Request
+{
   addressValidated?: ValidatedAddress;
   pool?: Pool;
 }
 
-/**
- * Middleware de validare a adresei.
- * Așteaptă în req.body: { placeId, strada, numar, bloc, scara, apartament, localitate, judet, codPostal }
- * La succes, adaugă req.addressValidated la obiectul standardizat.
- * La eșec, returnează 400 cu eroarea.
- */
 export async function validateAddress(
   req: AddressValidationRequest,
   res: Response,
   next: NextFunction,
-): Promise<void> {
+): Promise<void>
+{
   const {
     placeId,
     strada,
@@ -56,20 +41,22 @@ export async function validateAddress(
     codPostal,
   } = req.body;
 
-  // --- Validare câmpuri obligatorii ---
-  if (!placeId) {
+  if(!placeId)
+  {
     res.status(400).json({ error: 'placeId lipsește. Adresa trebuie selectată din sugestii.' });
     return;
   }
-  if (!strada || !localitate || !judet) {
+  if(!strada || !localitate || !judet)
+  {
     res.status(400).json({ error: 'Strada, localitatea și județul sunt obligatorii.' });
     return;
   }
 
-  // --- (a) Verifică localitatea + județul în tabelul SQL de referință ---
-  try {
+  try
+  {
     const client = await req.pool!.connect();
-    try {
+    try
+    {
       const refResult = await client.query(
         `SELECT 1 FROM localitati_referinta
          WHERE LOWER(judet) = LOWER($1)
@@ -78,27 +65,31 @@ export async function validateAddress(
         [judet, localitate],
       );
 
-      if (refResult.rows.length === 0) {
+      if(refResult.rows.length === 0)
+      {
         res.status(400).json({
           error: `Adresa „${localitate}, ${judet}” nu există în baza noastră de referință. Verifică județul și localitatea.`,
         });
         return;
       }
-    } finally {
+    }
+    finally
+    {
       client.release();
     }
-  } catch (dbErr: any) {
+  }
+  catch (dbErr: any)
+  {
     console.error('Eroare la interogarea localitati_referinta:', dbErr.message);
-    // Dacă tabelul nu există, nu blocăm — e configurabil
-    if (dbErr.code !== '42P01') {
-      // 42P01 = undefined_table
+    // Table might not exist — don't block registration in that case
+    if(dbErr.code !== '42P01')
+    {
       res.status(500).json({ error: 'Eroare internă la validarea adresei' });
       return;
     }
     console.warn('Tabelul localitati_referinta nu există — se omite verificarea în SQL.');
   }
 
-  // --- (b) Totul e valid → obiect standardizat ---
   const addressParts = [
     strada.trim(),
     numar ? `Nr. ${numar}` : '',

@@ -1,9 +1,3 @@
-// ============================================================
-// Application Module
-// Hexagonal Architecture — Application Layer
-// Registers all use cases and bridges ports to infrastructure.
-// ============================================================
-
 import { Module } from '@nestjs/common';
 
 import { InitiateTransferUseCase } from './use-cases/initiate-transfer.use-case';

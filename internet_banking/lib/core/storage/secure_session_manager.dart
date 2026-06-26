@@ -1,64 +1,49 @@
-// lib/core/storage/secure_session_manager.dart
-// JWT tokens stocate in Keychain/Keystore (flutter_secure_storage)
-
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-class SecureSessionManager {
+class SecureSessionManager
+{
   static const _storage = FlutterSecureStorage();
 
-  static const _keyAccessToken = 'jwt_access_token';
-  static const _keyRefreshToken = 'jwt_refresh_token';
-  static const _keyUserId = 'jwt_user_id';
-  static const _keyPhone = 'jwt_user_phone';
+  static const _accessTokenKey = 'accessToken';
+  static const _refreshTokenKey = 'refreshToken';
+  static const _userIdKey = 'userId';
+  static const _phoneKey = 'phone';
 
-  // --- Access Token ---
-  static Future<void> saveAccessToken(String token) async {
-    await _storage.write(key: _keyAccessToken, value: token);
-  }
+  static Future<void> saveAccessToken(String token) async =>
+      await _storage.write(key: _accessTokenKey, value: token);
 
-  static Future<String?> getAccessToken() async {
-    return await _storage.read(key: _keyAccessToken);
-  }
+  static Future<String?> getAccessToken() async =>
+      await _storage.read(key: _accessTokenKey);
 
-  // --- Refresh Token ---
-  static Future<void> saveRefreshToken(String token) async {
-    await _storage.write(key: _keyRefreshToken, value: token);
-  }
+  static Future<void> saveRefreshToken(String token) async =>
+      await _storage.write(key: _refreshTokenKey, value: token);
 
-  static Future<String?> getRefreshToken() async {
-    return await _storage.read(key: _keyRefreshToken);
-  }
+  static Future<String?> getRefreshToken() async =>
+      await _storage.read(key: _refreshTokenKey);
 
-  // --- User ID ---
-  static Future<void> saveUserId(int userId) async {
-    await _storage.write(key: _keyUserId, value: userId.toString());
-  }
+  static Future<void> saveUserId(int userId) async =>
+      await _storage.write(key: _userIdKey, value: userId.toString());
 
-  static Future<int?> getUserId() async {
-    final val = await _storage.read(key: _keyUserId);
+  static Future<int?> getUserId() async
+  {
+    final val = await _storage.read(key: _userIdKey);
     return val != null ? int.tryParse(val) : null;
   }
 
-  // --- Phone Number ---
-  static Future<void> savePhone(String phone) async {
-    await _storage.write(key: _keyPhone, value: phone);
-  }
+  static Future<void> savePhone(String phone) async =>
+      await _storage.write(key: _phoneKey, value: phone);
 
-  static Future<String?> getPhone() async {
-    return await _storage.read(key: _keyPhone);
-  }
+  static Future<String?> getPhone() async =>
+      await _storage.read(key: _phoneKey);
 
-  // --- Clear all (logout) ---
-  static Future<void> clearAll() async {
-    await _storage.delete(key: _keyAccessToken);
-    await _storage.delete(key: _keyRefreshToken);
-    await _storage.delete(key: _keyUserId);
-    await _storage.delete(key: _keyPhone);
-  }
+  static Future<void> clearAll() async =>
+      await _storage.deleteAll();
 
-  /// Verifică dacă există o sesiune JWT activă (refresh token salvat)
-  static Future<bool> hasSession() async {
-    final refreshToken = await getRefreshToken();
-    return refreshToken != null && refreshToken.isNotEmpty;
+  static Future<void> clearSession() async
+  {
+    await _storage.delete(key: _accessTokenKey);
+    await _storage.delete(key: _refreshTokenKey);
+    await _storage.delete(key: _userIdKey);
+    await _storage.delete(key: _phoneKey);
   }
 }

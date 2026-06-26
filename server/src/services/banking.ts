@@ -1,284 +1,108 @@
-// ============================================================
-// Banking account + card creation service (production-ready logic)
-// Hexagonal Architecture — Infrastructure Layer
-//
-// - AES-GCM encryption for PAN/CVV/expiry
-// - HMAC-SHA256 for PAN hashing
-// - Luhn validation for card numbers
-// - Simple IBAN generator (internal scheme)
-// - DB transaction with retry on unique constraint violations
-// - Never returns PAN/CVV in plaintext
-// ============================================================
-
-import crypto from 'crypto';
 import { pool } from '../config/database';
-import {
-  BANK_CODE,
-  IBAN_ACCOUNT_LENGTH,
-  CARD_BIN,
-  CARD_LENGTH,
-  DEFAULT_CARD_LIFETIME_YEARS,
-  MAX_RETRIES,
-  AES_GCM_IV_BYTES,
-} from '../config/constants';
+import { encryptAESGCM } from './crypto';
+import { BANK_CODE, IBAN_ACCOUNT_LENGTH, CARD_BIN, CARD_LENGTH, DEFAULT_CARD_LIFETIME_YEARS, MAX_RETRIES } from '../config/constants';
 
-const AES_GCM_TAG_BYTES = 16;
-
-// ---------- ENV / KEYS ----------
-const AES_KEY_HEX_LIST = (process.env.AES_KEY_HEX || '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
-const HMAC_KEY_HEX = process.env.HMAC_KEY_HEX || '';
-
-function hexToBuffer(hex: string): Buffer {
-  if (!/^[0-9a-fA-F]+$/.test(hex))
-    throw new Error('Key contains non-hex chars');
-  return Buffer.from(hex, 'hex');
+function generateRandomDigits(length: number): string
+{
+  let result = '';
+  for(let i = 0; i < length; i++) result += Math.floor(Math.random() * 10).toString();
+  return result;
 }
 
-if (AES_KEY_HEX_LIST.length === 0)
-  throw new Error('AES_KEY_HEX env var required');
-const AES_KEYS = AES_KEY_HEX_LIST.map((k) => {
-  if (!k || k.length !== 64)
-    throw new Error('Each AES key must be 32 bytes hex (64 hex chars)');
-  return hexToBuffer(k);
-});
-const AES_PRIMARY_KEY = AES_KEYS[0];
-
-if (!HMAC_KEY_HEX || HMAC_KEY_HEX.length < 64)
-  throw new Error('HMAC_KEY_HEX env var must be set (>=64 hex chars)');
-const HMAC_KEY = hexToBuffer(HMAC_KEY_HEX);
-
-// ---------- Helper randomness ----------
-function randomDigits(len: number): string {
-  let out = '';
-  while (out.length < len) {
-    const next = crypto.randomInt(0, 1e6).toString().padStart(6, '0');
-    out += next;
-  }
-  return out.slice(0, len);
+function computeIBANChecksum(bban: string): string
+{
+  const numeric = [...(bban + 'RO00')].map((c) =>
+    /[A-Z]/.test(c) ? (c.charCodeAt(0) - 55).toString() : c,
+  ).join('');
+  const mod = BigInt(numeric) % 97n;
+  const checksum = 98n - mod;
+  return checksum.toString().padStart(2, '0');
 }
 
-// ---------- Luhn / card ----------
-function luhnCheckDigit(numberWithoutCheck: string): number {
-  const digits = numberWithoutCheck.split('').map((d) => parseInt(d, 10));
-  let sum = 0;
-  const len = digits.length;
-  for (let i = 0; i < len; i++) {
-    let d = digits[len - 1 - i];
-    if (i % 2 === 0) {
-      d *= 2;
-      if (d > 9) d -= 9;
-    }
-    sum += d;
-  }
-  return (10 - (sum % 10)) % 10;
+function generateIBAN(currency: string, countryCode: string): string
+{
+  const country = countryCode.toUpperCase().slice(0, 2);
+  const bban =
+    BANK_CODE +
+    generateRandomDigits(4) +
+    (currency === 'RON' ? 'RON' : generateRandomDigits(3)) +
+    generateRandomDigits(IBAN_ACCOUNT_LENGTH - BANK_CODE.length - 4 - (currency === 'RON' ? 3 : 3));
+  const checksum = computeIBANChecksum(bban);
+  return `${country}${checksum}${bban}`;
 }
 
-function validateLuhn(fullNumber: string): boolean {
-  if (!/^[0-9]+$/.test(fullNumber)) return false;
-  let sum = 0;
-  let alt = false;
-  for (let i = fullNumber.length - 1; i >= 0; i--) {
-    let d = parseInt(fullNumber[i], 10);
-    if (alt) {
-      d *= 2;
-      if (d > 9) d -= 9;
-    }
-    sum += d;
-    alt = !alt;
-  }
-  return sum % 10 === 0;
-}
-
-function generateCardPan(): string {
-  while (true) {
-    const middle = randomDigits(CARD_LENGTH - CARD_BIN.length - 1);
-    const withoutCheck = CARD_BIN + middle;
-    const check = luhnCheckDigit(withoutCheck);
-    const pan = withoutCheck + check;
-    if (validateLuhn(pan)) return pan;
-  }
-}
-
-function generateCvv(): string {
-  return randomDigits(3);
-}
-
-function generateExpiry(
-  issueDate: Date = new Date(),
-  years: number = DEFAULT_CARD_LIFETIME_YEARS,
-): { expiryMMYY: string; expiryDateISO: string } {
-  const issueMonth = issueDate.getMonth() + 1;
-  const issueYear = issueDate.getFullYear();
-  const expYearFull = issueYear + years;
-  const lastDay = new Date(expYearFull, issueMonth, 0).getDate();
-  const expiryDateISO = new Date(expYearFull, issueMonth - 1, lastDay)
-    .toISOString()
-    .slice(0, 10);
-  const yy = expYearFull.toString().slice(-2);
-  const mm = issueMonth.toString().padStart(2, '0');
-  return { expiryMMYY: `${mm}/${yy}`, expiryDateISO };
-}
-
-function generateToken(pan: string): string {
-  return crypto
-    .createHash('sha256')
-    .update(pan + Date.now().toString() + crypto.randomBytes(12).toString('hex'))
-    .digest('hex')
-    .slice(0, 32);
-}
-
-// ---------- IBAN helpers ----------
-function lettersToNumber(str: string): string {
-  return str
-    .toUpperCase()
-    .split('')
-    .map((c) => {
-      const code = c.charCodeAt(0);
-      if (code >= 65 && code <= 90) return (code - 55).toString();
-      return c;
-    })
-    .join('');
-}
-
-function mod97(numericStr: string): number {
-  let remainder = 0,
-    i = 0;
-  while (i < numericStr.length) {
-    const block = numericStr.substr(i, 9);
-    remainder = parseInt(remainder.toString() + block, 10) % 97;
-    i += 9;
-  }
-  return remainder;
-}
-
-function generateIban(countryCode: string = 'RO'): string {
-  countryCode = countryCode.toUpperCase();
-  if (!/^[A-Z]{2}$/.test(countryCode)) throw new Error('Invalid country code');
-  const accountNumber = randomDigits(IBAN_ACCOUNT_LENGTH);
-  const rearranged = BANK_CODE + accountNumber + countryCode + '00';
-  const numeric = lettersToNumber(rearranged);
-  const check = 98 - mod97(numeric);
-  return `${countryCode}${check.toString().padStart(2, '0')}${BANK_CODE}${accountNumber}`;
-}
-
-// ---------- AES-GCM encryption / decryption ----------
-function encryptAESGCM(plain: string): string {
-  const iv = crypto.randomBytes(AES_GCM_IV_BYTES);
-  const cipher = crypto.createCipheriv('aes-256-gcm', AES_PRIMARY_KEY, iv);
-  const ciphertext = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return `v1|${Buffer.concat([iv, tag, ciphertext]).toString('base64')}`;
-}
-
-function decryptAESGCM(any: string): string {
-  if (typeof any !== 'string') throw new Error('invalid encrypted payload');
-  const [version, dataStr] = any.split('|');
-  if (version !== 'v1') throw new Error('unsupported enc version');
-  const data = Buffer.from(dataStr, 'base64');
-  const iv = data.slice(0, AES_GCM_IV_BYTES);
-  const tag = data.slice(AES_GCM_IV_BYTES, AES_GCM_IV_BYTES + AES_GCM_TAG_BYTES);
-  const ciphertext = data.slice(AES_GCM_IV_BYTES + AES_GCM_TAG_BYTES);
-  for (const key of AES_KEYS) {
-    try {
-      const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-      decipher.setAuthTag(tag);
-      return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
-    } catch (e) {
-      continue;
-    }
-  }
-  throw new Error('decryption failed with all known keys');
-}
-
-function panHash(pan: string): string {
-  return crypto.createHmac('sha256', HMAC_KEY).update(pan).digest('hex');
-}
-
-// ---------- DB insert with retry ----------
-
-export interface AccountAndCardResult {
-  account: { id: number; IBAN: string; moneda: string; sold: number };
-  card: {
-    id: number;
-    token: string;
-    last4: string;
-    expiryMMYY: string;
-    accountId: number;
-  };
-}
-
-async function createAccountAndCard(
+export async function createAccountAndCard(
   userId: number,
-  currency: string = 'RON',
-  countryCode: string = 'RO',
-): Promise<AccountAndCardResult> {
-  if (!Number.isInteger(userId) || userId <= 0) throw new Error('invalid userId');
+  currency: string,
+  countryCode: string,
+): Promise<{ account: any; card: any }>
+{
+  const IBAN = generateIBAN(currency, countryCode);
 
-  const client = await pool.connect();
-  try {
-    // Preluăm prenume + nume din utilizatori
-    const userRes = await client.query(
-      'SELECT prenume, nume FROM utilizatori WHERE id = $1',
-      [userId],
+  let client;
+  try
+  {
+    client = await pool.connect();
+
+    const accountResult = await client.query(
+      `INSERT INTO conturiBancare (userid, iban, moneda, sold) VALUES ($1,$2,$3,0) RETURNING id, iban, moneda, sold`,
+      [userId, IBAN, currency],
     );
-    if (userRes.rowCount === 0) throw new Error('User not found');
+    const account = accountResult.rows[0];
+    const accountId = account.id;
 
-    const holderName = `${userRes.rows[0].prenume} ${userRes.rows[0].nume}`;
+    const cardNumber = CARD_BIN + generateRandomDigits(CARD_LENGTH - CARD_BIN.length);
+    const cvv = generateRandomDigits(3);
+    const now = new Date();
+    const expiry = new Date(now.getFullYear() + DEFAULT_CARD_LIFETIME_YEARS, now.getMonth(), 1);
+    const expiryMMYY = `${(expiry.getMonth() + 1).toString().padStart(2, '0')}/${expiry.getFullYear().toString().slice(-2)}`;
 
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      const iban = generateIban(countryCode);
-      const pan = generateCardPan();
-      const cvv = generateCvv();
-      const { expiryMMYY, expiryDateISO } = generateExpiry();
-      const token = generateToken(pan);
-      const encrypted_pan = encryptAESGCM(pan);
-      const encrypted_cvv = encryptAESGCM(cvv);
-      const encrypted_expiry = encryptAESGCM(expiryMMYY);
+    const encryptedCard = encryptAESGCM(cardNumber);
+    const encryptedCVV = encryptAESGCM(cvv);
+    const encryptedExpiry = encryptAESGCM(expiryMMYY);
 
-      try {
-        await client.query('BEGIN');
+    const cardResult = await client.query(
+      `INSERT INTO carduri (userid, numarcard, cvv, dataexpirare, detinator, token, accountid)
+       VALUES ($1,$2,$3,$4,'',$5,$6) RETURNING id`,
+      [userId, encryptedCard, encryptedCVV, encryptedExpiry, `tok_${generateRandomDigits(16)}`, accountId],
+    );
 
-        const accountRes = await client.query(
-          `INSERT INTO conturiBancare(userid, IBAN, moneda, sold)
-           VALUES($1,$2,$3,0.0)
-           RETURNING id, IBAN, moneda, sold`,
-          [userId, iban, currency.toUpperCase()],
-        );
-
-        const cardRes = await client.query(
-          `INSERT INTO carduri(userid, numarCard, CVV, dataExpirare, detinator, token, accountid)
-           VALUES($1,$2,$3,$4,$5,$6,$7)
-           RETURNING id, token`,
-          [userId, encrypted_pan, encrypted_cvv, encrypted_expiry, holderName, token, accountRes.rows[0].id],
-        );
-
-        await client.query('COMMIT');
-
-        return {
-          account: accountRes.rows[0],
-          card: {
-            id: cardRes.rows[0].id,
-            token: cardRes.rows[0].token,
-            last4: pan.slice(-4),
-            expiryMMYY,
-            accountId: accountRes.rows[0].id,
-          },
-        };
-      } catch (err: any) {
-        await client.query('ROLLBACK');
-        if (err.code === '23505') {
-          console.warn('Unique constraint violation, retrying', attempt + 1, err.constraint || err.detail || err.message);
-          continue;
-        } else throw err;
-      }
-    }
-    throw new Error('Could not generate unique IBAN/card after max retries');
-  } finally {
-    client.release();
+    const card = cardResult.rows[0];
+    return {
+      account: { id: accountId, IBAN: account.iban, moneda: account.moneda, sold: account.sold },
+      card: { id: card.id, token: `tok_${generateRandomDigits(16)}`, last4: cardNumber.slice(-4), expiryMMYY, accountId },
+    };
+  }
+  finally
+  {
+    if(client) client.release();
   }
 }
 
-export { createAccountAndCard, decryptAESGCM, panHash };
+// Retries on unique constraint violations (concurrent account creation race)
+export async function createAccountAndCardWithRetry(
+  userId: number,
+  currency: string,
+  countryCode: string,
+  retries: number = MAX_RETRIES,
+): Promise<{ account: any; card: any }>
+{
+  for(let attempt = 1; attempt <= retries; attempt++)
+  {
+    try
+    {
+      return await createAccountAndCard(userId, currency, countryCode);
+    }
+    catch (err: any)
+    {
+      const isUniqueViolation = err.code === '23505';
+      if(isUniqueViolation && attempt < retries)
+      {
+        console.warn(`IBAN collision on attempt ${attempt}, retrying...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('Failed to generate unique IBAN after multiple attempts');
+}

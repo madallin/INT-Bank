@@ -1,16 +1,3 @@
-// ============================================================
-// Transfer REST Controller (Inbound Adapter — Driving Side)
-// Hexagonal Architecture — Infrastructure Layer
-//
-// Receives POST /transfers, validates the request body,
-// delegates to the InitiateTransferUseCase, and returns
-// HTTP 202 Accepted with a tracking ID.
-//
-// This adapter NEVER blocks the HTTP thread waiting for the
-// transfer to complete. Instead, it publishes an event to
-// Kafka and responds immediately.
-// ============================================================
-
 import {
   Controller,
   Post,
@@ -23,9 +10,8 @@ import { IsNotEmpty, IsNumber, IsString, MinLength, Min } from 'class-validator'
 
 import { TransferUseCase } from '../../../../core/ports/in/transfer.use-case';
 
-// ---- DTOs ----
-
-export class InitiateTransferBodyDto {
+export class InitiateTransferBodyDto
+{
   @IsString()
   @IsNotEmpty()
   fromIban!: string;
@@ -55,19 +41,19 @@ export class InitiateTransferBodyDto {
   senderName!: string;
 }
 
-// ---- Controller ----
-
 @Controller('transfers')
-export class TransferController {
+export class TransferController
+{
   private readonly logger = new Logger(TransferController.name);
 
   constructor(private readonly transferUseCase: TransferUseCase) {}
 
   @Post()
   @HttpCode(HttpStatus.ACCEPTED)
-  async initiate(@Body() body: InitiateTransferBodyDto) {
+  async initiate(@Body() body: InitiateTransferBodyDto)
+  {
     this.logger.log(
-      `POST /transfers — ${body.fromIban} → ${body.toIban} | ${body.amount} ${body.currency}`,
+      `POST /transfers - ${body.fromIban} -> ${body.toIban} | ${body.amount} ${body.currency}`,
     );
 
     const result = await this.transferUseCase.initiate({

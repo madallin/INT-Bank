@@ -1,7 +1,3 @@
-// ============================================================
-// Route: Auth Session — JWT with refresh token rotation
-// ============================================================
-
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -9,7 +5,8 @@ import crypto from 'crypto';
 import { Pool } from 'pg';
 import { createAccountAndCard } from '../services/banking';
 
-interface AuthSessionRequest extends Request {
+interface AuthSessionRequest extends Request
+{
   pool?: Pool;
 }
 
@@ -19,27 +16,26 @@ const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
-/**
- * POST /auth-session/login
- * Body: { phone, pin }
- * Returns: { accessToken, refreshToken, userId }
- */
-router.post('/login', async (req: AuthSessionRequest, res: Response) => {
+router.post('/login', async (req: AuthSessionRequest, res: Response) =>
+{
   const { phone, pin } = req.body;
-  if (!phone || !pin) {
+  if(!phone || !pin)
+  {
     res.status(400).json({ error: 'Telefon si PIN sunt necesare' });
     return;
   }
 
   let client;
-  try {
+  try
+  {
     client = await req.pool!.connect();
     const result = await client.query(
       'SELECT id, pincont FROM utilizatori WHERE nrtelefon = $1 AND contaprobat = true',
       [phone],
     );
 
-    if (result.rowCount === 0) {
+    if(result.rowCount === 0)
+    {
       res.status(401).json({ error: 'Cont inexistent sau neaprobat' });
       return;
     }
@@ -47,7 +43,8 @@ router.post('/login', async (req: AuthSessionRequest, res: Response) => {
     const user = result.rows[0];
 
     const pinMatch = await bcrypt.compare(pin, user.pincont);
-    if (!pinMatch) {
+    if(!pinMatch)
+    {
       res.status(401).json({ error: 'PIN incorect' });
       return;
     }
@@ -72,7 +69,8 @@ router.post('/login', async (req: AuthSessionRequest, res: Response) => {
     );
     const hasAccounts = parseInt(accountCheck.rows[0].cnt, 10) > 0;
 
-    if (!hasAccounts) {
+    if(!hasAccounts)
+    {
       client.release();
       client = null;
 
@@ -82,28 +80,30 @@ router.post('/login', async (req: AuthSessionRequest, res: Response) => {
     }
 
     res.json({ accessToken, refreshToken, userId: user.id });
-  } catch (err) {
+  }
+  catch (err)
+  {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Eroare la autentificare' });
-  } finally {
-    if (client) client.release();
+  }
+  finally
+  {
+    if(client) client.release();
   }
 });
 
-/**
- * POST /auth-session/refresh
- * Body: { refreshToken }
- * Returns: { accessToken, refreshToken }
- */
-router.post('/refresh', async (req: AuthSessionRequest, res: Response) => {
+router.post('/refresh', async (req: AuthSessionRequest, res: Response) =>
+{
   const { refreshToken } = req.body;
-  if (!refreshToken) {
+  if(!refreshToken)
+  {
     res.status(400).json({ error: 'Refresh token lipsa' });
     return;
   }
 
   let client;
-  try {
+  try
+  {
     client = await req.pool!.connect();
 
     const result = await client.query(
@@ -111,15 +111,18 @@ router.post('/refresh', async (req: AuthSessionRequest, res: Response) => {
     );
 
     let matchedSession = null;
-    for (const row of result.rows) {
+    for(const row of result.rows)
+    {
       const match = await bcrypt.compare(refreshToken, row.refresh_token_hash);
-      if (match) {
+      if(match)
+      {
         matchedSession = row;
         break;
       }
     }
 
-    if (!matchedSession) {
+    if(!matchedSession)
+    {
       res.status(401).json({ error: 'Refresh token invalid sau expirat' });
       return;
     }
@@ -142,34 +145,39 @@ router.post('/refresh', async (req: AuthSessionRequest, res: Response) => {
     );
 
     res.json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
-  } catch (err) {
+  }
+  catch (err)
+  {
     console.error('Refresh error:', err);
     res.status(500).json({ error: 'Eroare la reimprospatarea sesiunii' });
-  } finally {
-    if (client) client.release();
+  }
+  finally
+  {
+    if(client) client.release();
   }
 });
 
-/**
- * POST /auth-session/logout
- * Body: { refreshToken }
- */
-router.post('/logout', async (req: AuthSessionRequest, res: Response) => {
+router.post('/logout', async (req: AuthSessionRequest, res: Response) =>
+{
   const { refreshToken } = req.body;
-  if (!refreshToken) {
+  if(!refreshToken)
+  {
     res.status(400).json({ error: 'Refresh token lipsa' });
     return;
   }
 
   let client;
-  try {
+  try
+  {
     client = await req.pool!.connect();
 
     const result = await client.query('SELECT id, refresh_token_hash FROM sesiuni');
 
-    for (const row of result.rows) {
+    for(const row of result.rows)
+    {
       const match = await bcrypt.compare(refreshToken, row.refresh_token_hash);
-      if (match) {
+      if(match)
+      {
         await client.query('DELETE FROM sesiuni WHERE id = $1', [row.id]);
         res.json({ success: true });
         return;
@@ -177,11 +185,15 @@ router.post('/logout', async (req: AuthSessionRequest, res: Response) => {
     }
 
     res.json({ success: true });
-  } catch (err) {
+  }
+  catch (err)
+  {
     console.error('Logout error:', err);
     res.status(500).json({ error: 'Eroare la delogare' });
-  } finally {
-    if (client) client.release();
+  }
+  finally
+  {
+    if(client) client.release();
   }
 });
 

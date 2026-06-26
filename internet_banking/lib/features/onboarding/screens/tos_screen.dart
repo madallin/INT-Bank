@@ -1,5 +1,3 @@
-// lib/features/onboarding/screens/tos_screen.dart
-
 import 'dart:convert' show jsonDecode, jsonEncode;
 import 'dart:io' show HttpClient, X509Certificate, Platform;
 
@@ -14,7 +12,8 @@ import 'approval_screen.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../welcome/welcome_screen.dart';
 
-class TosScreen extends StatefulWidget {
+class TosScreen extends StatefulWidget
+{
   final int userId;
   const TosScreen({super.key, required this.userId});
 
@@ -22,36 +21,44 @@ class TosScreen extends StatefulWidget {
   State<TosScreen> createState() => _TosScreenState();
 }
 
-class _TosScreenState extends State<TosScreen> {
+class _TosScreenState extends State<TosScreen>
+{
   final ScrollController _scrollController = ScrollController();
   bool _canAccept = false;
   bool _loading = false;
 
-  http.Client _createHttpClient() {
+  http.Client _createHttpClient()
+  {
     final ioc = HttpClient();
     ioc.badCertificateCallback =
         (X509Certificate cert, String host, int port) => true;
     return IOClient(ioc);
   }
 
-  Future<String> getDeviceId() async {
+  Future<String> getDeviceId() async
+  {
     final deviceInfo = DeviceInfoPlugin();
-    if (Platform.isAndroid) {
+    if(Platform.isAndroid)
+    {
       final androidInfo = await deviceInfo.androidInfo;
       return androidInfo.id;
-    } else if (Platform.isIOS) {
+    }
+    else if(Platform.isIOS)
+    {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor!;
     }
     return 'unknown-device';
   }
 
-  Future<void> _acceptTerms() async {
-    if (!mounted) return;
+  Future<void> _acceptTerms() async
+  {
+    if(!mounted) return;
     setState(() => _loading = true);
 
     final client = _createHttpClient();
-    try {
+    try
+    {
       final deviceId = await getDeviceId();
       final tokenResponse = await client.post(
         Uri.parse('https://$serverUrl/auth/get-client-token'),
@@ -59,7 +66,7 @@ class _TosScreenState extends State<TosScreen> {
         body: jsonEncode({'deviceId': deviceId}),
       );
 
-      if (!mounted) return;
+      if(!mounted) return;
       final tokenData = jsonDecode(tokenResponse.body);
       final clientToken = tokenData['client_token'];
 
@@ -71,8 +78,9 @@ class _TosScreenState extends State<TosScreen> {
         },
       );
 
-      if (!mounted) return;
-      if (tosResponse.statusCode != 200) {
+      if(!mounted) return;
+      if(tosResponse.statusCode != 200)
+      {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eroare la verificarea TOS')),
         );
@@ -82,7 +90,8 @@ class _TosScreenState extends State<TosScreen> {
       final tosData = jsonDecode(tosResponse.body);
       final acceptedTerms = tosData['termeniAcceptati'] ?? false;
 
-      if (!acceptedTerms) {
+      if(!acceptedTerms)
+      {
         final putResponse = await client.put(
           Uri.parse('https://$serverUrl/users/${widget.userId}/accept-tos'),
           headers: {
@@ -90,8 +99,9 @@ class _TosScreenState extends State<TosScreen> {
             'Authorization': 'Bearer $clientToken',
           },
         );
-        if (!mounted) return;
-        if (putResponse.statusCode != 200) {
+        if(!mounted) return;
+        if(putResponse.statusCode != 200)
+        {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Eroare la actualizarea TOS')),
           );
@@ -107,8 +117,9 @@ class _TosScreenState extends State<TosScreen> {
         },
       );
 
-      if (!mounted) return;
-      if (approvedResponse.statusCode != 200) {
+      if(!mounted) return;
+      if(approvedResponse.statusCode != 200)
+      {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eroare la verificarea contului')),
         );
@@ -118,8 +129,10 @@ class _TosScreenState extends State<TosScreen> {
       final approvedData = jsonDecode(approvedResponse.body);
       final isApproved = approvedData['contaprobat'] ?? false;
 
-      if (!isApproved) {
-        if (mounted) {
+      if(!isApproved)
+      {
+        if(mounted)
+        {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
@@ -128,8 +141,11 @@ class _TosScreenState extends State<TosScreen> {
             (route) => false,
           );
         }
-      } else {
-        if (mounted) {
+      }
+      else
+      {
+        if(mounted)
+        {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const WelcomeScreen()),
@@ -141,14 +157,19 @@ class _TosScreenState extends State<TosScreen> {
           );
         }
       }
-    } catch (e) {
-      if (mounted) {
+    }
+    catch (e)
+    {
+      if(mounted)
+      {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Nu se poate conecta la server')),
         );
       }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    }
+    finally
+    {
+      if(mounted) setState(() => _loading = false);
       client.close();
     }
   }
@@ -349,30 +370,36 @@ class _TosScreenState extends State<TosScreen> {
   ];
 
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     _scrollController.addListener(() {
-      if (_scrollController.offset >=
-          _scrollController.position.maxScrollExtent) {
+      if(_scrollController.offset >=
+          _scrollController.position.maxScrollExtent)
+      {
         setState(() => _canAccept = true);
       }
     });
   }
 
   @override
-  void dispose() {
+  void dispose()
+  {
     _scrollController.dispose();
     super.dispose();
   }
 
-  Widget _buildRule(String rule, int index) {
+  Widget _buildRule(String rule, int index)
+  {
     String letter = String.fromCharCode(97 + index);
     List<TextSpan> spans = [];
     final exp = RegExp(r'\b(INT Bank|cont|tranzacț|confidențialitate|securitate)\b');
     int start = 0;
 
-    for (final match in exp.allMatches(rule)) {
-      if (match.start > start) {
+    for(final match in exp.allMatches(rule))
+    {
+      if(match.start > start)
+      {
         spans.add(TextSpan(text: rule.substring(start, match.start)));
       }
       spans.add(
@@ -386,7 +413,8 @@ class _TosScreenState extends State<TosScreen> {
       );
       start = match.end;
     }
-    if (start < rule.length) {
+    if(start < rule.length)
+    {
       spans.add(TextSpan(text: rule.substring(start)));
     }
 
@@ -409,7 +437,8 @@ class _TosScreenState extends State<TosScreen> {
     );
   }
 
-  Widget _buildChapter(String title, List<String> rules) {
+  Widget _buildChapter(String title, List<String> rules)
+  {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
@@ -424,7 +453,8 @@ class _TosScreenState extends State<TosScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(

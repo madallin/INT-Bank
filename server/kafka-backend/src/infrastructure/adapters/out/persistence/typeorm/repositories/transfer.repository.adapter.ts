@@ -1,9 +1,3 @@
-// ============================================================
-// Transfer Repository Adapter (TypeORM)
-// Hexagonal Architecture — Infrastructure Layer
-// Implements the TransferRepository port using TypeORM.
-// ============================================================
-
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -16,19 +10,22 @@ import {
 import { TransferOrmEntity } from '../entities/transfer.orm-entity';
 
 @Injectable()
-export class TransferRepositoryAdapter implements TransferRepository {
+export class TransferRepositoryAdapter implements TransferRepository
+{
   constructor(
     @InjectRepository(TransferOrmEntity)
     private readonly repo: Repository<TransferOrmEntity>,
   ) {}
 
-  async save(transfer: Transfer): Promise<Transfer> {
+  async save(transfer: Transfer): Promise<Transfer>
+  {
     const entity = this.toEntity(transfer);
     const saved = await this.repo.save(entity);
     return this.toDomain(saved);
   }
 
-  async findById(id: string): Promise<Transfer | null> {
+  async findById(id: string): Promise<Transfer | null>
+  {
     const entity = await this.repo.findOne({ where: { id } });
     return entity ? this.toDomain(entity) : null;
   }
@@ -38,20 +35,24 @@ export class TransferRepositoryAdapter implements TransferRepository {
     status: TransferStatus,
     completedAt?: Date,
     failureReason?: string,
-  ): Promise<void> {
+  ): Promise<void>
+  {
     const updateData: Partial<TransferOrmEntity> = {
       status,
     };
-    if (completedAt !== undefined) {
+    if(completedAt !== undefined)
+    {
       updateData.completedAt = completedAt;
     }
-    if (failureReason !== undefined) {
+    if(failureReason !== undefined)
+    {
       updateData.failureReason = failureReason;
     }
     await this.repo.update(id, updateData);
   }
 
-  async findByAccountId(accountId: number): Promise<Transfer[]> {
+  async findByAccountId(accountId: number): Promise<Transfer[]>
+  {
     const entities = await this.repo.find({
       where: [
         { fromAccountId: accountId },
@@ -64,7 +65,8 @@ export class TransferRepositoryAdapter implements TransferRepository {
     return entities.map((e) => this.toDomain(e));
   }
 
-  private toDomain(entity: TransferOrmEntity): Transfer {
+  private toDomain(entity: TransferOrmEntity): Transfer
+  {
     return {
       id: entity.id,
       fromAccountId: entity.fromAccountId,
@@ -79,7 +81,8 @@ export class TransferRepositoryAdapter implements TransferRepository {
     };
   }
 
-  private toEntity(domain: Transfer): TransferOrmEntity {
+  private toEntity(domain: Transfer): TransferOrmEntity
+  {
     const entity = new TransferOrmEntity();
     entity.id = domain.id;
     entity.fromAccountId = domain.fromAccountId;

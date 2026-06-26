@@ -1,13 +1,8 @@
-// ============================================================
-// Domain Entity: Account
-// Hexagonal Architecture — Core Domain Layer
-// Pure domain entity with NO framework or ORM dependencies.
-// ============================================================
-
 import { Money } from '../value-objects/money.vo';
 import { Iban } from '../value-objects/iban.vo';
 
-export class Account {
+export class Account
+{
   private constructor(
     private readonly _id: string,
     private readonly _userId: number,
@@ -23,7 +18,8 @@ export class Account {
     userId: number,
     iban: Iban,
     currency: string = 'RON',
-  ): Account {
+  ): Account
+  {
     return new Account(
       id,
       userId,
@@ -43,44 +39,50 @@ export class Account {
     currency: string,
     createdAt: Date,
     updatedAt: Date,
-  ): Account {
+  ): Account
+  {
     return new Account(id, userId, iban, balance, currency, createdAt, updatedAt);
   }
 
-  // ---- Getters ----
-
-  get id(): string {
+  get id(): string
+  {
     return this._id;
   }
 
-  get userId(): number {
+  get userId(): number
+  {
     return this._userId;
   }
 
-  get iban(): Iban {
+  get iban(): Iban
+  {
     return this._iban;
   }
 
-  get balance(): Money {
+  get balance(): Money
+  {
     return this._balance;
   }
 
-  get currency(): string {
+  get currency(): string
+  {
     return this._currency;
   }
 
-  get createdAt(): Date {
+  get createdAt(): Date
+  {
     return this._createdAt;
   }
 
-  get updatedAt(): Date {
+  get updatedAt(): Date
+  {
     return this._updatedAt;
   }
 
-  // ---- Behaviour ----
-
-  debit(amount: Money): void {
-    if (amount.currency !== this._currency) {
+  debit(amount: Money): void
+  {
+    if(amount.currency !== this._currency)
+    {
       throw new Error(
         `Currency mismatch: account=${this._currency}, debit=${amount.currency}`,
       );
@@ -89,8 +91,10 @@ export class Account {
     this._updatedAt = new Date();
   }
 
-  credit(amount: Money): void {
-    if (amount.currency !== this._currency) {
+  credit(amount: Money): void
+  {
+    if(amount.currency !== this._currency)
+    {
       throw new Error(
         `Currency mismatch: account=${this._currency}, credit=${amount.currency}`,
       );
@@ -99,11 +103,13 @@ export class Account {
     this._updatedAt = new Date();
   }
 
-  hasSufficientFunds(amount: Money): boolean {
+  hasSufficientFunds(amount: Money): boolean
+  {
     return this._balance.amount >= amount.amount;
   }
 
-  toJSON() {
+  toJSON()
+  {
     return {
       id: this._id,
       userId: this._userId,

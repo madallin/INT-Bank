@@ -1,119 +1,75 @@
-// lib/core/network/api_client.dart
-// HTTP client factory with SSL bypass for development
-
-import 'dart:convert' show jsonDecode, jsonEncode;
-import 'dart:io' show HttpClient, X509Certificate;
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 
-import '../../config/app_config.dart';
-
-/// Creates an HTTP client that bypasses SSL certificate validation
-/// (intended for development with self-signed certs).
-IOClient createHttpClient() {
+IOClient _createIOClient()
+{
   final httpClient = HttpClient()
-    ..badCertificateCallback =
-        (X509Certificate cert, String host, int port) => true;
+    ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
   return IOClient(httpClient);
 }
 
-/// Checks whether a response body is valid JSON.
-bool isJson(String str) {
-  try {
-    jsonDecode(str);
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
+class ApiClient
+{
+  final IOClient _client;
+  String? _accessToken;
+  String? _refreshToken;
 
-/// Attempts to refresh the client token.
-Future<String?> refreshClientToken({
-  required String deviceId,
-  required String refreshToken,
-}) async {
-  final client = createHttpClient();
-  try {
-    final response = await client.post(
-      Uri.parse('https://$serverUrl/auth/refresh-client-token'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'deviceId': deviceId,
-        'refreshToken': refreshToken,
-      }),
-    );
-    if (response.statusCode == 200 && isJson(response.body)) {
-      final data = jsonDecode(response.body);
-      return data['client_token'] as String?;
+  ApiClient._(this._client);
+  factory ApiClient()
+  {
+    return ApiClient._(_createIOClient());
+  }
+
+  String? get accessToken => _accessToken;
+  String? get refreshToken => _refreshToken;
+
+  void setTokens({String? accessToken, String? refreshToken})
+  {
+    if(accessToken != null) _accessToken = accessToken;
+    if(refreshToken != null) _refreshToken = refreshToken;
+  }
+
+  Map<String, String> _headers({Map<String, String>? extra})
+  {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    if(_accessToken != null)
+    {
+      headers['Authorization'] = 'Bearer $_accessToken';
     }
-    return null;
-  } catch (_) {
-    return null;
-  } finally {
-    client.close();
-  }
-}
-
-/// Obtains a fresh client token from the server.
-Future<Map<String, dynamic>?> getClientToken({
-  required String deviceId,
-}) async {
-  final client = createHttpClient();
-  try {
-    final response = await client.post(
-      Uri.parse('https://$serverUrl/auth/get-client-token'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'deviceId': deviceId}),
-    );
-    if (response.statusCode == 200 && isJson(response.body)) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    }
-    return null;
-  } finally {
-    client.close();
-  }
-}
-
-/// Performs a GET request with automatic token refresh on 401.
-Future<http.Response> fetchWithRefresh(
-  Uri uri,
-  String? clientToken,
-  String refreshToken,
-  String deviceId,
-) async {
-  final client = createHttpClient();
-
-  http.Response response = await client.get(uri, headers: {
-    'Authorization': 'Bearer $clientToken',
-    'Accept': 'application/json',
-  });
-
-  if (response.statusCode == 401) {
-    final body = jsonDecode(response.body);
-    if (body['code'] == 'TOKEN_EXPIRED') {
-      final refreshRes = await client.post(
-        Uri.parse('https://$serverUrl/auth/refresh-client-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'deviceId': deviceId,
-          'refreshToken': refreshToken,
-        }),
-      );
-
-      if (refreshRes.statusCode == 200) {
-        final data = jsonDecode(refreshRes.body);
-        final newToken = data['client_token'];
-        clientToken = newToken;
-
-        response = await client.get(uri, headers: {
-          'Authorization': 'Bearer $clientToken',
-          'Accept': 'application/json',
-        });
-      }
-    }
+    if(extra != null) headers.addAll(extra);
+    return headers;
   }
 
-  client.close();
-  return response;
+  Future<http.Response> get(String url, {Map<String, String>? headers}) =>
+      _client.get(Uri.parse(url), headers: _headers(extra: headers));
+
+  Future<http.Response> post(String url,
+          {Map<String, dynamic>? body, Map<String, String>? headers}) =>
+      _client.post(Uri.parse(url),
+          headers: _headers(extra: headers),
+          body: body != null ? jsonEncode(body) : null);
+
+  Future<http.Response> put(String url,
+          {Map<String, dynamic>? body, Map<String, String>? headers}) =>
+      _client.put(Uri.parse(url),
+          headers: _headers(extra: headers),
+          body: body != null ? jsonEncode(body) : null);
+
+  Future<http.Response> patch(String url,
+          {Map<String, dynamic>? body, Map<String, String>? headers}) =>
+      _client.patch(Uri.parse(url),
+          headers: _headers(extra: headers),
+          body: body != null ? jsonEncode(body) : null);
+
+  Future<http.Response> delete(String url,
+          {Map<String, String>? headers}) =>
+      _client.delete(Uri.parse(url), headers: _headers(extra: headers));
+
+  void close() => _client.close();
 }

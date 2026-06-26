@@ -1,6 +1,3 @@
-// lib/features/exchange/screens/exchange_screen.dart
-// ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -10,7 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../config/app_config.dart';
 import '../../../services/currency_service.dart';
 
-class ExchangeScreen extends StatefulWidget {
+class ExchangeScreen extends StatefulWidget
+{
   final int userId;
 
   const ExchangeScreen({super.key, required this.userId});
@@ -20,14 +18,14 @@ class ExchangeScreen extends StatefulWidget {
 }
 
 class _ExchangeScreenState extends State<ExchangeScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin
+{
   final TextEditingController _fromAmountController = TextEditingController();
   final TextEditingController _toAmountController = TextEditingController();
 
   String _fromCurrency = 'RON';
   String _toCurrency = 'EUR';
 
-  // Live rate data (computed from CurrencyService)
   double _originalRate = 0.0;
   double _rateWithCommission = 0.0;
   double _commissionAmount = 0.0;
@@ -38,7 +36,6 @@ class _ExchangeScreenState extends State<ExchangeScreen>
   AnimationController? _swapController;
   Animation<double>? _swapAnimation;
 
-  // Debounce timer for amount changes
   Timer? _debounce;
 
   final Map<String, String> _currencySymbols = {
@@ -49,7 +46,8 @@ class _ExchangeScreenState extends State<ExchangeScreen>
   };
 
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -64,12 +62,15 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     );
     _swapAnimation = CurvedAnimation(parent: _swapController!, curve: Curves.easeInOut);
 
-    // If rates haven't been fetched yet, fetch them
-    if (!CurrencyService.instance.hasRates) {
-      CurrencyService.instance.fetchRates().then((_) {
-        if (mounted) _recalculate();
+    if(!CurrencyService.instance.hasRates)
+    {
+      CurrencyService.instance.fetchRates().then((_)
+      {
+        if(mounted) _recalculate();
       });
-    } else {
+    }
+    else
+    {
       _recalculate();
     }
 
@@ -77,7 +78,8 @@ class _ExchangeScreenState extends State<ExchangeScreen>
   }
 
   @override
-  void dispose() {
+  void dispose()
+  {
     _debounce?.cancel();
     _fadeController?.dispose();
     _swapController?.dispose();
@@ -86,18 +88,22 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     super.dispose();
   }
 
-  void _onFromAmountChanged() {
+  void _onFromAmountChanged()
+  {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
+    _debounce = Timer(const Duration(milliseconds: 500), ()
+    {
       _recalculate();
     });
   }
 
-  void _recalculate() {
+  void _recalculate()
+  {
     final service = CurrencyService.instance;
     final rate = service.getRate(_fromCurrency, _toCurrency);
 
-    if (rate == null) {
+    if(rate == null)
+    {
       setState(() => _hasRate = false);
       return;
     }
@@ -115,8 +121,10 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     });
   }
 
-  void _swapCurrencies() {
-    _swapController!.forward().then((_) {
+  void _swapCurrencies()
+  {
+    _swapController!.forward().then((_)
+    {
       setState(() {
         final temp = _fromCurrency;
         _fromCurrency = _toCurrency;
@@ -131,34 +139,39 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     });
   }
 
-  void _onFromCurrencyChanged(String? value) {
-    if (value == null) return;
+  void _onFromCurrencyChanged(String? value)
+  {
+    if(value == null) return;
     setState(() => _fromCurrency = value);
     _recalculate();
   }
 
-  void _onToCurrencyChanged(String? value) {
-    if (value == null) return;
+  void _onToCurrencyChanged(String? value)
+  {
+    if(value == null) return;
     setState(() => _toCurrency = value);
     _recalculate();
   }
 
-  String _formatAmount(String input) {
+  String _formatAmount(String input)
+  {
     String clean = input.replaceAll(RegExp(r'[^\d.]'), '');
-    if (clean.isEmpty) return '';
+    if(clean.isEmpty) return '';
 
     final parts = clean.split('.');
     String intPart = parts[0];
 
     String reversed = intPart.split('').reversed.join('');
     String formatted = '';
-    for (int i = 0; i < reversed.length; i++) {
-      if (i > 0 && i % 3 == 0) formatted += ',';
+    for(int i = 0; i < reversed.length; i++)
+    {
+      if(i > 0 && i % 3 == 0) formatted += ',';
       formatted += reversed[i];
     }
     intPart = formatted.split('').reversed.join('');
 
-    if (parts.length > 1) {
+    if(parts.length > 1)
+    {
       return '$intPart.${parts[1]}';
     }
     return intPart;
@@ -169,7 +182,8 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     required TextEditingController controller,
     required String currency,
     required Function(String?) onCurrencyChanged,
-  }) {
+  })
+  {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -199,7 +213,8 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                     isExpanded: true,
                     icon: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey[400], size: 20),
                     style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(darkGreyColor)),
-                    items: _currencySymbols.keys.map((curr) {
+                    items: _currencySymbols.keys.map((curr)
+                    {
                       return DropdownMenuItem<String>(value: curr, child: Text(curr));
                     }).toList(),
                     onChanged: onCurrencyChanged,
@@ -215,11 +230,13 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-                      TextInputFormatter.withFunction((oldValue, newValue) {
-                        if (newValue.text.contains('.')) {
+                      TextInputFormatter.withFunction((oldValue, newValue)
+                      {
+                        if(newValue.text.contains('.'))
+                        {
                           final parts = newValue.text.split('.');
-                          if (parts.length > 2) return oldValue;
-                          if (parts.length == 2 && parts[1].length > 2) return oldValue;
+                          if(parts.length > 2) return oldValue;
+                          if(parts.length == 2 && parts[1].length > 2) return oldValue;
                         }
                         final formatted = _formatAmount(newValue.text);
                         return TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
@@ -247,7 +264,8 @@ class _ExchangeScreenState extends State<ExchangeScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     final service = CurrencyService.instance;
 
     return Scaffold(
@@ -329,8 +347,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                             ),
                             const SizedBox(height: 20),
 
-                            // ── Rate info card with commission ──
-                            if (!service.hasRates)
+                            if(!service.hasRates)
                               const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 8),
                                 child: SizedBox(
@@ -339,7 +356,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                                   child: CircularProgressIndicator(strokeWidth: 2.5),
                                 ),
                               )
-                            else if (!_hasRate)
+                            else if(!_hasRate)
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
@@ -371,7 +388,6 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Current rate
                                     Row(
                                       children: [
                                         Icon(Icons.info_outline_rounded, color: const Color(lightForestGreenColor), size: 18),
@@ -385,7 +401,6 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    // Commission info
                                     Row(
                                       children: [
                                         const SizedBox(width: 26),
@@ -398,7 +413,6 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                                       ],
                                     ),
                                     const SizedBox(height: 6),
-                                    // Effective rate
                                     Row(
                                       children: [
                                         const SizedBox(width: 26),

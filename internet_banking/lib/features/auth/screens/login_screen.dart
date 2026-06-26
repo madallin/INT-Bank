@@ -1,6 +1,3 @@
-// lib/features/auth/screens/login_screen.dart
-// ignore_for_file: curly_braces_in_flow_control_structures, use_build_context_synchronously
-
 import 'dart:convert';
 import 'dart:io' show HttpClient, X509Certificate;
 
@@ -20,7 +17,8 @@ import 'two_factor_screen.dart';
 
 final FlutterSecureStorage storage = const FlutterSecureStorage();
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends StatefulWidget
+{
   const LoginScreen({super.key});
 
   @override
@@ -28,7 +26,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin
+{
   final TextEditingController _phoneController = TextEditingController();
   CountryWithPhoneCode? _selectedCountry;
   List<CountryWithPhoneCode> _countries = [];
@@ -38,7 +37,8 @@ class _LoginScreenState extends State<LoginScreen>
   Animation<double>? _fadeAnimation;
 
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -52,33 +52,39 @@ class _LoginScreenState extends State<LoginScreen>
     _initPhoneLib();
   }
 
-  Future<void> _initPhoneLib() async {
+  Future<void> _initPhoneLib() async
+  {
     await init();
     _countries = CountryManager().countries;
     _selectedCountry = _countries.firstWhere(
       (c) => c.countryCode == 'RO',
       orElse: () => _countries.first,
     );
-    if (mounted) setState(() {});
+    if(mounted) setState(() {});
   }
 
-  http.Client _createHttpClient() {
+  http.Client _createHttpClient()
+  {
     final ioc = HttpClient();
     ioc.badCertificateCallback =
         (X509Certificate cert, String host, int port) => true;
     return IOClient(ioc);
   }
 
-  String? _formatPhoneForServer(String phone) {
-    if (_selectedCountry == null) return null;
+  String? _formatPhoneForServer(String phone)
+  {
+    if(_selectedCountry == null) return null;
     String cleanPhone = phone.replaceAll(RegExp(r'\D'), '');
-    if (_countryUsesTrunkPrefix(_selectedCountry!.countryCode) &&
-        cleanPhone.startsWith('0')) {
+    if(_countryUsesTrunkPrefix(_selectedCountry!.countryCode) &&
+        cleanPhone.startsWith('0'))
+    {
       cleanPhone = cleanPhone.substring(1);
     }
     final fullNumber = '+${_selectedCountry!.phoneCode}$cleanPhone';
-    if (cleanPhone.length < 8 || cleanPhone.length > 15) {
-      if (mounted) {
+    if(cleanPhone.length < 8 || cleanPhone.length > 15)
+    {
+      if(mounted)
+      {
         setState(() => textEroare = 'Lungimea numărului nu este validă');
       }
       return null;
@@ -86,9 +92,11 @@ class _LoginScreenState extends State<LoginScreen>
     return fullNumber;
   }
 
-  Future<void> _attemptLogin(String fullPhoneNumber) async {
+  Future<void> _attemptLogin(String fullPhoneNumber) async
+  {
     final client = _createHttpClient();
-    try {
+    try
+    {
       final uri = Uri.parse('https://$serverUrl/login');
       final response = await client.post(
         uri,
@@ -96,24 +104,31 @@ class _LoginScreenState extends State<LoginScreen>
         body: jsonEncode({'phone': fullPhoneNumber}),
       );
 
-      if (response.statusCode == 200) {
+      if(response.statusCode == 200)
+      {
         final data = jsonDecode(response.body);
 
-        if (data['exists'] == true) {
+        if(data['exists'] == true)
+        {
           final userId = data['userId'];
           final isApproved = data['approved'] == true;
           final hasTOS = data['acceptedterms'] == true;
 
-          if (!hasTOS) {
-            if (mounted) {
+          if(!hasTOS)
+          {
+            if(mounted)
+            {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => TosScreen(userId: userId)),
                 (route) => false,
               );
             }
-          } else if (isApproved) {
-            if (mounted) {
+          }
+          else if(isApproved)
+          {
+            if(mounted)
+            {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
@@ -125,8 +140,11 @@ class _LoginScreenState extends State<LoginScreen>
                 (route) => false,
               );
             }
-          } else {
-            if (mounted) {
+          }
+          else
+          {
+            if(mounted)
+            {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
@@ -136,44 +154,58 @@ class _LoginScreenState extends State<LoginScreen>
               );
             }
           }
-        } else {
-          if (mounted) {
+        }
+        else
+        {
+          if(mounted)
+          {
             setState(
               () => textEroare = 'Numărul de telefon nu aparține unui client',
             );
           }
         }
-      } else {
-        if (mounted) {
+      }
+      else
+      {
+        if(mounted)
+        {
           setState(
             () => textEroare =
                 'Eroare la comunicarea cu serverul (cod: ${response.statusCode})',
           );
         }
       }
-    } catch (e) {
-      if (mounted) {
+    }
+    catch (e)
+    {
+      if(mounted)
+      {
         setState(
           () => textEroare =
               'Nu te poți conecta la server. Verifică conexiunea la internet',
         );
       }
       debugPrint('Eroare _attemptLogin: $e');
-    } finally {
+    }
+    finally
+    {
       client.close();
     }
   }
 
-  Future<void> _login() async {
-    if (_selectedCountry == null) return;
+  Future<void> _login() async
+  {
+    if(_selectedCountry == null) return;
     final phoneRaw = _phoneController.text.trim();
-    if (phoneRaw.isEmpty) {
+    if(phoneRaw.isEmpty)
+    {
       setState(() => textEroare = 'Introdu numărul de telefon');
       return;
     }
 
     final fullPhoneNumber = _formatPhoneForServer(phoneRaw);
-    if (fullPhoneNumber == null) {
+    if(fullPhoneNumber == null)
+    {
       setState(() => textEroare = 'Numărul de telefon nu este valid');
       return;
     }
@@ -184,10 +216,11 @@ class _LoginScreenState extends State<LoginScreen>
     });
 
     await _attemptLogin(fullPhoneNumber);
-    if (mounted) setState(() => _loading = false);
+    if(mounted) setState(() => _loading = false);
   }
 
-  bool _countryUsesTrunkPrefix(String countryCode) {
+  bool _countryUsesTrunkPrefix(String countryCode)
+  {
     const trunkPrefixCountries = [
       'RO', 'DE', 'GB', 'FR', 'IT', 'ES', 'PL', 'AT', 'CH',
       'BE', 'NL', 'PT', 'GR', 'DK', 'SE', 'NO', 'FI', 'IE',
@@ -201,55 +234,66 @@ class _LoginScreenState extends State<LoginScreen>
     return trunkPrefixCountries.contains(countryCode);
   }
 
-  String _getHintForCountry() {
-    if (_selectedCountry == null) return '712 345 678';
+  String _getHintForCountry()
+  {
+    if(_selectedCountry == null) return '712 345 678';
     final countryCode = _selectedCountry!.countryCode;
     final example = _selectedCountry!.exampleNumberMobileNational;
-    if (_countryUsesTrunkPrefix(countryCode)) {
+    if(_countryUsesTrunkPrefix(countryCode))
+    {
       String hint = example.replaceAll(RegExp(r'[^\d\s]'), '');
-      if (hint.startsWith('0')) hint = hint.substring(1).trim();
+      if(hint.startsWith('0')) hint = hint.substring(1).trim();
       return hint.isEmpty ? '712 345 678' : hint;
     }
     return example.replaceAll(RegExp(r'[^\d\s]'), '').trim();
   }
 
-  int _getMaxLengthForCountry() {
+  int _getMaxLengthForCountry()
+  {
     final hint = _getHintForCountry();
     return hint.length;
   }
 
-  String _formatAsYouType(String input) {
-    if (_selectedCountry == null) return input;
+  String _formatAsYouType(String input)
+  {
+    if(_selectedCountry == null) return input;
     String digits = input.replaceAll(RegExp(r'\D'), '');
-    if (_countryUsesTrunkPrefix(_selectedCountry!.countryCode) &&
-        digits.startsWith('0')) {
+    if(_countryUsesTrunkPrefix(_selectedCountry!.countryCode) &&
+        digits.startsWith('0'))
+    {
       digits = digits.substring(1);
     }
-    if (_selectedCountry!.countryCode == 'RO') {
-      if (digits.length <= 3) return digits;
-      if (digits.length <= 6) {
+    if(_selectedCountry!.countryCode == 'RO')
+    {
+      if(digits.length <= 3) return digits;
+      if(digits.length <= 6)
+      {
         return '${digits.substring(0, 3)} ${digits.substring(3)}';
       }
       return '${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}';
     }
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 6) {
+    if(digits.length <= 3) return digits;
+    if(digits.length <= 6)
+    {
       return '${digits.substring(0, 3)} ${digits.substring(3)}';
     }
-    if (digits.length <= 9) {
+    if(digits.length <= 9)
+    {
       return '${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}';
     }
     return '${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6, 9)} ${digits.substring(9)}';
   }
 
   @override
-  void dispose() {
+  void dispose()
+  {
     _fadeController?.dispose();
     _phoneController.dispose();
     super.dispose();
   }
 
-  Widget _buildConfirmButton() {
+  Widget _buildConfirmButton()
+  {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       child: AnimatedContainer(
@@ -308,8 +352,10 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildCountryDropdown() {
-    if (_countries.isEmpty) {
+  Widget _buildCountryDropdown()
+  {
+    if(_countries.isEmpty)
+    {
       return Container(
         width: 110,
         height: 58,
@@ -363,7 +409,8 @@ class _LoginScreenState extends State<LoginScreen>
             fontWeight: FontWeight.w600,
             color: const Color(darkGreyColor),
           ),
-          items: _countries.map((country) {
+          items: _countries.map((country)
+          {
             return DropdownMenuItem<CountryWithPhoneCode>(
               value: country,
               child: Row(
@@ -381,8 +428,10 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             );
           }).toList(),
-          onChanged: (CountryWithPhoneCode? newCountry) {
-            if (newCountry != null) {
+          onChanged: (CountryWithPhoneCode? newCountry)
+          {
+            if(newCountry != null)
+            {
               setState(() {
                 _selectedCountry = newCountry;
                 _phoneController.clear();
@@ -395,7 +444,8 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -572,7 +622,8 @@ class _LoginScreenState extends State<LoginScreen>
                                           keyboardType: TextInputType.phone,
                                           inputFormatters: [
                                             FilteringTextInputFormatter.allow(RegExp(r'[\d\s+]')),
-                                            TextInputFormatter.withFunction((oldValue, newValue) {
+                                            TextInputFormatter.withFunction((oldValue, newValue)
+                                            {
                                               final formatted = _formatAsYouType(newValue.text);
                                               return TextEditingValue(
                                                 text: formatted,
@@ -617,7 +668,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ],
                             ),
-                            if (textEroare != null)
+                            if(textEroare != null)
                               Container(
                                 margin: const EdgeInsets.only(top: 20),
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

@@ -1,59 +1,49 @@
-// lib/core/network/api_endpoints.dart
-// Centralized API endpoint definitions
-
 import '../../config/app_config.dart';
 
-class ApiEndpoints {
+class ApiEndpoints
+{
   static String get baseUrl => 'https://$serverUrl';
 
-  // Auth
-  static const String getClientToken = '/auth/get-client-token';
-  static const String refreshClientToken = '/auth/refresh-client-token';
+  static String login = '$baseUrl/login';
 
-  // Login & Registration
-  static const String login = '/login';
-  static const String register = '/register';
+  static String user(int userId) => '$baseUrl/users/$userId';
+  static String userAccounts(int userId) => '$baseUrl/users/$userId/accounts';
+  static String userAccount(int userId, int accountId) =>
+      '$baseUrl/users/$userId/accounts/$accountId';
+  static String accountTransactions(int userId, int accountId) =>
+      '$baseUrl/users/$userId/accounts/$accountId/transactions';
+  static String userCards(int userId) => '$baseUrl/users/$userId/cards';
+  static String userCard(int userId, int cardId) =>
+      '$baseUrl/users/$userId/cards/$cardId';
+  static String cardTransactions(int userId, int cardId) =>
+      '$baseUrl/users/$userId/cards/$cardId/transactions';
 
-  // 2FA
-  static const String twoFactorRequest = '/2fa/request';
-  static const String twoFactorVerify = '/2fa/verify';
+  static String exchangeRates = '$baseUrl/currency/api/v1/exchange-rates';
+  static String convertCurrency = '$baseUrl/currency/api/v1/convert';
 
-  // Users
-  static String user(int userId) => '/users/$userId';
-  static String setPin(int userId) => '/users/$userId/set-pin';
-  static String verifyPin(int userId) => '/users/$userId/verify-pin';
-  static String hasPin(int userId) => '/users/$userId/has-pin';
-  static String hasTos(int userId) => '/users/$userId/has-tos';
-  static String acceptTos(int userId) => '/users/$userId/accept-tos';
-  static String hasApproved(int userId) => '/users/$userId/has-approved/';
-  static String createAccountAndCard(int userId) =>
-      '/users/$userId/create-account-and-card';
+  static String authRefresh = '$baseUrl/auth-session/refresh';
+  static String authLogin = '$baseUrl/auth-session/login';
+  static String authLogout = '$baseUrl/auth-session/logout';
 
-  // Cards & Accounts
-  static String cards(int userId) => '/users/$userId/cards';
-  static String cardDetails(int userId, int cardId) =>
-      '/users/$userId/cards/$cardId/details';
-  static String account(int userId, int accountId) =>
-      '/users/$userId/accounts/$accountId';
-  static String transactions(int userId, int accountId) =>
-      '/users/$userId/accounts/$accountId/transactions';
+  static String register = '$baseUrl/register';
+  static String approveUser(int userId) => '$baseUrl/users/$userId/approve';
+  static String acceptTos(int userId) => '$baseUrl/users/$userId/accept-tos';
+  static String hasTos(int userId) => '$baseUrl/users/$userId/has-tos';
+  static String hasApproved(int userId) =>
+      '$baseUrl/users/$userId/has-approved';
+  static String submitDocuments(int userId) =>
+      '$baseUrl/users/$userId/submit-documents';
+  static String getIp() => '$baseUrl/ip';
 
-  // Transfers
-  static String transfer(int userId) => '/users/$userId/transfer';
+  static String getClientToken = '$baseUrl/auth/get-client-token';
+  static String refreshClientToken = '$baseUrl/auth/refresh-client-token';
 
-  // Exchange
-  static const String exchangeRates = '/exchange/rates';
+  static String twoFactorRequest = '$baseUrl/2fa/request';
+  static String twoFactorVerify = '$baseUrl/2fa/verify';
+  static String hasPin(int userId) => '$baseUrl/users/$userId/has-pin';
+  static String setPin(int userId) => '$baseUrl/users/$userId/set-pin';
+  static String verifyPin(int userId) => '$baseUrl/users/$userId/verify-pin';
 
-  // Google Places
-  static String placesAutocomplete(String text, String locality) =>
-      '/places/autocomplete?text=${Uri.encodeComponent(text)}&locality=${Uri.encodeComponent(locality)}';
-  static String placeDetails(String placeId) =>
-      '/places/details?place_id=${Uri.encodeComponent(placeId)}';
-
-  // Health
-  static const String health = '/health';
-  static const String status = '/express_status';
-
-  // WebSocket
-  static String get wsBaseUrl => 'wss://$serverUrl';
+  static String transfer(int userId) => '$baseUrl/users/$userId/transfer';
+  static String expressStatus = '$baseUrl/express_status';
 }

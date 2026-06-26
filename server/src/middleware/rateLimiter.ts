@@ -12,7 +12,7 @@ import {
   GLOBAL_MAX_REQUESTS,
 } from '../config/constants';
 
-// Our keyGenerator already prefixes with ip:/phone:/user: and has fallback chain;
+// keyGenerator prefixes with ip:/phone:/user: and has fallback chain;
 // disable express-rate-limit's built-in IP validation to avoid false IPv6 warnings.
 const phoneOrIpKey = (req: Request): string =>
 {

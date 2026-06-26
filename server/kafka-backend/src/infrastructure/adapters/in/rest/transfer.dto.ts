@@ -1,9 +1,3 @@
-// ============================================================
-// REST DTO: CreateTransferDto / TransferStatusResponse
-// Hexagonal Architecture — Inbound REST Adapter
-// Uses class-validator decorators for request validation.
-// ============================================================
-
 import {
   IsString,
   IsNumber,
@@ -14,7 +8,8 @@ import {
   Matches,
 } from 'class-validator';
 
-export class CreateTransferDto {
+export class CreateTransferDto
+{
   @IsString()
   @MinLength(16)
   @MaxLength(34)
@@ -53,23 +48,27 @@ export class CreateTransferDto {
   readonly description?: string;
 }
 
-export class TransferStatusResponse {
+export class TransferStatusResponse
+{
   readonly trackingId!: string;
   readonly status!: string;
   readonly failureReason!: string | null;
   readonly transfer!: Record<string, unknown> | null;
 
-  constructor(partial: Partial<TransferStatusResponse>) {
+  constructor(partial: Partial<TransferStatusResponse>)
+  {
     Object.assign(this, partial);
   }
 }
 
-export class InitiateTransferResponse {
+export class InitiateTransferResponse
+{
   readonly trackingId!: string;
   readonly status!: string;
   readonly message!: string;
 
-  constructor(partial: Partial<InitiateTransferResponse>) {
+  constructor(partial: Partial<InitiateTransferResponse>)
+  {
     Object.assign(this, partial);
   }
 }

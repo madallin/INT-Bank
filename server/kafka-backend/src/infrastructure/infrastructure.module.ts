@@ -1,9 +1,3 @@
-// ============================================================
-// Infrastructure Module
-// Hexagonal Architecture — Infrastructure Layer
-// Aggregates all adapters (persistence, messaging, REST, common).
-// ============================================================
-
 import { Module } from '@nestjs/common';
 
 import { DatabaseModule } from './adapters/out/persistence/typeorm/database.module';

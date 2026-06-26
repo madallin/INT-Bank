@@ -1,9 +1,3 @@
-// ============================================================
-// Account Repository Adapter (TypeORM)
-// Hexagonal Architecture — Infrastructure Layer
-// Implements the AccountRepository port using TypeORM.
-// ============================================================
-
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
@@ -13,7 +7,8 @@ import { Account, AccountBalance } from '../../../../../../core/domain/account.e
 import { AccountOrmEntity } from '../entities/account.orm-entity';
 
 @Injectable()
-export class AccountRepositoryAdapter implements AccountRepository {
+export class AccountRepositoryAdapter implements AccountRepository
+{
   private readonly logger = new Logger(AccountRepositoryAdapter.name);
 
   constructor(
@@ -21,12 +16,14 @@ export class AccountRepositoryAdapter implements AccountRepository {
     private readonly repo: Repository<AccountOrmEntity>,
   ) {}
 
-  async findByIban(iban: string): Promise<Account | null> {
+  async findByIban(iban: string): Promise<Account | null>
+  {
     const entity = await this.repo.findOne({ where: { IBAN: iban } });
     return entity ? this.toDomain(entity) : null;
   }
 
-  async findById(id: number): Promise<Account | null> {
+  async findById(id: number): Promise<Account | null>
+  {
     const entity = await this.repo.findOne({ where: { id } });
     return entity ? this.toDomain(entity) : null;
   }
@@ -34,9 +31,10 @@ export class AccountRepositoryAdapter implements AccountRepository {
   async findByIdWithLock(
     id: number,
     entityManager?: unknown,
-  ): Promise<Account | null> {
-    // If an EntityManager is provided (inside a transaction), use it.
-    if (entityManager) {
+  ): Promise<Account | null>
+  {
+    if(entityManager)
+    {
       const em = entityManager as EntityManager;
       const entity = await em.findOne(AccountOrmEntity, {
         where: { id },
@@ -45,7 +43,6 @@ export class AccountRepositoryAdapter implements AccountRepository {
       return entity ? this.toDomain(entity) : null;
     }
 
-    // Otherwise, use the default repository with a pessimistic lock.
     const entity = await this.repo.findOne({
       where: { id },
       lock: { mode: 'pessimistic_write' },
@@ -57,11 +54,15 @@ export class AccountRepositoryAdapter implements AccountRepository {
     accountId: number,
     newBalance: number,
     entityManager?: unknown,
-  ): Promise<void> {
-    if (entityManager) {
+  ): Promise<void>
+  {
+    if(entityManager)
+    {
       const em = entityManager as EntityManager;
       await em.update(AccountOrmEntity, accountId, { sold: newBalance });
-    } else {
+    }
+    else
+    {
       await this.repo.update(accountId, { sold: newBalance });
     }
 
@@ -70,9 +71,11 @@ export class AccountRepositoryAdapter implements AccountRepository {
     );
   }
 
-  async getBalance(accountId: number): Promise<AccountBalance> {
+  async getBalance(accountId: number): Promise<AccountBalance>
+  {
     const entity = await this.repo.findOne({ where: { id: accountId } });
-    if (!entity) {
+    if(!entity)
+    {
       throw new NotFoundException(`Account ${accountId} not found`);
     }
 
@@ -84,7 +87,8 @@ export class AccountRepositoryAdapter implements AccountRepository {
     };
   }
 
-  private toDomain(entity: AccountOrmEntity): Account {
+  private toDomain(entity: AccountOrmEntity): Account
+  {
     return {
       id: entity.id,
       userId: entity.userId,

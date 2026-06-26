@@ -1,7 +1,3 @@
-// ============================================================
-// Application Entry: Express App Configuration
-// ============================================================
-
 import express, { Application, Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import { pool } from './config/database';
@@ -26,38 +22,36 @@ import {
 
 const app: Application = express();
 
-// --- Security & parsing ---
 app.use(helmet());
 app.use(express.json({ limit: '10kb' }));
 
-// --- Make redis available to routes ---
 app.locals.redis = redis;
 
-// --- Make db pool available to routes ---
-app.use((req: Request, _res: Response, next: NextFunction) => {
+app.use((req: Request, _res: Response, next: NextFunction) =>
+{
   (req as any).pool = pool;
   next();
 });
 
-// --- Global rate-limit ---
 app.use(globalLimiter);
 
-// --- Health endpoints ---
 app.get('/express_status', (_req: Request, res: Response) => res.json({ status: 'ok' }));
 app.get('/health', (_req: Request, res: Response) => res.json({ status: 'ok' }));
 
-// --- Apply routes ---
 app.use('/auth', authRoute);
 app.use('/login', loginLimiter, loginRoute);
 app.use(
   '/2fa',
   verifyClientToken,
-  (req: Request, res: Response, next: NextFunction): void => {
-    if (req.path === '/request') {
+  (req: Request, res: Response, next: NextFunction): void =>
+  {
+    if(req.path === '/request')
+    {
       request2faLimiter(req, res, next);
       return;
     }
-    if (req.path === '/verify') {
+    if(req.path === '/verify')
+    {
       verify2faLimiter(req, res, next);
       return;
     }

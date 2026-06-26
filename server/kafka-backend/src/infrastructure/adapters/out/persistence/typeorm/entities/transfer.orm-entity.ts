@@ -1,9 +1,3 @@
-// ============================================================
-// Transfer ORM Entity (TypeORM)
-// Hexagonal Architecture — Infrastructure Layer
-// Maps the Transfer domain entity to the `transferuri_kafka` table.
-// ============================================================
-
 import {
   Entity,
   PrimaryColumn,
@@ -13,7 +7,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'transferuri_kafka' })
-export class TransferOrmEntity {
+export class TransferOrmEntity
+{
   @PrimaryColumn({ type: 'uuid' })
   id!: string;
 

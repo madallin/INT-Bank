@@ -11,7 +11,6 @@ import { TransferRepository } from '../../../../../core/ports/out/transfer.repos
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      // DATABASE_URL has priority; falls back to DB_* then PG* for Render/Env compat
       url: process.env.DATABASE_URL,
       ...(process.env.DATABASE_URL
         ? {}

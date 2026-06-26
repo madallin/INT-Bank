@@ -1,6 +1,3 @@
-// lib/features/home/screens/home_screen.dart
-// ignore_for_file: curly_braces_in_flow_control_structures, deprecated_member_use
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show HttpClient, Platform, X509Certificate;
@@ -22,7 +19,8 @@ import '../../transactions/screens/transaction_history_screen.dart';
 import '../../exchange/screens/exchange_screen.dart';
 import '../../welcome/welcome_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatefulWidget
+{
   final int userId;
   const HomeScreen({super.key, required this.userId});
 
@@ -31,30 +29,26 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
-  // Cards & Account
+    with TickerProviderStateMixin, WidgetsBindingObserver
+{
   final List<CardModel> _cardList = [];
   CardModel? _selectedCard;
   int _currentCardIndex = 0;
   int? _currentAccountId;
 
-  // UI State
   double _balance = 0.0;
   bool _balanceVisible = true;
   bool _loading = true;
   bool _loadingBalance = true;
 
-  // Card flip
   late AnimationController _flipController;
   bool _cardShowingBack = false;
   Timer? _cardRevealTimer;
   int _revealCountdown = 60;
 
-  // Slide-in animation
   late AnimationController _pageController;
   late Animation<Offset> _pageAnimation;
 
-  // Auth / Device
   String? clientToken;
   String? refreshToken;
   String _deviceId = 'dev-device';
@@ -62,14 +56,14 @@ class _HomeScreenState extends State<HomeScreen>
   late SharedPreferences _prefs;
   Timer? _refreshTimer;
 
-  // Recent transactions
   List<Map<String, dynamic>> _recentTransactions = [];
   bool _loadingTransactions = false;
 
   final storage = const FlutterSecureStorage();
 
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
@@ -92,42 +86,54 @@ class _HomeScreenState extends State<HomeScreen>
     _startPeriodicRefresh();
   }
 
-  Future<void> _initPrefs() async {
+  Future<void> _initPrefs() async
+  {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  Future<void> _initialize() async {
+  Future<void> _initialize() async
+  {
     await _initDeviceId();
     await _getClientToken();
     await _fetchCardsAndAccounts();
     await CurrencyService.instance.fetchRates();
-    if (mounted) setState(() {});
+    if(mounted) setState(() {});
   }
 
-  Future<void> _initDeviceId() async {
+  Future<void> _initDeviceId() async
+  {
     final deviceInfo = DeviceInfoPlugin();
-    try {
-      if (Platform.isAndroid) {
+    try
+    {
+      if(Platform.isAndroid)
+      {
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
-      } else if (Platform.isIOS) {
+      }
+      else if(Platform.isIOS)
+      {
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
-    } catch (_) {
+    }
+    catch(_)
+    {
       _deviceId = 'dev-device';
     }
   }
 
-  http.Client _createHttpClient() {
+  http.Client _createHttpClient()
+  {
     final ioc = HttpClient();
     ioc.badCertificateCallback =
         (X509Certificate cert, String host, int port) => true;
     return IOClient(ioc);
   }
 
-  Future<void> _getClientToken() async {
-    try {
+  Future<void> _getClientToken() async
+  {
+    try
+    {
       final client = _createHttpClient();
       final response = await client.post(
         Uri.parse('https://$serverUrl/auth/get-client-token'),
@@ -135,92 +141,119 @@ class _HomeScreenState extends State<HomeScreen>
         body: jsonEncode({'deviceId': _deviceId}),
       );
       client.close();
-      if (response.statusCode == 200) {
+      if(response.statusCode == 200)
+      {
         final data = jsonDecode(response.body);
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
       }
-    } catch (e) {
+    }
+    catch(e)
+    {
       debugPrint('Error getting client token: $e');
     }
   }
 
-  Future<bool> _refreshClientToken() async {
-    if (refreshToken == null) return false;
+  Future<bool> _refreshClientToken() async
+  {
+    if(refreshToken == null) return false;
     final client = _createHttpClient();
-    try {
+    try
+    {
       final response = await client.post(
         Uri.parse('https://$serverUrl/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
-      if (response.statusCode == 200) {
+      if(response.statusCode == 200)
+      {
         final data = jsonDecode(response.body);
-        if (mounted) setState(() => clientToken = data['client_token']);
+        if(mounted) setState(() => clientToken = data['client_token']);
         return true;
       }
       return false;
-    } catch (_) {
+    }
+    catch(_)
+    {
       return false;
-    } finally {
+    }
+    finally
+    {
       client.close();
     }
   }
 
-  Future<void> _fetchCardsAndAccounts() async {
+  Future<void> _fetchCardsAndAccounts() async
+  {
     setState(() => _loading = true);
-    try {
+    try
+    {
       final client = _createHttpClient();
       final response = await client.get(
         Uri.parse('https://$serverUrl/users/${widget.userId}/cards'),
         headers: {
           'Content-Type': 'application/json',
-          if (clientToken != null) 'Authorization': 'Bearer $clientToken',
+          if(clientToken != null) 'Authorization': 'Bearer $clientToken',
         },
       );
       client.close();
 
-      if (response.statusCode == 200 && response.body.isNotEmpty) {
+      if(response.statusCode == 200 && response.body.isNotEmpty)
+      {
         final data = jsonDecode(response.body);
-        if (data['cards'] != null) {
+        if(data['cards'] != null)
+        {
           final cards = List<Map<String, dynamic>>.from(data['cards']);
           setState(() {
             _cardList.clear();
-            for (final card in cards) {
+            for(final card in cards)
+            {
               _cardList.add(CardModel.fromJson(card));
             }
-            if (_cardList.isNotEmpty) {
+            if(_cardList.isNotEmpty)
+            {
               _selectedCard = _cardList[_currentCardIndex];
               _currentAccountId = _selectedCard!.accountId;
             }
           });
         }
-      } else if (response.statusCode == 401) {
-        final refreshed = await _refreshClientToken();
-        if (refreshed) await _fetchCardsAndAccounts();
       }
-    } catch (e) {
-      debugPrint('Error fetching cards: $e');
-    } finally {
-      if (mounted) setState(() => _loading = false);
+      else if(response.statusCode == 401)
+      {
+        final refreshed = await _refreshClientToken();
+        if(refreshed) await _fetchCardsAndAccounts();
+      }
     }
-    if (_selectedCard != null) {
+    catch(e)
+    {
+      debugPrint('Error fetching cards: $e');
+    }
+    finally
+    {
+      if(mounted) setState(() => _loading = false);
+    }
+    if(_selectedCard != null)
+    {
       await _fetchBalance();
       await _fetchRecentTransactions();
     }
   }
 
-  Future<void> _fetchBalance() async {
+  Future<void> _fetchBalance() async
+  {
     setState(() => _loadingBalance = true);
-    if (clientToken == null) {
+    if(clientToken == null)
+    {
       setState(() => _loadingBalance = false);
       return;
     }
 
     int? accountId = _currentAccountId;
 
-    if (accountId == null) {
-      try {
+    if(accountId == null)
+    {
+      try
+      {
         final client = _createHttpClient();
         final resp = await client.get(
           Uri.parse('https://$serverUrl/users/${widget.userId}/cards'),
@@ -230,21 +263,26 @@ class _HomeScreenState extends State<HomeScreen>
           },
         );
         client.close();
-        if (resp.statusCode == 200) {
+        if(resp.statusCode == 200)
+        {
           final data = jsonDecode(resp.body);
           final cards = data['cards'] as List?;
-          if (cards != null && cards.isNotEmpty) {
+          if(cards != null && cards.isNotEmpty)
+          {
             accountId = cards.first['accountId'] as int?;
           }
         }
-      } catch (_) {}
-      if (accountId == null) {
+      }
+      catch(_) {}
+      if(accountId == null)
+      {
         setState(() => _loadingBalance = false);
         return;
       }
     }
 
-    try {
+    try
+    {
       final client = _createHttpClient();
       final response = await client.get(
         Uri.parse('https://$serverUrl/users/${widget.userId}/accounts/$accountId'),
@@ -255,90 +293,73 @@ class _HomeScreenState extends State<HomeScreen>
       );
       client.close();
 
-      if (response.statusCode == 200) {
+      if(response.statusCode == 200)
+      {
         final data = jsonDecode(response.body);
-        if (data['account'] != null && data['account']['sold'] != null) {
+        if(data['account'] != null && data['account']['sold'] != null)
+        {
           final sold = data['account']['sold'];
           setState(() => _balance =
               (sold is String ? double.parse(sold) : (sold as num).toDouble()));
         }
-      } else if (response.statusCode == 401) {
-        final refreshed = await _refreshClientToken();
-        if (refreshed) await _fetchBalance();
       }
-    } catch (e) {
+      else if(response.statusCode == 401)
+      {
+        final refreshed = await _refreshClientToken();
+        if(refreshed) await _fetchBalance();
+      }
+    }
+    catch(e)
+    {
       debugPrint('Error fetching balance: $e');
-    } finally {
-      if (mounted) setState(() => _loadingBalance = false);
+    }
+    finally
+    {
+      if(mounted) setState(() => _loadingBalance = false);
     }
   }
 
-  Future<void> _fetchCardDetails(CardModel card) async {
-    if (clientToken == null) return;
-    try {
-      final client = _createHttpClient();
-      final response = await client.get(
-        Uri.parse(
-            'https://$serverUrl/users/${widget.userId}/cards/${card.id}/details'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $clientToken',
-        },
-      );
-      client.close();
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted && data['card'] != null) {
-          setState(() {
-            _selectedCard = card.copyWith(
-              fullNumber: data['card']['pan'] ?? card.fullNumber,
-              cvv: data['card']['cvv'] ?? card.cvv,
-              expiry: data['card']['expiry'] ?? card.expiry,
-            );
-          });
-        }
-      } else if (response.statusCode == 401) {
-        final refreshed = await _refreshClientToken();
-        if (refreshed) await _fetchCardDetails(card);
-      }
-    } catch (e) {
-      debugPrint('Error fetching card details: $e');
-    }
-  }
-
-  Future<void> _fetchRecentTransactions() async {
-    if (_currentAccountId == null || clientToken == null) return;
+  Future<void> _fetchRecentTransactions() async
+  {
+    if(_currentAccountId == null || clientToken == null) return;
     setState(() => _loadingTransactions = true);
-    try {
+    try
+    {
       final client = _createHttpClient();
       final response = await client.get(
-        Uri.parse(
-            'https://$serverUrl/users/${widget.userId}/accounts/$_currentAccountId/transactions'),
+        Uri.parse('https://$serverUrl/users/${widget.userId}/accounts/$_currentAccountId/transactions'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',
         },
       );
       client.close();
-      if (response.statusCode == 200 && response.body.isNotEmpty) {
+      if(response.statusCode == 200 && response.body.isNotEmpty)
+      {
         final data = jsonDecode(response.body);
-        if (data['transactions'] != null) {
-          final all =
-              List<Map<String, dynamic>>.from(data['transactions']);
-          if (mounted) setState(() => _recentTransactions = all.take(3).toList());
+        if(data['transactions'] != null)
+        {
+          final all = List<Map<String, dynamic>>.from(data['transactions']);
+          if(mounted) setState(() => _recentTransactions = all.take(3).toList());
         }
       }
-    } catch (e) {
+    }
+    catch(e)
+    {
       debugPrint('Error fetching recent transactions: $e');
-    } finally {
-      if (mounted) setState(() => _loadingTransactions = false);
+    }
+    finally
+    {
+      if(mounted) setState(() => _loadingTransactions = false);
     }
   }
 
-  void _startPeriodicRefresh() {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      if (mounted) {
+  void _startPeriodicRefresh()
+  {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_)
+    {
+      if(mounted)
+      {
         _fetchBalance();
         _fetchCardsAndAccounts();
       }
@@ -346,7 +367,8 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   @override
-  void dispose() {
+  void dispose()
+  {
     WidgetsBinding.instance.removeObserver(this);
     _flipController.dispose();
     _pageController.dispose();
@@ -355,10 +377,10 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  // ---- Card navigation ----
-
-  void _nextCard() {
-    if (_currentCardIndex < _cardList.length - 1) {
+  void _nextCard()
+  {
+    if(_currentCardIndex < _cardList.length - 1)
+    {
       _cancelCardReveal();
       setState(() {
         _currentCardIndex++;
@@ -370,8 +392,10 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  void _prevCard() {
-    if (_currentCardIndex > 0) {
+  void _prevCard()
+  {
+    if(_currentCardIndex > 0)
+    {
       _cancelCardReveal();
       setState(() {
         _currentCardIndex--;
@@ -383,7 +407,8 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  void _cancelCardReveal() {
+  void _cancelCardReveal()
+  {
     _cardRevealTimer?.cancel();
     setState(() {
       _revealCountdown = 60;
@@ -392,11 +417,11 @@ class _HomeScreenState extends State<HomeScreen>
     _flipController.value = 0;
   }
 
-  // ---- Card reveal (Afișează / Ascunde datele) ----
-
-  Future<void> _onToggleCardReveal() async {
-    if (_flipController.isAnimating) return;
-    if (_cardShowingBack) {
+  Future<void> _onToggleCardReveal() async
+  {
+    if(_flipController.isAnimating) return;
+    if(_cardShowingBack)
+    {
       _cardRevealTimer?.cancel();
       setState(() {
         _revealCountdown = 60;
@@ -404,11 +429,10 @@ class _HomeScreenState extends State<HomeScreen>
       });
       await _flipController.animateTo(0,
           duration: const Duration(milliseconds: 600), curve: Curves.easeInOut);
-    } else {
-      if (_selectedCard == null) return;
-      if (_selectedCard!.fullNumber == null || _selectedCard!.cvv == null) {
-        await _fetchCardDetails(_selectedCard!);
-      }
+    }
+    else
+    {
+      if(_selectedCard == null) return;
       setState(() => _cardShowingBack = true);
       await _flipController.animateTo(1,
           duration: const Duration(milliseconds: 600), curve: Curves.easeInOut);
@@ -416,17 +440,21 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  void _startRevealTimer() {
+  void _startRevealTimer()
+  {
     _cardRevealTimer?.cancel();
     setState(() => _revealCountdown = 60);
-    _cardRevealTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
+    _cardRevealTimer = Timer.periodic(const Duration(seconds: 1), (timer)
+    {
+      if(!mounted)
+      {
         timer.cancel();
         return;
       }
       setState(() {
         _revealCountdown--;
-        if (_revealCountdown <= 0) {
+        if(_revealCountdown <= 0)
+        {
           timer.cancel();
           _revealCountdown = 60;
           _cardShowingBack = false;
@@ -438,14 +466,14 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  void _toggleBalance() {
+  void _toggleBalance()
+  {
     setState(() => _balanceVisible = !_balanceVisible);
   }
 
-  // ---- Navigation ----
-
-  void _goToTransfer() {
-    if (_selectedCard == null) return;
+  void _goToTransfer()
+  {
+    if(_selectedCard == null) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -454,8 +482,9 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _goToHistory() {
-    if (_currentAccountId == null) return;
+  void _goToHistory()
+  {
+    if(_currentAccountId == null) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -467,14 +496,16 @@ class _HomeScreenState extends State<HomeScreen>
     ).then((_) => _fetchRecentTransactions());
   }
 
-  void _goToExchange() {
+  void _goToExchange()
+  {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => ExchangeScreen(userId: widget.userId)),
     );
   }
 
-  void _goToStatement() {
+  void _goToStatement()
+  {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Extras de cont – funcție disponibilă în curând',
@@ -487,9 +518,10 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Future<void> _logout() async {
+  Future<void> _logout() async
+  {
     await _prefs.remove('loggedUserId');
-    if (!mounted) return;
+    if(!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const WelcomeScreen()),
@@ -497,9 +529,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ---- Formatters ----
-
-  String _formatBalance(double bal) {
+  String _formatBalance(double bal)
+  {
     final parts = bal.toStringAsFixed(2).split('.');
     final intPart = parts[0].replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
@@ -508,26 +539,33 @@ class _HomeScreenState extends State<HomeScreen>
     return '$intPart,${parts[1]}';
   }
 
-  String _formatPan(String raw) {
+  String _formatPan(String raw)
+  {
     final clean = raw.replaceAll(' ', '');
     final buf = StringBuffer();
-    for (int i = 0; i < clean.length; i++) {
-      if (i > 0 && i % 4 == 0) buf.write(' ');
+    for(int i = 0; i < clean.length; i++)
+    {
+      if(i > 0 && i % 4 == 0) buf.write(' ');
       buf.write(clean[i]);
     }
     return buf.toString();
   }
 
-  String _txDate(String dateStr) {
-    try {
+  String _txDate(String dateStr)
+  {
+    try
+    {
       final d = DateTime.parse(dateStr);
       return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
-    } catch (_) {
+    }
+    catch(_)
+    {
       return dateStr;
     }
   }
 
-  String _txAmount(Map<String, dynamic> t) {
+  String _txAmount(Map<String, dynamic> t)
+  {
     final isIn = t['type'] == 'received';
     final double amt = (t['suma'] as num).toDouble();
     final str = amt.toStringAsFixed(2).replaceAll('.', ',');
@@ -537,12 +575,9 @@ class _HomeScreenState extends State<HomeScreen>
     return '${isIn ? '+' : '-'}$intPart,${parts[1]} RON';
   }
 
-  // ============================================================
-  //  BUILD
-  // ============================================================
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
@@ -551,10 +586,11 @@ class _HomeScreenState extends State<HomeScreen>
             : SlideTransition(
                 position: _pageAnimation,
                 child: RefreshIndicator(
-                  onRefresh: () async {
+                  onRefresh: () async
+                  {
                     await _fetchCardsAndAccounts();
                     await CurrencyService.instance.fetchRates();
-                    if (mounted) setState(() {});
+                    if(mounted) setState(() {});
                   },
                   color: const Color(lightForestGreenColor),
                   child: SingleChildScrollView(
@@ -583,9 +619,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ---- Header ----
-
-  Widget _buildHeader() {
+  Widget _buildHeader()
+  {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
@@ -635,10 +670,10 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ---- Card section (flip animation) ----
-
-  Widget _buildCardSection() {
-    if (_cardList.isEmpty) {
+  Widget _buildCardSection()
+  {
+    if(_cardList.isEmpty)
+    {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -654,7 +689,8 @@ class _HomeScreenState extends State<HomeScreen>
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: AnimatedBuilder(
             animation: _flipController,
-            builder: (context, _) {
+            builder: (context, _)
+            {
               final angle = _flipController.value * math.pi;
               final showBack = _flipController.value > 0.5;
 
@@ -676,7 +712,7 @@ class _HomeScreenState extends State<HomeScreen>
             },
           ),
         ),
-        if (_cardList.length > 1) ...[
+        if(_cardList.length > 1) ...[
           const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -690,7 +726,8 @@ class _HomeScreenState extends State<HomeScreen>
                         : Colors.grey[300]),
               ),
               const SizedBox(width: 6),
-              ...List.generate(_cardList.length, (i) {
+              ...List.generate(_cardList.length, (i)
+              {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -722,8 +759,9 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildCardFront() {
-    if (_selectedCard == null) return const SizedBox();
+  Widget _buildCardFront()
+  {
+    if(_selectedCard == null) return const SizedBox();
     return Container(
       key: const ValueKey('front'),
       width: double.infinity,
@@ -745,7 +783,6 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       child: Stack(
         children: [
-          // Decorative circles
           Positioned(
             right: -28,
             top: -28,
@@ -775,7 +812,6 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -789,7 +825,6 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
                 const SizedBox(height: 14),
-                // Chip
                 Container(
                   width: 38,
                   height: 28,
@@ -803,7 +838,6 @@ class _HomeScreenState extends State<HomeScreen>
                       color: Colors.white60, size: 16),
                 ),
                 const SizedBox(height: 10),
-                // Card number
                 Text(
                   '**** **** **** ${_selectedCard!.last4}',
                   style: GoogleFonts.spaceMono(
@@ -813,7 +847,6 @@ class _HomeScreenState extends State<HomeScreen>
                       fontWeight: FontWeight.w500),
                 ),
                 const Spacer(),
-                // Holder + expiry
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -842,7 +875,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: Colors.white60,
                                 letterSpacing: 1.5)),
                         const SizedBox(height: 3),
-                        Text(_selectedCard!.expiry ?? '••/••',
+                        Text(_selectedCard!.expiry,
                             style: GoogleFonts.inter(
                                 fontSize: 13,
                                 color: Colors.white,
@@ -859,8 +892,9 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildCardBack() {
-    if (_selectedCard == null) return const SizedBox();
+  Widget _buildCardBack()
+  {
+    if(_selectedCard == null) return const SizedBox();
     final pan = _selectedCard!.fullNumber;
     final cvv = _selectedCard!.cvv;
     final expiry = _selectedCard!.expiry;
@@ -887,7 +921,6 @@ class _HomeScreenState extends State<HomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Magnetic stripe
           Container(
             height: 42,
             margin: const EdgeInsets.only(top: 24),
@@ -899,7 +932,6 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Full PAN
                 Row(
                   children: [
                     Text('PAN  ',
@@ -908,9 +940,7 @@ class _HomeScreenState extends State<HomeScreen>
                             color: Colors.white60,
                             letterSpacing: 1.5)),
                     Text(
-                      pan != null
-                          ? _formatPan(pan)
-                          : '**** **** **** ${_selectedCard!.last4}',
+                      _formatPan(pan),
                       style: GoogleFonts.spaceMono(
                           fontSize: 14,
                           color: Colors.white,
@@ -920,11 +950,9 @@ class _HomeScreenState extends State<HomeScreen>
                   ],
                 ),
                 const SizedBox(height: 10),
-                // Signature strip + CVV + expiry + timer
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Signature strip with CVV
                     Expanded(
                       child: Container(
                         height: 34,
@@ -949,7 +977,7 @@ class _HomeScreenState extends State<HomeScreen>
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 10),
                               child: Text(
-                                cvv ?? '•••',
+                                cvv,
                                 style: GoogleFonts.spaceMono(
                                     fontSize: 15,
                                     color: Colors.white,
@@ -961,7 +989,6 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                     ),
                     const SizedBox(width: 10),
-                    // CVV label + expiry
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -971,7 +998,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: Colors.white60,
                                 letterSpacing: 1.5)),
                         const SizedBox(height: 2),
-                        Text(expiry ?? '••/••',
+                        Text(expiry,
                             style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: Colors.white,
@@ -979,7 +1006,6 @@ class _HomeScreenState extends State<HomeScreen>
                       ],
                     ),
                     const SizedBox(width: 12),
-                    // Countdown ring
                     Stack(
                       alignment: Alignment.center,
                       children: [
@@ -1013,9 +1039,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ---- Balance row ----
-
-  Widget _buildBalanceRow() {
+  Widget _buildBalanceRow()
+  {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
@@ -1086,9 +1111,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ---- Action buttons ----
-
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons()
+  {
     final showingBack = _cardShowingBack;
 
     final List<_BtnData> buttons = [
@@ -1111,7 +1135,8 @@ class _HomeScreenState extends State<HomeScreen>
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: buttons.length,
         separatorBuilder: (context, index) => const SizedBox(width: 10),
-        itemBuilder: (context, i) {
+        itemBuilder: (context, i)
+        {
           final b = buttons[i];
           return GestureDetector(
             onTap: b.onTap,
@@ -1155,9 +1180,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ---- Exchange rates preview ----
-
-  Widget _buildExchangePreview() {
+  Widget _buildExchangePreview()
+  {
     final service = CurrencyService.instance;
     const currencies = ['EUR', 'USD', 'GBP'];
     const symbols = {'EUR': '€', 'USD': r'$', 'GBP': '£'};
@@ -1212,10 +1236,11 @@ class _HomeScreenState extends State<HomeScreen>
                                 fontSize: 13, color: Colors.grey[400]))),
                   )
                 : Column(
-                    children: List.generate(currencies.length, (i) {
+                    children: List.generate(currencies.length, (i)
+                    {
                       final code = currencies[i];
                       final rate = service.rates?[code];
-                      if (rate == null) return const SizedBox();
+                      if(rate == null) return const SizedBox();
                       return Column(
                         children: [
                           Padding(
@@ -1258,7 +1283,7 @@ class _HomeScreenState extends State<HomeScreen>
                                     ],
                                   ),
                                 ),
-                                Text('${rate.toStringAsFixed(4)} RON',
+                                Text('${rate['RON']?.toStringAsFixed(4) ?? 'N/A'} RON',
                                     style: GoogleFonts.inter(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
@@ -1266,7 +1291,7 @@ class _HomeScreenState extends State<HomeScreen>
                               ],
                             ),
                           ),
-                          if (i < currencies.length - 1)
+                          if(i < currencies.length - 1)
                             Divider(
                                 height: 1,
                                 color: Colors.grey[100],
@@ -1282,9 +1307,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ---- Recent transactions ----
-
-  Widget _buildRecentTransactions() {
+  Widget _buildRecentTransactions()
+  {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -1337,7 +1361,8 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                       )
                     : Column(
-                        children: List.generate(_recentTransactions.length, (i) {
+                        children: List.generate(_recentTransactions.length, (i)
+                        {
                           final t = _recentTransactions[i];
                           final isIn = t['type'] == 'received';
                           final title =
@@ -1384,7 +1409,7 @@ class _HomeScreenState extends State<HomeScreen>
                                                       darkGreyColor)),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis),
-                                          if (dateStr.isNotEmpty)
+                                          if(dateStr.isNotEmpty)
                                             Text(_txDate(dateStr),
                                                 style: GoogleFonts.inter(
                                                     fontSize: 12,
@@ -1404,7 +1429,7 @@ class _HomeScreenState extends State<HomeScreen>
                                   ],
                                 ),
                               ),
-                              if (i < _recentTransactions.length - 1)
+                              if(i < _recentTransactions.length - 1)
                                 Divider(
                                     height: 1,
                                     color: Colors.grey[100],
@@ -1421,7 +1446,8 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
-class _BtnData {
+class _BtnData
+{
   final IconData icon;
   final String label;
   final VoidCallback onTap;

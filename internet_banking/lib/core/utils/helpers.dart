@@ -1,103 +1,109 @@
-// lib/core/utils/helpers.dart
-// General-purpose helper functions
+import 'package:flutter/material.dart';
 
-import 'dart:io' show Platform;
-import 'package:device_info_plus/device_info_plus.dart';
-
-/// Normalizes a string: removes diacritics, lowercases, trims.
-String normalize(String s) {
-  var x = s.toLowerCase().trim();
-  x = x.replaceAll('ă', 'a').replaceAll('â', 'a').replaceAll('î', 'i');
-  x = x.replaceAll('ș', 's').replaceAll('ş', 's');
-  x = x.replaceAll('ț', 't').replaceAll('ţ', 't');
-  x = x.replaceAll(RegExp(r'\s+'), ' ');
-  return x;
+void showErrorSnackBar(BuildContext context, String message)
+{
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.white),
+          const SizedBox(width: 12),
+          Expanded(child: Text(message, style: const TextStyle(color: Colors.white))),
+        ],
+      ),
+      backgroundColor: Colors.red,
+    ),
+  );
 }
 
-/// Removes diacritics from a string (preserves case).
-String removeDiacritics(String s) {
-  const map = <String, String>{
-    'ă': 'a', 'Ă': 'A', 'â': 'a', 'Â': 'A',
-    'î': 'i', 'Î': 'I', 'ș': 's', 'Ș': 'S',
-    'ş': 's', 'Ş': 'S', 'ț': 't', 'Ț': 'T',
-    'ţ': 't', 'Ţ': 'T',
-  };
-  final sb = StringBuffer();
-  for (final r in s.runes) {
-    final ch = String.fromCharCode(r);
-    sb.write(map[ch] ?? ch);
+void showSuccessSnackBar(BuildContext context, String message)
+{
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          const Icon(Icons.check_circle_outline, color: Colors.white),
+          const SizedBox(width: 12),
+          Expanded(child: Text(message, style: const TextStyle(color: Colors.white))),
+        ],
+      ),
+      backgroundColor: Colors.green,
+    ),
+  );
+}
+
+String formatPhoneDisplay(String phone)
+{
+  if(phone.length >= 12)
+  {
+    final countryCode = phone.substring(0, 3);
+    final rest = phone.substring(3);
+    final formattedRest = '${rest.substring(0, 3)} ${rest.substring(3, 6)} ${rest.substring(6)}';
+    return '$countryCode $formattedRest';
   }
-  return sb.toString();
+  return phone;
 }
 
-/// Returns device ID for Android/iOS/other.
-Future<String> getDeviceId() async {
-  final deviceInfo = DeviceInfoPlugin();
-  try {
-    if (Platform.isAndroid) {
-      final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.id;
-    } else if (Platform.isIOS) {
-      final iosInfo = await deviceInfo.iosInfo;
-      return iosInfo.identifierForVendor ?? 'dev-device';
-    }
-  } catch (_) {
-    // Fall through
+String countryCodeToEmoji(String countryCode)
+{
+  final codePoint1 = 0x1F1E6 + countryCode.codeUnitAt(0) - 65;
+  final codePoint2 = 0x1F1E6 + countryCode.codeUnitAt(1) - 65;
+  return String.fromCharCodes([codePoint1, codePoint2]);
+}
+
+String formatDate(String dateStr)
+{
+  try
+  {
+    final date = DateTime.parse(dateStr);
+    return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
   }
-  return 'dev-device';
-}
-
-/// Formats a phone number for display (e.g., +40 712 345 678).
-String formatPhoneDisplay(String phoneNumber) {
-  String cleaned = phoneNumber.replaceAll(RegExp(r'\D'), '');
-  String countryCode = '';
-  String nationalNumber = cleaned;
-  if (cleaned.length > 9 && cleaned.startsWith('40')) {
-    countryCode = '40';
-    nationalNumber = cleaned.substring(2);
+  catch(e)
+  {
+    return dateStr;
   }
-  String formatted = '';
-  for (int i = 0; i < nationalNumber.length; i++) {
-    if (i > 0 && i % 3 == 0) formatted += ' ';
-    formatted += nationalNumber[i];
+}
+
+double? parseRomanianNumber(String text)
+{
+  try
+  {
+    return double.parse(text.replaceAll('.', '').replaceAll(',', '.'));
   }
-  return countryCode.isEmpty ? formatted : '+$countryCode $formatted';
-}
-
-/// Formats an IBAN with spaces every 4 characters.
-String formatIBAN(String input) {
-  String clean = input.replaceAll(' ', '').toUpperCase();
-  String formatted = '';
-  for (int i = 0; i < clean.length; i++) {
-    if (i > 0 && i % 4 == 0) formatted += ' ';
-    formatted += clean[i];
+  catch(e)
+  {
+    return null;
   }
-  return formatted;
 }
 
-/// Formats a numeric amount with thousands separator (dot).
-String formatAmount(String input) {
-  String clean = input.replaceAll(RegExp(r'[^\d]'), '');
-  if (clean.isEmpty) return '';
-  String reversed = clean.split('').reversed.join('');
-  String formatted = '';
-  for (int i = 0; i < reversed.length; i++) {
-    if (i > 0 && i % 3 == 0) formatted += '.';
-    formatted += reversed[i];
+String toTitleCase(String text)
+{
+  if(text.isEmpty) return text;
+  return text.split(' ').map((word)
+  {
+    if(word.isEmpty) return word;
+    return word[0].toUpperCase() + word.substring(1).toLowerCase();
+  }).join(' ');
+}
+
+ImageProvider cachedNetworkImage(String url)
+{
+  return NetworkImage(url);
+}
+
+String formatIBAN(String iban)
+{
+  final cleaned = iban.replaceAll(' ', '');
+  final buffer = StringBuffer();
+  for(int i = 0; i < cleaned.length; i++)
+  {
+    if(i > 0 && i % 4 == 0) buffer.write(' ');
+    buffer.write(cleaned[i]);
   }
-  return formatted.split('').reversed.join('');
+  return buffer.toString();
 }
 
-/// Converts country code to emoji flag.
-String countryCodeToEmoji(String countryCode) {
-  final base = 0x1F1E6;
-  final firstChar = countryCode.codeUnitAt(0) - 65 + base;
-  final secondChar = countryCode.codeUnitAt(1) - 65 + base;
-  return String.fromCharCode(firstChar) + String.fromCharCode(secondChar);
-}
-
-/// Truncates a string and adds ellipsis if too long.
-String truncate(String s, int maxLength) {
-  if (s.length <= maxLength) return s;
-  return '${s.substring(0, maxLength)}...';
+T enumFromString<T>(String key, List<T> values)
+{
+  return values.firstWhere((v) => v.toString().split('.').last == key);
 }

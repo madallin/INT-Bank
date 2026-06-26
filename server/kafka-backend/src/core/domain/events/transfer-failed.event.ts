@@ -1,10 +1,5 @@
-// ============================================================
-// Domain Event: TransferFailedEvent
-// Hexagonal Architecture — Core Domain Layer
-// Emitted when a transfer processing fails (e.g. insufficient funds).
-// ============================================================
-
-export class TransferFailedEvent {
+export class TransferFailedEvent
+{
   constructor(
     public readonly trackingId: string,
     public readonly fromAccountId: string,

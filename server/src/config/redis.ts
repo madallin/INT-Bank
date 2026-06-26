@@ -1,7 +1,3 @@
-// ============================================================
-// Redis Connection (Upstash / local)
-// ============================================================
-
 import Redis from 'ioredis';
 
 const redis = new Redis({

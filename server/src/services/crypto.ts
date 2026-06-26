@@ -1,78 +1,64 @@
-// ============================================================
-// Crypto Service — AES-GCM decryption utilities
-// Used for decrypting PAN, CVV, Expiry stored in the database.
-// ============================================================
-
 import crypto from 'crypto';
 import { AES_GCM_IV_BYTES, AES_GCM_TAG_BYTES } from '../config/constants';
 
-const AES_KEY_HEX_LIST = (process.env.AES_KEY_HEX || '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+const ENCRYPTED_PREFIX = 'enc:';
+const ALGORITHM = 'aes-256-gcm';
 
-function hexToBuffer(hex: string): Buffer {
-  if (!/^[0-9a-fA-F]+$/.test(hex)) throw new Error('Key contains non-hex chars');
-  return Buffer.from(hex, 'hex');
-}
-
-if (AES_KEY_HEX_LIST.length === 0) {
-  throw new Error('AES_KEY_HEX env var required (comma separated keys)');
-}
-
-const AES_KEYS = AES_KEY_HEX_LIST.map((k) => {
-  if (!k || k.length !== 64) throw new Error('Each AES key must be 32 bytes hex (64 hex chars)');
-  return hexToBuffer(k);
-});
-
-/**
- * Decryptează un payload AES-GCM format "v1|<base64(iv|tag|ciphertext)>"
- * încearcă toate cheile din AES_KEYS (rotate keys).
- * Aruncă eroare dacă decriptarea eșuează.
- */
-function decryptAESGCM(payload: string): string {
-  if (typeof payload !== 'string') throw new Error('Invalid encrypted payload type');
-  const parts = payload.split('|');
-  if (parts.length !== 2) throw new Error('Invalid encrypted payload format');
-  const version = parts[0];
-  const dataStr = parts[1];
-  if (version !== 'v1') throw new Error('Unsupported encryption version');
-
-  const data = Buffer.from(dataStr, 'base64');
-  if (data.length <= AES_GCM_IV_BYTES + AES_GCM_TAG_BYTES)
-    throw new Error('Encrypted payload too short');
-
-  const iv = data.slice(0, AES_GCM_IV_BYTES);
-  const tag = data.slice(AES_GCM_IV_BYTES, AES_GCM_IV_BYTES + AES_GCM_TAG_BYTES);
-  const ciphertext = data.slice(AES_GCM_IV_BYTES + AES_GCM_TAG_BYTES);
-
-  for (const key of AES_KEYS) {
-    try {
-      const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-      decipher.setAuthTag(tag);
-      const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-      return decrypted.toString('utf8');
-    } catch (e) {
-      // try next key
-      continue;
-    }
+function getEncryptionKey(): Buffer
+{
+  const raw = process.env.CARD_ENCRYPTION_KEY;
+  if(!raw || raw.length === 0)
+  {
+    throw new Error('CARD_ENCRYPTION_KEY environment variable is not set');
   }
-  throw new Error('Decryption failed with all known keys');
+  return crypto.createHash('sha256').update(raw).digest();
 }
 
-/**
- * Utility: safeExtractLast4 — încearcă să decripteze PAN-ul;
- * în caz de eroare returnează null. Nu aruncă erori către client.
- */
-function safeExtractLast4(panEncrypted: string): string | null {
-  try {
-    const pan = decryptAESGCM(panEncrypted);
-    if (typeof pan === 'string' && pan.length >= 4) return pan.slice(-4);
-    return null;
-  } catch (e: any) {
-    console.error('safeExtractLast4: decryption failed', e.message);
+export function encryptAESGCM(plaintext: string): string
+{
+  const key = getEncryptionKey();
+  const iv = crypto.randomBytes(AES_GCM_IV_BYTES);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+
+  let encrypted = cipher.update(plaintext, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const tag = cipher.getAuthTag().toString('hex');
+
+  return ENCRYPTED_PREFIX + iv.toString('hex') + tag + encrypted;
+}
+
+export function decryptAESGCM(ciphertext: string): string
+{
+  if(!ciphertext.startsWith(ENCRYPTED_PREFIX))
+  {
+    throw new Error('Invalid encrypted data format: missing prefix');
+  }
+
+  const payload = ciphertext.slice(ENCRYPTED_PREFIX.length);
+  const iv = Buffer.from(payload.slice(0, AES_GCM_IV_BYTES * 2), 'hex');
+  const tag = Buffer.from(
+    payload.slice(AES_GCM_IV_BYTES * 2, AES_GCM_IV_BYTES * 2 + AES_GCM_TAG_BYTES * 2),
+    'hex',
+  );
+  const encrypted = payload.slice(AES_GCM_IV_BYTES * 2 + AES_GCM_TAG_BYTES * 2);
+
+  const key = getEncryptionKey();
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(tag);
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+export function safeExtractLast4(encryptedCard: string): string | null
+{
+  try
+  {
+    const raw = decryptAESGCM(encryptedCard);
+    return raw.slice(-4);
+  }
+  catch
+  {
     return null;
   }
 }
-
-export { decryptAESGCM, safeExtractLast4 };

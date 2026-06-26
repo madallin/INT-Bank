@@ -1,10 +1,3 @@
-// ============================================================
-// Root App Module
-// Hexagonal Architecture — Composition Root
-// Wires together all layers with strict dependency direction:
-//   Infrastructure → Application → Core Domain
-// ============================================================
-
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_PIPE, APP_INTERCEPTOR } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';

@@ -1,6 +1,3 @@
-// lib/features/transactions/screens/transaction_history_screen.dart
-// ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:convert';
 import 'dart:io' show HttpClient, Platform, X509Certificate;
 
@@ -12,7 +9,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 import '../../../config/app_config.dart';
 
-class TransactionHistoryScreen extends StatefulWidget {
+class TransactionHistoryScreen extends StatefulWidget
+{
   final int userId;
   final int accountId;
 
@@ -28,7 +26,8 @@ class TransactionHistoryScreen extends StatefulWidget {
 }
 
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin
+{
   AnimationController? _fadeController;
   Animation<double>? _fadeAnimation;
 
@@ -40,7 +39,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   String _deviceId = 'dev-device';
 
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -53,41 +53,53 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   }
 
   @override
-  void dispose() {
+  void dispose()
+  {
     _fadeController?.dispose();
     super.dispose();
   }
 
-  Future<void> _initDeviceAndFetch() async {
+  Future<void> _initDeviceAndFetch() async
+  {
     await _initDeviceId();
     await _getClientToken();
     await _fetchTransactions();
   }
 
-  Future<void> _initDeviceId() async {
+  Future<void> _initDeviceId() async
+  {
     final deviceInfo = DeviceInfoPlugin();
-    try {
-      if (Platform.isAndroid) {
+    try
+    {
+      if(Platform.isAndroid)
+      {
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
-      } else if (Platform.isIOS) {
+      }
+      else if(Platform.isIOS)
+      {
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
-    } catch (_) {
+    }
+    catch (_)
+    {
       _deviceId = 'dev-device';
     }
   }
 
-  http.Client _createHttpClient() {
+  http.Client _createHttpClient()
+  {
     final ioc = HttpClient();
     ioc.badCertificateCallback =
         (X509Certificate cert, String host, int port) => true;
     return IOClient(ioc);
   }
 
-  Future<void> _getClientToken() async {
-    try {
+  Future<void> _getClientToken() async
+  {
+    try
+    {
       final client = _createHttpClient();
       final response = await client.post(
         Uri.parse('https://$serverUrl/auth/get-client-token'),
@@ -96,71 +108,93 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       );
       client.close();
 
-      if (response.statusCode == 200) {
+      if(response.statusCode == 200)
+      {
         final data = jsonDecode(response.body);
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
       }
-    } catch (e) {
+    }
+    catch (e)
+    {
       debugPrint('Error getting client token: $e');
     }
   }
 
-  Future<bool> _refreshClientToken() async {
-    if (refreshToken == null) return false;
+  Future<bool> _refreshClientToken() async
+  {
+    if(refreshToken == null) return false;
     final client = _createHttpClient();
-    try {
+    try
+    {
       final response = await client.post(
         Uri.parse('https://$serverUrl/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
-      if (response.statusCode == 200) {
+      if(response.statusCode == 200)
+      {
         final data = jsonDecode(response.body);
-        if (mounted) setState(() => clientToken = data['client_token']);
+        if(mounted) setState(() => clientToken = data['client_token']);
         return true;
       }
       return false;
-    } catch (_) {
+    }
+    catch (_)
+    {
       return false;
-    } finally {
+    }
+    finally
+    {
       client.close();
     }
   }
 
-  Future<void> _fetchTransactions() async {
+  Future<void> _fetchTransactions() async
+  {
     setState(() => _loading = true);
-    try {
+    try
+    {
       final client = _createHttpClient();
       final uri = Uri.parse('https://$serverUrl/users/${widget.userId}/accounts/${widget.accountId}/transactions');
       final response = await client.get(uri, headers: {
         'Content-Type': 'application/json',
-        if (clientToken != null) 'Authorization': 'Bearer $clientToken',
+        if(clientToken != null) 'Authorization': 'Bearer $clientToken',
       });
       client.close();
 
-      if (response.statusCode == 200 && response.body.isNotEmpty) {
+      if(response.statusCode == 200 && response.body.isNotEmpty)
+      {
         final data = jsonDecode(response.body);
-        if (data['transactions'] != null) {
+        if(data['transactions'] != null)
+        {
           setState(() => _transactions = List<Map<String, dynamic>>.from(data['transactions']));
         }
-      } else if (response.statusCode == 401) {
-        final refreshed = await _refreshClientToken();
-        if (refreshed) await _fetchTransactions();
       }
-    } catch (e) {
+      else if(response.statusCode == 401)
+      {
+        final refreshed = await _refreshClientToken();
+        if(refreshed) await _fetchTransactions();
+      }
+    }
+    catch (e)
+    {
       debugPrint('Error fetching transactions: $e');
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    }
+    finally
+    {
+      if(mounted) setState(() => _loading = false);
     }
   }
 
-  String _formatDate(String dateStr) {
+  String _formatDate(String dateStr)
+  {
     final date = DateTime.parse(dateStr);
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  String _formatAmount(Map<String, dynamic> transaction) {
+  String _formatAmount(Map<String, dynamic> transaction)
+  {
     final type = transaction['type'];
     final double amount = (transaction['suma'] as num).toDouble();
     final displayAmount = type == 'received' ? amount : -amount;
@@ -171,7 +205,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     return '${displayAmount >= 0 ? '+' : '-'}$intPart,${parts[1]}';
   }
 
-  Widget _buildTransactionCard(Map<String, dynamic> transaction) {
+  Widget _buildTransactionCard(Map<String, dynamic> transaction)
+  {
     final isPositive = transaction['type'] == 'received';
     final amountStr = _formatAmount(transaction);
     return Container(
@@ -215,7 +250,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(

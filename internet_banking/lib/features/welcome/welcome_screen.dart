@@ -1,6 +1,3 @@
-// lib/features/welcome/welcome_screen.dart
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -8,35 +5,40 @@ import '../../config/app_config.dart';
 import '../auth/screens/login_screen.dart';
 import '../auth/screens/register_screen.dart';
 
-class WelcomeScreen extends StatefulWidget {
+class WelcomeScreen extends StatefulWidget
+{
   const WelcomeScreen({super.key});
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> {
+class _WelcomeScreenState extends State<WelcomeScreen>
+{
   bool _loading = false;
 
-  Future<void> conecteazaClient(BuildContext context) async {
+  Future<void> conecteazaClient(BuildContext context) async
+  {
     setState(() => _loading = true);
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
-    if (mounted) setState(() => _loading = false);
+    if(mounted) setState(() => _loading = false);
   }
 
-  Future<void> inregistreazaClient(BuildContext context) async {
+  Future<void> inregistreazaClient(BuildContext context) async
+  {
     setState(() => _loading = true);
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const RegisterScreen()),
     );
-    if (mounted) setState(() => _loading = false);
+    if(mounted) setState(() => _loading = false);
   }
 
-  Widget _buildRegisterButton(BuildContext context) {
+  Widget _buildRegisterButton(BuildContext context)
+  {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       child: AnimatedContainer(
@@ -96,7 +98,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(

@@ -1,6 +1,3 @@
-// lib/features/transfer/screens/transfer_screen.dart
-// ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show HttpClient, Platform, X509Certificate;
@@ -14,7 +11,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 import '../../../config/app_config.dart';
 
-class TransferScreen extends StatefulWidget {
+class TransferScreen extends StatefulWidget
+{
   final int userId;
   final String userIban;
 
@@ -29,7 +27,8 @@ class TransferScreen extends StatefulWidget {
 }
 
 class _TransferScreenState extends State<TransferScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin
+{
   final TextEditingController _ibanController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
@@ -44,7 +43,8 @@ class _TransferScreenState extends State<TransferScreen>
   late String refreshToken;
 
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -59,7 +59,8 @@ class _TransferScreenState extends State<TransferScreen>
   }
 
   @override
-  void dispose() {
+  void dispose()
+  {
     _fadeController.dispose();
     _ibanController.dispose();
     _nameController.dispose();
@@ -68,30 +69,35 @@ class _TransferScreenState extends State<TransferScreen>
     super.dispose();
   }
 
-  String _formatIBAN(String input) {
+  String _formatIBAN(String input)
+  {
     String clean = input.replaceAll(' ', '').toUpperCase();
     String formatted = '';
-    for (int i = 0; i < clean.length; i++) {
-      if (i > 0 && i % 4 == 0) formatted += ' ';
+    for(int i = 0; i < clean.length; i++)
+    {
+      if(i > 0 && i % 4 == 0) formatted += ' ';
       formatted += clean[i];
     }
     return formatted;
   }
 
-  String _formatAmount(String input) {
+  String _formatAmount(String input)
+  {
     String clean = input.replaceAll(RegExp(r'[^\d]'), '');
-    if (clean.isEmpty) return '';
+    if(clean.isEmpty) return '';
     String reversed = clean.split('').reversed.join('');
     String formatted = '';
-    for (int i = 0; i < reversed.length; i++) {
-      if (i > 0 && i % 3 == 0) formatted += '.';
+    for(int i = 0; i < reversed.length; i++)
+    {
+      if(i > 0 && i % 3 == 0) formatted += '.';
       formatted += reversed[i];
     }
     return formatted.split('').reversed.join('');
   }
 
-  void _showError(String message) {
-    if (!mounted) return;
+  void _showError(String message)
+  {
+    if(!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -102,8 +108,9 @@ class _TransferScreenState extends State<TransferScreen>
     );
   }
 
-  void _showSuccess(String message) {
-    if (!mounted) return;
+  void _showSuccess(String message)
+  {
+    if(!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -114,65 +121,87 @@ class _TransferScreenState extends State<TransferScreen>
     );
   }
 
-  Future<void> _initDeviceId() async {
+  Future<void> _initDeviceId() async
+  {
     final deviceInfo = DeviceInfoPlugin();
-    try {
-      if (Platform.isAndroid) {
+    try
+    {
+      if(Platform.isAndroid)
+      {
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
-      } else if (Platform.isIOS) {
+      }
+      else if(Platform.isIOS)
+      {
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
-    } catch (_) {
+    }
+    catch (_)
+    {
       _deviceId = 'dev-device';
     }
   }
 
-  http.Client _createHttpClient() {
+  http.Client _createHttpClient()
+  {
     final ioc = HttpClient();
     ioc.badCertificateCallback =
         (X509Certificate cert, String host, int port) => true;
     return IOClient(ioc);
   }
 
-  Future<void> _getClientToken() async {
-    try {
+  Future<void> _getClientToken() async
+  {
+    try
+    {
       final client = _createHttpClient();
       final response = await client.post(
         Uri.parse('https://$serverUrl/auth/get-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId}),
       );
-      if (response.statusCode == 200) {
+      if(response.statusCode == 200)
+      {
         final data = jsonDecode(response.body);
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
-      } else {
+      }
+      else
+      {
         _showError('Eroare la obținerea tokenului client');
       }
-    } catch (e) {
+    }
+    catch (e)
+    {
       _showError('Eroare de rețea: $e');
     }
   }
 
-  Future<bool> _refreshToken() async {
+  Future<bool> _refreshToken() async
+  {
     final client = _createHttpClient();
-    try {
+    try
+    {
       final response = await client.post(
         Uri.parse('https://$serverUrl/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
-      if (response.statusCode == 200) {
+      if(response.statusCode == 200)
+      {
         final data = jsonDecode(response.body);
-        if (mounted) clientToken = data['client_token'];
+        if(mounted) clientToken = data['client_token'];
         return true;
       }
       return false;
-    } catch (_) {
+    }
+    catch (_)
+    {
       return false;
-    } finally {
+    }
+    finally
+    {
       client.close();
     }
   }
@@ -182,12 +211,14 @@ class _TransferScreenState extends State<TransferScreen>
     required String name,
     required int amount,
     required String reason,
-  }) async {
-    if (_loading) return {'success': false, 'error': 'Transfer în curs'};
+  }) async
+  {
+    if(_loading) return {'success': false, 'error': 'Transfer în curs'};
     setState(() => _loading = true);
 
     final client = _createHttpClient();
-    try {
+    try
+    {
       final response = await client.post(
         Uri.parse('https://$serverUrl/users/${widget.userId}/transfer'),
         headers: {
@@ -202,9 +233,11 @@ class _TransferScreenState extends State<TransferScreen>
         }),
       );
 
-      if (response.statusCode == 401) {
+      if(response.statusCode == 401)
+      {
         final refreshed = await _refreshToken();
-        if (refreshed) {
+        if(refreshed)
+        {
           return await fetchTransferApi(iban: iban, name: name, amount: amount, reason: reason);
         }
         return {'success': false, 'error': 'Sesiune expirat. Reconectează-te.'};
@@ -212,26 +245,32 @@ class _TransferScreenState extends State<TransferScreen>
 
       final data = jsonDecode(response.body);
       return {'success': data['success'] ?? false, 'error': data['error']};
-    } catch (e) {
+    }
+    catch (e)
+    {
       return {'success': false, 'error': 'Eroare de rețea: $e'};
-    } finally {
+    }
+    finally
+    {
       client.close();
-      if (mounted) setState(() => _loading = false);
+      if(mounted) setState(() => _loading = false);
     }
   }
 
-  Future<void> _submitTransfer() async {
+  Future<void> _submitTransfer() async
+  {
     final iban = _ibanController.text.replaceAll(' ', '');
     final name = _nameController.text.trim();
     final amount = int.tryParse(_amountController.text.replaceAll('.', ''));
     final reason = _reasonController.text.trim();
 
-    if (iban.isEmpty || iban.length < 16) return _showError('IBAN invalid');
-    if (name.length < 7 || name.length > 128) return _showError('Numele trebuie să aibă 7-128 caractere');
-    if (!name.contains(' ')) return _showError('Trebuie minim un nume și un prenume');
-    if (reason.length < 3) return _showError('Motiv prea scurt');
-    if (amount == null || amount <= 0) return _showError('Sumă invalidă');
-    if (iban.toUpperCase() == widget.userIban.replaceAll(' ', '').toUpperCase()) {
+    if(iban.isEmpty || iban.length < 16) return _showError('IBAN invalid');
+    if(name.length < 7 || name.length > 128) return _showError('Numele trebuie să aibă 7-128 caractere');
+    if(!name.contains(' ')) return _showError('Trebuie minim un nume și un prenume');
+    if(reason.length < 3) return _showError('Motiv prea scurt');
+    if(amount == null || amount <= 0) return _showError('Sumă invalidă');
+    if(iban.toUpperCase() == widget.userIban.replaceAll(' ', '').toUpperCase())
+    {
       return _showError('Nu poți trimite bani în propriul cont');
     }
 
@@ -243,19 +282,23 @@ class _TransferScreenState extends State<TransferScreen>
       reason: capitalizedReason,
     );
 
-    if (result['success'] == true) {
+    if(result['success'] == true)
+    {
       _showSuccess('Transfer efectuat cu succes!');
       _ibanController.clear();
       _nameController.clear();
       _amountController.clear();
       _reasonController.clear();
-    } else {
+    }
+    else
+    {
       _showError(result['error'] ?? 'Eroare la transfer');
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -292,7 +335,8 @@ class _TransferScreenState extends State<TransferScreen>
                     children: [
                       _buildInputField(controller: _ibanController, label: 'IBAN destinatar', icon: Icons.account_balance_outlined, hint: 'RO49 AAAA 1B31 0075 9384 0000', keyboardType: TextInputType.text, maxLength: 34, inputFormatters: [
                         FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-                        TextInputFormatter.withFunction((oldValue, newValue) {
+                        TextInputFormatter.withFunction((oldValue, newValue)
+                        {
                           final formatted = _formatIBAN(newValue.text);
                           return TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
                         }),
@@ -304,7 +348,8 @@ class _TransferScreenState extends State<TransferScreen>
                       const SizedBox(height: 24),
                       _buildInputField(controller: _amountController, label: 'Sumă (RON)', icon: Icons.payments_outlined, hint: '5', keyboardType: TextInputType.number, inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
-                        TextInputFormatter.withFunction((oldValue, newValue) {
+                        TextInputFormatter.withFunction((oldValue, newValue)
+                        {
                           final formatted = _formatAmount(newValue.text);
                           return TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
                         }),
@@ -324,7 +369,8 @@ class _TransferScreenState extends State<TransferScreen>
     );
   }
 
-  Widget _buildTransferButton() {
+  Widget _buildTransferButton()
+  {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: AnimatedContainer(
@@ -360,7 +406,8 @@ class _TransferScreenState extends State<TransferScreen>
     List<TextInputFormatter>? inputFormatters,
     int? maxLines,
     int? maxLength,
-  }) {
+  })
+  {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

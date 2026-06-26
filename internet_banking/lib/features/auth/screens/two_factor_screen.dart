@@ -1,5 +1,3 @@
-// lib/features/auth/screens/two_factor_screen.dart
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show HttpClient, Platform, X509Certificate;
@@ -15,7 +13,8 @@ import '../../../core/utils/helpers.dart';
 import '../../../core/storage/secure_session_manager.dart';
 import 'pin_screen.dart';
 
-class TwoFactorScreen extends StatefulWidget {
+class TwoFactorScreen extends StatefulWidget
+{
   final String phoneNumber;
   final int userId;
 
@@ -29,7 +28,8 @@ class TwoFactorScreen extends StatefulWidget {
   State<TwoFactorScreen> createState() => _TwoFactorScreenState();
 }
 
-class _TwoFactorScreenState extends State<TwoFactorScreen> {
+class _TwoFactorScreenState extends State<TwoFactorScreen>
+{
   String pin = '';
   String textEroare = '';
   bool isVerifying = false;
@@ -42,25 +42,29 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
   Timer? _cooldownTimer;
 
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     _userId = widget.userId;
     _initDeviceId().then((_) => _getClientTokenAndSendCode());
   }
 
   @override
-  void dispose() {
+  void dispose()
+  {
     _cooldownTimer?.cancel();
     super.dispose();
   }
 
-  void _showError(String message) {
-    if (!mounted) return;
+  void _showError(String message)
+  {
+    if(!mounted) return;
     setState(() => textEroare = message);
   }
 
-  void _showSuccess(String message) {
-    if (!mounted) return;
+  void _showSuccess(String message)
+  {
+    if(!mounted) return;
     _showError('');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -80,86 +84,112 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
     );
   }
 
-  Future<void> _initDeviceId() async {
+  Future<void> _initDeviceId() async
+  {
     final deviceInfo = DeviceInfoPlugin();
-    try {
-      if (Platform.isAndroid) {
+    try
+    {
+      if(Platform.isAndroid)
+      {
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
-      } else if (Platform.isIOS) {
+      }
+      else if(Platform.isIOS)
+      {
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
-    } catch (_) {
+    }
+    catch(_)
+    {
       _deviceId = 'dev-device';
     }
-    if (mounted) setState(() {});
+    if(mounted) setState(() {});
   }
 
-  Future<void> _getClientTokenAndSendCode() async {
-    try {
+  Future<void> _getClientTokenAndSendCode() async
+  {
+    try
+    {
       final client = _createHttpClient();
       final response = await client.post(
         Uri.parse('https://$serverUrl/auth/get-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId}),
       );
-      if (response.statusCode == 200) {
+      if(response.statusCode == 200)
+      {
         final data = jsonDecode(response.body);
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
         await _sendCode();
-      } else {
+      }
+      else
+      {
         _showError('Eroare la obținerea tokenului client');
       }
-    } catch (e) {
+    }
+    catch(e)
+    {
       _showError('Eroare de rețea: $e');
     }
   }
 
-  http.Client _createHttpClient() {
+  http.Client _createHttpClient()
+  {
     final ioc = HttpClient();
     ioc.badCertificateCallback =
         (X509Certificate cert, String host, int port) => true;
     return IOClient(ioc);
   }
 
-  void _onNumberPress(String number) {
-    if (isVerifying) return;
-    if (pin.length < 6) {
+  void _onNumberPress(String number)
+  {
+    if(isVerifying) return;
+    if(pin.length < 6)
+    {
       _showError('');
       setState(() => pin += number);
-      if (pin.length == 6) _verifyPin();
+      if(pin.length == 6) _verifyPin();
     }
   }
 
-  void _onDeletePress() {
-    if (isVerifying) return;
-    if (pin.isNotEmpty) {
+  void _onDeletePress()
+  {
+    if(isVerifying) return;
+    if(pin.isNotEmpty)
+    {
       _showError('');
       setState(() => pin = pin.substring(0, pin.length - 1));
     }
   }
 
-  Future<void> _startCooldown() async {
+  Future<void> _startCooldown() async
+  {
     setState(() => _cooldownSeconds = 60);
     _cooldownTimer?.cancel();
-    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_cooldownSeconds > 0) {
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer)
+    {
+      if(_cooldownSeconds > 0)
+      {
         setState(() => _cooldownSeconds--);
-      } else {
+      }
+      else
+      {
         timer.cancel();
       }
     });
   }
 
-  Future<void> _sendCode() async {
-    if (isVerifying || _cooldownSeconds > 0) return;
+  Future<void> _sendCode() async
+  {
+    if(isVerifying || _cooldownSeconds > 0) return;
     _showError('');
     setState(() => isVerifying = true);
 
     final client = _createHttpClient();
-    try {
+    try
+    {
       final response = await client.post(
         Uri.parse('https://$serverUrl/2fa/request'),
         headers: {
@@ -169,33 +199,43 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
         body: jsonEncode({'phone': widget.phoneNumber}),
       );
 
-      if (response.statusCode == 401) {
+      if(response.statusCode == 401)
+      {
         _showError('Timpul pentru verificare a expirat. Te rugăm să reîncepi procesul.');
         setState(() => pin = '');
         return;
       }
 
       final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['success'] == true) {
+      if(response.statusCode == 200 && data['success'] == true)
+      {
         await _startCooldown();
-      } else {
-        if (mounted) _showError(data['error'] ?? 'Eroare la trimiterea codului');
       }
-    } catch (e) {
-      if (mounted) _showError('Eroare de rețea: $e');
-    } finally {
+      else
+      {
+        if(mounted) _showError(data['error'] ?? 'Eroare la trimiterea codului');
+      }
+    }
+    catch(e)
+    {
+      if(mounted) _showError('Eroare de rețea: $e');
+    }
+    finally
+    {
       client.close();
-      if (mounted) setState(() => isVerifying = false);
+      if(mounted) setState(() => isVerifying = false);
     }
   }
 
-  Future<void> _verifyPin() async {
-    if (isVerifying) return;
+  Future<void> _verifyPin() async
+  {
+    if(isVerifying) return;
     _showError('');
     setState(() => isVerifying = true);
 
     final client = _createHttpClient();
-    try {
+    try
+    {
       final response = await client.post(
         Uri.parse('https://$serverUrl/2fa/verify'),
         headers: {
@@ -205,11 +245,15 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
         body: jsonEncode({'phone': widget.phoneNumber, 'code': pin}),
       );
 
-      if (response.statusCode == 401) {
+      if(response.statusCode == 401)
+      {
         final refreshed = await _refreshToken();
-        if (refreshed) {
+        if(refreshed)
+        {
           await _verifyPin();
-        } else if (mounted) {
+        }
+        else if(mounted)
+        {
           _showError('Sesiune expirată. Te rugăm să te reconectezi');
           setState(() => pin = '');
         }
@@ -217,8 +261,9 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
       }
 
       final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (!mounted) return;
+      if(response.statusCode == 200 && data['success'] == true)
+      {
+        if(!mounted) return;
         setState(() => isVerifying = true);
         _showSuccess('Verificare reușită! Vei fi redirecționat...');
 
@@ -231,16 +276,17 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
           },
         );
 
-        if (hasPinResponse.statusCode == 200) {
+        if(hasPinResponse.statusCode == 200)
+        {
           final hasPinData = jsonDecode(hasPinResponse.body);
           setPin = !(hasPinData['hasPin'] ?? false);
         }
 
-        // Salvează telefonul în secure storage pentru login JWT
         await SecureSessionManager.savePhone(widget.phoneNumber);
 
-        Future.delayed(const Duration(seconds: 3), () {
-          if (!mounted) return;
+        Future.delayed(const Duration(seconds: 3), ()
+        {
+          if(!mounted) return;
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
@@ -254,46 +300,61 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
             (route) => false,
           );
         });
-      } else if (mounted) {
+      }
+      else if(mounted)
+      {
         final serverError = (data['error'] as String?) ?? 'Cod invalid sau ai depasit numarul de incercari';
         _showError(serverError);
         setState(() => pin = '');
       }
-    } catch (e) {
-      if (mounted) _showError('Eroare de rețea: $e');
-    } finally {
+    }
+    catch(e)
+    {
+      if(mounted) _showError('Eroare de rețea: $e');
+    }
+    finally
+    {
       client.close();
-      if (mounted) setState(() => isVerifying = false);
+      if(mounted) setState(() => isVerifying = false);
     }
   }
 
-  Future<bool> _refreshToken() async {
+  Future<bool> _refreshToken() async
+  {
     final client = _createHttpClient();
-    try {
+    try
+    {
       final response = await client.post(
         Uri.parse('https://$serverUrl/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
-      if (response.statusCode == 200) {
+      if(response.statusCode == 200)
+      {
         final data = jsonDecode(response.body);
-        if (mounted) setState(() => clientToken = data['client_token']);
+        if(mounted) setState(() => clientToken = data['client_token']);
         return true;
       }
       return false;
-    } catch (_) {
+    }
+    catch(_)
+    {
       return false;
-    } finally {
+    }
+    finally
+    {
       client.close();
     }
   }
 
-  void _resendCode() {
-    if (_cooldownSeconds == 0) _sendCode();
+  void _resendCode()
+  {
+    if(_cooldownSeconds == 0) _sendCode();
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -342,7 +403,8 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                     const SizedBox(height: 32),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(6, (index) {
+                      children: List.generate(6, (index)
+                      {
                         bool isFilled = index < pin.length;
                         return Container(
                           margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -366,7 +428,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        if (textEroare.isNotEmpty) ...[
+                        if(textEroare.isNotEmpty) ...[
                           const SizedBox(height: 20),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -410,12 +472,14 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 72),
               child: Column(
                 children: [
-                  ...List.generate(3, (row) {
+                  ...List.generate(3, (row)
+                  {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: List.generate(3, (col) {
+                        children: List.generate(3, (col)
+                        {
                           return _buildNumberButton((row * 3 + col + 1).toString());
                         }),
                       ),
@@ -438,7 +502,8 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
     );
   }
 
-  Widget _buildNumberButton(String number) {
+  Widget _buildNumberButton(String number)
+  {
     return GestureDetector(
       onTap: () => _onNumberPress(number),
       child: Container(
@@ -454,7 +519,8 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
     );
   }
 
-  Widget _buildDeleteButton() {
+  Widget _buildDeleteButton()
+  {
     return GestureDetector(
       onTap: _onDeletePress,
       child: Container(

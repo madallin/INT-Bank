@@ -1,12 +1,9 @@
-// ============================================================
-// Route: Register — User registration with address validation
-// ============================================================
-
 import { Router, Response } from 'express';
 import { Pool } from 'pg';
 import { validateAddress, AddressValidationRequest } from '../middleware/addressValidation';
 
-interface RegisterRequest extends AddressValidationRequest {
+interface RegisterRequest extends AddressValidationRequest
+{
   pool?: Pool;
   body: {
     nume?: string;
@@ -30,17 +27,17 @@ interface RegisterRequest extends AddressValidationRequest {
 
 const router = Router();
 
-router.post('/', validateAddress, async (req: RegisterRequest, res: Response) => {
+router.post('/', validateAddress, async (req: RegisterRequest, res: Response) =>
+{
   const { nume, prenume, email, nrtelefon, sex, datanasterii, cnp } = req.body;
   const addr = req.addressValidated!;
 
-  // Validare minimală
-  if (!nume || !prenume || !email || !nrtelefon || !sex || !datanasterii || !cnp) {
+  if(!nume || !prenume || !email || !nrtelefon || !sex || !datanasterii || !cnp)
+  {
     res.status(400).json({ error: 'Toate câmpurile sunt obligatorii' });
     return;
   }
 
-  // Construim adresa completă cu toate componentele
   const addressParts = [
     addr.strada,
     addr.numar ? `Nr. ${addr.numar}` : '',
@@ -50,7 +47,8 @@ router.post('/', validateAddress, async (req: RegisterRequest, res: Response) =>
   ].filter(Boolean);
 
   let clientDb;
-  try {
+  try
+  {
     clientDb = await req.pool!.connect();
 
     const result = await clientDb.query(
@@ -83,15 +81,20 @@ router.post('/', validateAddress, async (req: RegisterRequest, res: Response) =>
 
     const user = result.rows[0];
     res.status(201).json({ success: true, user });
-  } catch (err: any) {
+  }
+  catch (err: any)
+  {
     console.error('Eroare la baza de date (register):', err);
-    if (err.code === '23505') {
+    if(err.code === '23505')
+    {
       res.status(400).json({ error: 'Email sau CNP deja existent' });
       return;
     }
     res.status(500).json({ error: 'Eroare la comunicarea cu serverul' });
-  } finally {
-    if (clientDb) clientDb.release();
+  }
+  finally
+  {
+    if(clientDb) clientDb.release();
   }
 });
 

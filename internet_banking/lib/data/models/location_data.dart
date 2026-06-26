@@ -1,21 +1,47 @@
-// lib/data/models/location_data.dart
-// Romanian county (județ) and locality data management
+class LocationData
+{
+  final String city;
+  final String county;
+  final String country;
+  final String? street;
+  final String? postalCode;
+  final double? latitude;
+  final double? longitude;
 
-import 'dart:convert' show json;
-import 'package:flutter/services.dart' show rootBundle;
+  LocationData({
+    required this.city,
+    required this.county,
+    required this.country,
+    this.street,
+    this.postalCode,
+    this.latitude,
+    this.longitude,
+  });
 
-List<Map<String, dynamic>> judete = [];
-Map<String, List<String>> mapLocalitati = {};
+  factory LocationData.fromJson(Map<String, dynamic> json)
+  {
+    return LocationData(
+      city: json['city'] ?? '',
+      county: json['county'] ?? '',
+      country: json['country'] ?? '',
+      street: json['street'],
+      postalCode: json['postalCode'],
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+    );
+  }
 
-/// Loads the judete.json asset and populates [judete] and [mapLocalitati].
-Future<void> loadJudete() async {
-  final jsonString = await rootBundle.loadString('assets/judete.json');
-  final List<dynamic> data = json.decode(jsonString);
-
-  judete = data.cast<Map<String, dynamic>>();
-
-  mapLocalitati = {
-    for (final item in judete)
-      item['judet'] as String: (List<String>.from(item['localitati'])..sort()),
-  };
+  String get displayAddress
+  {
+    final parts = <String>[];
+    if(street != null && street!.isNotEmpty) parts.add(street!);
+    parts.add(city);
+    parts.add(county);
+    if(postalCode != null && postalCode!.isNotEmpty)
+    {
+      parts.add(postalCode!);
+    }
+    parts.add(country);
+    return parts.join(', ');
+  }
 }

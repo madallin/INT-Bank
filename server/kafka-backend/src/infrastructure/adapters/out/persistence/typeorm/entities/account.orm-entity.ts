@@ -1,9 +1,3 @@
-// ============================================================
-// Account ORM Entity (TypeORM)
-// Hexagonal Architecture — Infrastructure Layer
-// Maps the Account domain entity to the PostgreSQL `conturiBancare` table.
-// ============================================================
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -12,7 +6,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'conturiBancare' })
-export class AccountOrmEntity {
+export class AccountOrmEntity
+{
   @PrimaryGeneratedColumn()
   id!: number;
 

@@ -1,7 +1,3 @@
-// ============================================================
-// Server Entry Point
-// ============================================================
-
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -15,29 +11,38 @@ const PORT = process.env.PORT || 8080;
 
 const server = http.createServer(app);
 
-server.listen(PORT, () => {
+server.listen(PORT, () =>
+{
   console.log(`Serverul a pornit cu succes pe portul ${PORT}`);
 });
 
-// --- WebSocket + PostgreSQL LISTEN/NOTIFY ---
 const { pgClient } = setupWebSocket(server);
 
-// --- Graceful shutdown ---
-const shutdown = async () => {
+const shutdown = async () =>
+{
   console.log('Închidere server...');
-  try {
+  try
+  {
     await pool.end();
-  } catch (e) {
+  }
+  catch (e)
+  {
     console.error('Eroare la închiderea DB:', e);
   }
-  try {
+  try
+  {
     await redis.quit();
-  } catch (e) {
+  }
+  catch (e)
+  {
     /* ignore */
   }
-  try {
+  try
+  {
     await pgClient.end();
-  } catch (e) {
+  }
+  catch (e)
+  {
     /* ignore */
   }
   server.close(() => process.exit(0));

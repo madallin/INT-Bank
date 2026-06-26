@@ -1,0 +1,25 @@
+// ============================================================
+// Kafka Module
+// Hexagonal Architecture — Infrastructure Layer
+// Registers the Kafka producer and consumer adapters.
+// ============================================================
+
+import { Module } from '@nestjs/common';
+import { KafkaProducerAdapter } from './kafka-producer.adapter';
+import { KafkaConsumerAdapter } from './kafka-consumer.adapter';
+import { EventPublisher } from '../../../../../core/ports/out/event-publisher.interface';
+import { ApplicationModule } from '../../../../../application/application.module';
+
+@Module({
+  imports: [ApplicationModule],
+  providers: [
+    {
+      provide: EventPublisher,
+      useClass: KafkaProducerAdapter,
+    },
+    KafkaProducerAdapter,
+    KafkaConsumerAdapter,
+  ],
+  exports: [EventPublisher, KafkaProducerAdapter],
+})
+export class KafkaModule {}

@@ -1,6 +1,13 @@
 # docker-compose.yml
 # INT Bank - Full Stack Application
 # Run: docker compose up -d --build
+#
+# Architecture:
+#   - PostgreSQL 16 (Primary DB)
+#   - Redis 7 (Cache / Session)
+#   - Express.js Backend (Existing REST API)
+#   - Apache Kafka + Zookeeper (Event Bus)
+#   - NestJS Kafka Backend (Async Transfer Microservice)
 
 version: '3.8'
 
@@ -42,7 +49,7 @@ services:
     networks:
       - intbank-network
 
-  # --- Node.js Backend ---
+  # --- Express.js Backend (Existing) ---
   backend:
     build:
       context: ./server
@@ -64,7 +71,6 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PORT: 8443
-      # Add any other env vars your server needs
     env_file:
       - ./server/.env
     ports:
@@ -78,6 +84,110 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+    networks:
+      - intbank-network
+
+  # --- Zookeeper (Kafka Dependency) ---
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: intbank-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    ports:
+      - "2181:2181"
+    healthcheck:
+      test: ["CMD", "echo", "stat", "|", "nc", "localhost", "2181"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - intbank-network
+
+  # --- Apache Kafka Broker ---
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: intbank-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_started
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - intbank-network
+
+  # --- Kafka UI (Optional: for development monitoring) ---
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: intbank-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_started
+    environment:
+      KAFKA_CLUSTERS_0_NAME: intbank-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    ports:
+      - "8080:8080"
+    networks:
+      - intbank-network
+
+  # --- NestJS Kafka Backend (Async Transfer Microservice) ---
+  kafka-backend:
+    build:
+      context: ./server/kafka-backend
+      dockerfile: Dockerfile
+    container_name: intbank-kafka-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: intbank
+      DB_USER: intbank_user
+      DB_PASSWORD: ${DB_PASSWORD:-changeme_in_prod}
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: banking-producer
+      KAFKA_CONSUMER_GROUP: banking-transfer-group
+      CORS_ORIGIN: "*"
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/transfers"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     networks:
       - intbank-network
 

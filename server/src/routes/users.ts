@@ -265,7 +265,7 @@ router.get('/:userId/cards', async (req: UsersRequest, res: Response) => {
         'SELECT id FROM conturiBancare WHERE userid = $1 ORDER BY id LIMIT 1',
         [userId],
       );
-      if (accountRes.rowCount > 0) {
+      if (accountRes.rowCount != null && accountRes.rowCount > 0) {
         fallbackAccountId = accountRes.rows[0].id;
       }
     }

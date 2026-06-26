@@ -52,9 +52,15 @@ app.use('/login', loginLimiter, loginRoute);
 app.use(
   '/2fa',
   verifyClientToken,
-  (req: Request, res: Response, next: NextFunction) => {
-    if (req.path === '/request') return request2faLimiter(req, res, next);
-    if (req.path === '/verify') return verify2faLimiter(req, res, next);
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (req.path === '/request') {
+      request2faLimiter(req, res, next);
+      return;
+    }
+    if (req.path === '/verify') {
+      verify2faLimiter(req, res, next);
+      return;
+    }
     next();
   },
   twoFARoute,

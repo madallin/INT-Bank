@@ -8,9 +8,10 @@
 // ============================================================
 
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Kafka, Producer, logLevel as KafkaLogLevel } from 'kafkajs';
+import { Kafka, Producer } from 'kafkajs';
 
 import { EventPublisher } from '../../../../../core/ports/out/event-publisher.interface';
+import { getKafkaClientConfig } from './kafka.config';
 
 @Injectable()
 export class KafkaProducerAdapter
@@ -24,25 +25,7 @@ export class KafkaProducerAdapter
   constructor() {
     super();
 
-    const brokers = (process.env.KAFKA_BROKERS || 'localhost:9092').split(',');
-
-    this.kafka = new Kafka({
-      clientId: 'banking-nestjs-producer',
-      brokers,
-      logLevel: KafkaLogLevel.INFO,
-      retry: {
-        initialRetryTime: 300,
-        retries: 10,
-        maxRetryTime: 30000,
-      },
-      // === For production with SSL/SASL (e.g., Confluent Cloud) ===
-      // ssl: true,
-      // sasl: {
-      //   mechanism: 'plain',
-      //   username: process.env.KAFKA_SASL_USERNAME!,
-      //   password: process.env.KAFKA_SASL_PASSWORD!,
-      // },
-    });
+    this.kafka = new Kafka(getKafkaClientConfig('banking-nestjs-producer'));
 
     this.producer = this.kafka.producer({
       allowAutoTopicCreation: true,

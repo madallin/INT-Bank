@@ -17,11 +17,11 @@ import { TransferRepository } from '../../../../../core/ports/out/transfer.repos
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT ?? '5432', 10),
-      username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || 'postgres',
-      database: process.env.DB_NAME || 'internet_banking',
+      host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
+      port: parseInt(process.env.DB_PORT ?? process.env.PGPORT ?? '5432', 10),
+      username: process.env.DB_USERNAME || process.env.PGUSER || 'postgres',
+      password: process.env.DB_PASSWORD || process.env.PGPASSWORD || 'postgres',
+      database: process.env.DB_NAME || process.env.PGDATABASE || 'internet_banking',
       entities: [AccountOrmEntity, TransferOrmEntity],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],

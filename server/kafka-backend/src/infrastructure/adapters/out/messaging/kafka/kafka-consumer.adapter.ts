@@ -14,10 +14,11 @@
 // ============================================================
 
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Kafka, Consumer, EachMessagePayload, logLevel as KafkaLogLevel } from 'kafkajs';
+import { Kafka, Consumer, EachMessagePayload } from 'kafkajs';
 
 import { ProcessTransferUseCase } from '../../../../../application/use-cases/process-transfer.use-case';
 import { TransferInitiatedEvent } from '../../../../../core/domain/transfer.entity';
+import { getKafkaClientConfig, getKafkaBrokers, getKafkaSslConfig, getKafkaSaslConfig } from './kafka.config';
 
 @Injectable()
 export class KafkaConsumerAdapter implements OnModuleInit, OnModuleDestroy {
@@ -28,17 +29,7 @@ export class KafkaConsumerAdapter implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly processTransferUseCase: ProcessTransferUseCase,
   ) {
-    const brokers = (process.env.KAFKA_BROKERS || 'localhost:9092').split(',');
-
-    this.kafka = new Kafka({
-      clientId: 'banking-nestjs-consumer',
-      brokers,
-      logLevel: KafkaLogLevel.INFO,
-      retry: {
-        initialRetryTime: 300,
-        retries: 10,
-      },
-    });
+    this.kafka = new Kafka(getKafkaClientConfig('banking-nestjs-consumer'));
 
     this.consumer = this.kafka.consumer({
       groupId: process.env.KAFKA_CONSUMER_GROUP_ID || 'banking-transfer-group',
@@ -154,7 +145,9 @@ export class KafkaConsumerAdapter implements OnModuleInit, OnModuleDestroy {
     const { Kafka: KafkaDlq } = await import('kafkajs');
     const dlqKafka = new KafkaDlq({
       clientId: 'banking-dlq-producer',
-      brokers: (process.env.KAFKA_BROKERS || 'localhost:9092').split(','),
+      brokers: getKafkaBrokers(),
+      ssl: getKafkaSslConfig(),
+      ...(getKafkaSaslConfig() ? { sasl: getKafkaSaslConfig() } : {}),
     });
     const dlqProducer = dlqKafka.producer();
 

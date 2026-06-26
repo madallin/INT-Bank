@@ -110,7 +110,7 @@ router.post('/rate', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/rate/:base/:quote', async (req: Request, res: Response) => {
+router.get('/rate/:base/:quote', async (req: Request<{ base: string; quote: string }>, res: Response) => {
   try {
     const { base, quote } = req.params;
     const url = `${FRANKFURTER_API}/rate/${base.toUpperCase()}/${quote.toUpperCase()}`;

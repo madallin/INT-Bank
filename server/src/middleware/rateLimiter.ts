@@ -1,7 +1,3 @@
-// ============================================================
-// Rate Limit Middleware — Express
-// ============================================================
-
 import rateLimit from 'express-rate-limit';
 import type { Request } from 'express';
 import {
@@ -16,24 +12,26 @@ import {
   GLOBAL_MAX_REQUESTS,
 } from '../config/constants';
 
-/**
- * Key generator: uses phone from body, falls back to IP.
- */
-const phoneOrIpKey = (req: Request): string => {
-  if (req.body && req.body.phone) return `phone:${req.body.phone}`;
+const phoneOrIpKey = (req: Request): string =>
+{
+  if(req.body && req.body.phone) return `phone:${req.body.phone}`;
+  // IPv6-safe; express-rate-limit skips internal IP validation
   return `ip:${req.ip || req.socket.remoteAddress || 'unknown'}`;
 };
 
-// --- Global rate-limit ---
+// express-rate-limit v7+ validates internal key format;
+// disable its IP heuristic so our keyGenerator works with any IP shape.
+const validationOpts = { xForwardedForHeader: false } as const;
+
 const globalLimiter = rateLimit({
   windowMs: GLOBAL_WINDOW_MS,
   max: GLOBAL_MAX_REQUESTS,
   message: { error: 'Prea multe cereri trimise intr-un timp scurt' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: validationOpts,
 });
 
-// --- Rate-limit per login ---
 const loginLimiter = rateLimit({
   windowMs: LOGIN_WINDOW_MS,
   max: LOGIN_MAX_ATTEMPTS,
@@ -42,9 +40,9 @@ const loginLimiter = rateLimit({
     res.status(429).json({ error: 'Prea multe încercări pentru acest număr. Încearcă mai târziu.' }),
   standardHeaders: true,
   legacyHeaders: false,
+  validate: validationOpts,
 });
 
-// --- Rate-limit per 2FA request ---
 const request2faLimiter = rateLimit({
   windowMs: LOGIN_WINDOW_MS,
   max: TWOFA_REQUEST_MAX,
@@ -53,9 +51,9 @@ const request2faLimiter = rateLimit({
     res.status(429).json({ error: 'Prea multe cereri pentru acest număr. Încearcă mai târziu.' }),
   standardHeaders: true,
   legacyHeaders: false,
+  validate: validationOpts,
 });
 
-// --- Rate-limit per 2FA verify ---
 const verify2faLimiter = rateLimit({
   windowMs: TWOFA_VERIFY_WINDOW_MS,
   max: TWOFA_VERIFY_MAX,
@@ -64,19 +62,21 @@ const verify2faLimiter = rateLimit({
     res.status(429).json({ error: 'Prea multe încercări de verificare. Încearcă din nou mai târziu.' }),
   standardHeaders: true,
   legacyHeaders: false,
+  validate: validationOpts,
 });
 
-// --- Rate-limit per users endpoints ---
 const usersLimiter = rateLimit({
   windowMs: USERS_WINDOW_MS,
   max: USERS_MAX_REQUESTS,
   message: { error: 'Prea multe cereri. Încearcă mai târziu.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => {
-    if ((req as any).user?.id) return `user:${(req as any).user.id}`;
+  keyGenerator: (req: Request) =>
+  {
+    if((req as any).user?.id) return `user:${(req as any).user.id}`;
     return `ip:${req.ip || req.socket.remoteAddress || 'unknown'}`;
   },
+  validate: validationOpts,
 });
 
 export {

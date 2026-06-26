@@ -1,9 +1,3 @@
-// ============================================================
-// Database Module (TypeORM)
-// Hexagonal Architecture — Infrastructure Layer
-// Configures TypeORM for PostgreSQL and registers repositories.
-// ============================================================
-
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountOrmEntity } from './entities/account.orm-entity';
@@ -17,11 +11,17 @@ import { TransferRepository } from '../../../../../core/ports/out/transfer.repos
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
-      port: parseInt(process.env.DB_PORT ?? process.env.PGPORT ?? '5432', 10),
-      username: process.env.DB_USERNAME || process.env.PGUSER || 'postgres',
-      password: process.env.DB_PASSWORD || process.env.PGPASSWORD || 'postgres',
-      database: process.env.DB_NAME || process.env.PGDATABASE || 'internet_banking',
+      // DATABASE_URL has priority; falls back to DB_* then PG* for Render/Env compat
+      url: process.env.DATABASE_URL,
+      ...(process.env.DATABASE_URL
+        ? {}
+        : {
+            host:     process.env.DB_HOST || process.env.PGHOST || 'localhost',
+            port:     parseInt(process.env.DB_PORT ?? process.env.PGPORT ?? '5432', 10),
+            username: process.env.DB_USERNAME || process.env.PGUSER || 'postgres',
+            password: process.env.DB_PASSWORD || process.env.PGPASSWORD || 'postgres',
+            database: process.env.DB_NAME || process.env.PGDATABASE || 'internet_banking',
+          }),
       entities: [AccountOrmEntity, TransferOrmEntity],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],

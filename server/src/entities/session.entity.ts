@@ -15,7 +15,7 @@ export class SessionEntity
     @Column({ name: 'user_id', type: 'int' })
     userId!: number;
 
-    @Column({ name: 'jti', type: 'uuid', unique: true, default: () => 'gen_random_uuid()' })
+    @Column({ name: 'jti', type: 'uuid', unique: true })
     jti!: string;
 
     @Column({ name: 'refresh_token_hash', type: 'text' })

@@ -113,7 +113,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     {
       final client = _createHttpClient();
       final response = await client.post(
-        Uri.parse('https://$serverUrl/auth/get-client-token'),
+        Uri.parse('https://${AppConfig.serverUrl}/auth/get-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId}),
       );
@@ -126,12 +126,12 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
       }
       else
 {
-        _showError('Eroare la obținerea tokenului client');
+        _showError('Eroare la ob??inerea tokenului client');
       }
     }
     catch(e)
 {
-      _showError('Eroare de rețea: $e');
+      _showError('Eroare de re??ea: $e');
     }
   }
 
@@ -188,7 +188,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     try
     {
       final response = await client.post(
-        Uri.parse('https://$serverUrl/2fa/request'),
+        Uri.parse('https://${AppConfig.serverUrl}/2fa/request'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',
@@ -198,7 +198,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
 
       if(response.statusCode == 401)
 {
-        _showError('Timpul pentru verificare a expirat. Te rugăm să reîncepi procesul.');
+        _showError('Timpul pentru verificare a expirat. Te rug??m s?? re??ncepi procesul.');
         setState(() => pin = '');
         return;
       }
@@ -215,7 +215,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     }
     catch(e)
 {
-      if(mounted) _showError('Eroare de rețea: $e');
+      if(mounted) _showError('Eroare de re??ea: $e');
     }
     finally
     {
@@ -234,7 +234,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     try
     {
       final response = await client.post(
-        Uri.parse('https://$serverUrl/2fa/verify'),
+        Uri.parse('https://${AppConfig.serverUrl}/2fa/verify'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',
@@ -251,7 +251,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
         }
         else if(mounted)
 {
-          _showError('Sesiune expirată. Te rugăm să te reconectezi');
+          _showError('Sesiune expirat??. Te rug??m s?? te reconectezi');
           setState(() => pin = '');
         }
         return;
@@ -262,11 +262,11 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
 {
         if(!mounted) return;
         setState(() => isVerifying = true);
-        _showSuccess('Verificare reușită! Vei fi redirecționat...');
+        _showSuccess('Verificare reu??it??! Vei fi redirec??ionat...');
 
         bool setPin = true;
         final hasPinResponse = await client.get(
-          Uri.parse('https://$serverUrl/users/$_userId/has-pin'),
+          Uri.parse('https://${AppConfig.serverUrl}/users/$_userId/has-pin'),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $clientToken',
@@ -307,7 +307,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     }
     catch(e)
 {
-      if(mounted) _showError('Eroare de rețea: $e');
+      if(mounted) _showError('Eroare de re??ea: $e');
     }
     finally
     {
@@ -322,7 +322,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     try
     {
       final response = await client.post(
-        Uri.parse('https://$serverUrl/auth/refresh-client-token'),
+        Uri.parse('https://${AppConfig.serverUrl}/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
@@ -533,3 +533,4 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     );
   }
 }
+

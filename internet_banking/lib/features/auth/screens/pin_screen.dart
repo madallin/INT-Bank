@@ -112,7 +112,7 @@ class _PinScreenState extends State<PinScreen>
     {
       final client = _createHttpClient();
       final response = await client.post(
-        Uri.parse('https://$serverUrl/auth/get-client-token'),
+        Uri.parse('https://${AppConfig.serverUrl}/auth/get-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId}),
       );
@@ -125,7 +125,7 @@ class _PinScreenState extends State<PinScreen>
     }
     catch(e)
 {
-      _showError('Eroare de rețea: $e');
+      _showError('Eroare de re??ea: $e');
     }
   }
 
@@ -135,7 +135,7 @@ class _PinScreenState extends State<PinScreen>
     try
     {
       final response = await client.post(
-        Uri.parse('https://$serverUrl/auth/refresh-client-token'),
+        Uri.parse('https://${AppConfig.serverUrl}/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
@@ -220,7 +220,7 @@ class _PinScreenState extends State<PinScreen>
     try
     {
       final response = await client.post(
-        Uri.parse('https://$serverUrl/users/${widget.userId}/verify-pin'),
+        Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/verify-pin'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',
@@ -246,7 +246,7 @@ class _PinScreenState extends State<PinScreen>
           final success = await _performJwtLogin();
           if(!success)
 {
-            _showError('Eroare la autentificare. Încearcă din nou.');
+            _showError('Eroare la autentificare. ??ncearc?? din nou.');
             setState(() => pin = '');
             return;
           }
@@ -273,7 +273,7 @@ class _PinScreenState extends State<PinScreen>
     }
     catch(e)
 {
-      _showError('Eroare: Nu te poți conecta la server');
+      _showError('Eroare: Nu te po??i conecta la server');
       setState(() => pin = '');
     }
     finally
@@ -324,7 +324,7 @@ class _PinScreenState extends State<PinScreen>
     try
     {
       final response = await client.put(
-        Uri.parse('https://$serverUrl/users/${widget.userId}/set-pin'),
+        Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/set-pin'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',
@@ -375,7 +375,7 @@ class _PinScreenState extends State<PinScreen>
     }
     catch(e)
 {
-      _showError('Eroare: Nu te poți conecta la server');
+      _showError('Eroare: Nu te po??i conecta la server');
       setState(() {
         pin = '';
         confirmPin = '';
@@ -393,13 +393,13 @@ class _PinScreenState extends State<PinScreen>
   Widget build(BuildContext context)
   {
     final title = widget.set
-        ? (isConfirming ? 'Confirmă PIN-ul' : 'Setează PIN-ul')
+        ? (isConfirming ? 'Confirm?? PIN-ul' : 'Seteaz?? PIN-ul')
         : 'Introdu PIN-ul';
     final subtitle = widget.set
         ? (isConfirming
-            ? 'Reintroduceți codul PIN pentru confirmare'
-            : 'Alegeți un cod PIN din 6 cifre')
-        : 'Pentru a continua, te rugăm să introduci codul tău PIN';
+            ? 'Reintroduce??i codul PIN pentru confirmare'
+            : 'Alege??i un cod PIN din 6 cifre')
+        : 'Pentru a continua, te rug??m s?? introduci codul t??u PIN';
 
     final currentPin = isConfirming ? confirmPin : pin;
 
@@ -556,3 +556,4 @@ class _PinScreenState extends State<PinScreen>
     );
   }
 }
+

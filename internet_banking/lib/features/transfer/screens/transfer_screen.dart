@@ -154,7 +154,7 @@ class _TransferScreenState extends State<TransferScreen>
     {
       final client = _createHttpClient();
       final response = await client.post(
-        Uri.parse('https://$serverUrl/auth/get-client-token'),
+        Uri.parse('https://${AppConfig.serverUrl}/auth/get-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId}),
       );
@@ -166,12 +166,12 @@ class _TransferScreenState extends State<TransferScreen>
       }
       else
 {
-        _showError('Eroare la obținerea tokenului client');
+        _showError('Eroare la ob??inerea tokenului client');
       }
     }
     catch (e)
 {
-      _showError('Eroare de rețea: $e');
+      _showError('Eroare de re??ea: $e');
     }
   }
 
@@ -181,7 +181,7 @@ class _TransferScreenState extends State<TransferScreen>
     try
     {
       final response = await client.post(
-        Uri.parse('https://$serverUrl/auth/refresh-client-token'),
+        Uri.parse('https://${AppConfig.serverUrl}/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
@@ -210,14 +210,14 @@ class _TransferScreenState extends State<TransferScreen>
     required String reason,
   }) async
   {
-    if(_loading) return {'success': false, 'error': 'Transfer în curs'};
+    if(_loading) return {'success': false, 'error': 'Transfer ??n curs'};
     setState(() => _loading = true);
 
     final client = _createHttpClient();
     try
     {
       final response = await client.post(
-        Uri.parse('https://$serverUrl/users/${widget.userId}/transfer'),
+        Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/transfer'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',
@@ -237,7 +237,7 @@ class _TransferScreenState extends State<TransferScreen>
 {
           return await fetchTransferApi(iban: iban, name: name, amount: amount, reason: reason);
         }
-        return {'success': false, 'error': 'Sesiune expirat. Reconectează-te.'};
+        return {'success': false, 'error': 'Sesiune expirat. Reconecteaz??-te.'};
       }
 
       final data = jsonDecode(response.body);
@@ -245,7 +245,7 @@ class _TransferScreenState extends State<TransferScreen>
     }
     catch (e)
 {
-      return {'success': false, 'error': 'Eroare de rețea: $e'};
+      return {'success': false, 'error': 'Eroare de re??ea: $e'};
     }
     finally
     {
@@ -262,13 +262,13 @@ class _TransferScreenState extends State<TransferScreen>
     final reason = _reasonController.text.trim();
 
     if(iban.isEmpty || iban.length < 16) return _showError('IBAN invalid');
-    if(name.length < 7 || name.length > 128) return _showError('Numele trebuie să aibă 7-128 caractere');
-    if(!name.contains(' ')) return _showError('Trebuie minim un nume și un prenume');
+    if(name.length < 7 || name.length > 128) return _showError('Numele trebuie s?? aib?? 7-128 caractere');
+    if(!name.contains(' ')) return _showError('Trebuie minim un nume ??i un prenume');
     if(reason.length < 3) return _showError('Motiv prea scurt');
-    if(amount == null || amount <= 0) return _showError('Sumă invalidă');
+    if(amount == null || amount <= 0) return _showError('Sum?? invalid??');
     if(iban.toUpperCase() == widget.userIban.replaceAll(' ', '').toUpperCase())
 {
-      return _showError('Nu poți trimite bani în propriul cont');
+      return _showError('Nu po??i trimite bani ??n propriul cont');
     }
 
     final capitalizedReason = reason[0].toUpperCase() + reason.substring(1);
@@ -321,7 +321,7 @@ class _TransferScreenState extends State<TransferScreen>
             const SizedBox(height: 40),
             Text('Transfer nou', style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: const Color(darkGreyColor), letterSpacing: -0.5)),
             const SizedBox(height: 12),
-            Text('Completează datele pentru a efectua transferul', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w400, height: 1.5)),
+            Text('Completeaz?? datele pentru a efectua transferul', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w400, height: 1.5)),
             const SizedBox(height: 40),
             Expanded(
               child: SingleChildScrollView(
@@ -340,10 +340,10 @@ class _TransferScreenState extends State<TransferScreen>
                       ]),
                       const SizedBox(height: 24),
                       _buildInputField(controller: _nameController, label: 'Nume beneficiar', icon: Icons.person_outline, hint: 'Popescu Ion', keyboardType: TextInputType.name, inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZăâîșțĂÂÎȘȚ\s-]')),
+                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z????????????????????\s-]')),
                       ]),
                       const SizedBox(height: 24),
-                      _buildInputField(controller: _amountController, label: 'Sumă (RON)', icon: Icons.payments_outlined, hint: '5', keyboardType: TextInputType.number, inputFormatters: [
+                      _buildInputField(controller: _amountController, label: 'Sum?? (RON)', icon: Icons.payments_outlined, hint: '5', keyboardType: TextInputType.number, inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                         TextInputFormatter.withFunction((oldValue, newValue)
                         {
@@ -352,7 +352,7 @@ class _TransferScreenState extends State<TransferScreen>
                         }),
                       ]),
                       const SizedBox(height: 24),
-                      _buildInputField(controller: _reasonController, label: 'Motiv transfer', icon: Icons.description_outlined, hint: 'Plată factură, Rambursare etc.', keyboardType: TextInputType.text, maxLines: 3, maxLength: 140),
+                      _buildInputField(controller: _reasonController, label: 'Motiv transfer', icon: Icons.description_outlined, hint: 'Plat?? factur??, Rambursare etc.', keyboardType: TextInputType.text, maxLines: 3, maxLength: 140),
                       const SizedBox(height: 48),
                       _buildTransferButton(),
                     ],
@@ -386,7 +386,7 @@ class _TransferScreenState extends State<TransferScreen>
             child: Center(
               child: _loading
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                  : Text('Transferă', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                  : Text('Transfer??', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
             ),
           ),
         ),
@@ -447,3 +447,4 @@ class _TransferScreenState extends State<TransferScreen>
     );
   }
 }
+

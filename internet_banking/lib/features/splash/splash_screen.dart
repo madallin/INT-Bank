@@ -37,7 +37,7 @@ class _SplashScreenState extends State<SplashScreen>
     final client = _createHttpClient();
     try
     {
-      final uri = Uri.parse('https://$serverUrl/express_status');
+      final uri = Uri.parse('https://${AppConfig.serverUrl}/express_status');
       final response = await client.get(uri).timeout(
         const Duration(seconds: 8),
         onTimeout: () => throw Exception('Timeout'),
@@ -69,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen>
         MaterialPageRoute(
           builder: (_) => ErrorScreen(
             errorMessage:
-                'Nu s-a putut realiza conexiunea cu serverul. Așteptăm conexiunea...',
+                'Nu s-a putut realiza conexiunea cu serverul. A??tept??m conexiunea...',
             onConnectionRestored: (context)
             {
               Navigator.of(context).pushAndRemoveUntil(
@@ -125,3 +125,4 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+

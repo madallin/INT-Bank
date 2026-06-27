@@ -125,7 +125,7 @@ class _ErrorScreenState extends State<ErrorScreen>
     final client = _createHttpClient();
     try
     {
-      final uri = Uri.parse('https://$serverUrl/express_status');
+      final uri = Uri.parse('https://${AppConfig.serverUrl}/express_status');
       final response = await client.get(uri).timeout(
         const Duration(seconds: 5),
         onTimeout: () => throw Exception('Timeout'),
@@ -186,7 +186,7 @@ class _ErrorScreenState extends State<ErrorScreen>
               ),
               const SizedBox(height: 48),
               Text(
-                'Ups, ceva nu a funcționat...',
+                'Ups, ceva nu a func??ionat...',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 28,
@@ -621,3 +621,4 @@ class ScenePainter extends CustomPainter
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
+

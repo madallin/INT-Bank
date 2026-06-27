@@ -7,7 +7,7 @@ on:
     branches: [main, dev]
 
 jobs:
-  build:
+  analyze-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,11 +23,18 @@ jobs:
           channel: stable
           cache: true
 
-      - run: flutter pub get
+      - name: Get dependencies
+        run: flutter pub get
         working-directory: internet_banking
 
-      - run: dart run build_runner build --delete-conflicting-outputs
+      - name: Generate code (freezed, json_serializable)
+        run: dart run build_runner build --delete-conflicting-outputs
         working-directory: internet_banking
 
-      - run: flutter test
+      - name: Analyze Dart code
+        run: flutter analyze
+        working-directory: internet_banking
+
+      - name: Run tests
+        run: flutter test
         working-directory: internet_banking

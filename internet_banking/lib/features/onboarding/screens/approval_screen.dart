@@ -59,7 +59,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     {
       final client = HttpClient();
 
-      final uri = 'wss://$serverUrl';
+      final uri = 'wss://${AppConfig.serverUrl}';
       debugPrint('Incerc conexiune WS la: $uri');
 
       _ws = await WebSocket.connect(uri, customClient: client);
@@ -134,7 +134,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
       {
         final client = HttpClient();
         final request = await client.getUrl(
-          Uri.parse('https://$serverUrl/users/${widget.userId}/has-approved'),
+          Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/has-approved'),
         );
         final response = await request.close();
         final body = await response.transform(utf8.decoder).join();
@@ -489,3 +489,4 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     );
   }
 }
+

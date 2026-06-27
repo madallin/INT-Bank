@@ -24,7 +24,8 @@ dependencies:
   shared_preferences: ^2.5.3
   rename_app: ^1.6.5
   flutter_launcher_icons: ^0.14.4
-  flutter_dotenv: ^6.0.1
+
+
   geolocator: ^13.0.2
   freezed_annotation: ^2.4.1
   flutter_riverpod: ^2.6.1
@@ -48,7 +49,7 @@ flutter:
     - assets/images/logo.png
     - assets/images/logo_full_white.png
     - assets/images/visa.png
-    - .env
+
   fonts:
     - family: OCRA
       fonts:

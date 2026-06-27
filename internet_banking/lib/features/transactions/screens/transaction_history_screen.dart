@@ -99,7 +99,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     {
       final client = _createHttpClient();
       final response = await client.post(
-        Uri.parse('https://$serverUrl/auth/get-client-token'),
+        Uri.parse('https://${AppConfig.serverUrl}/auth/get-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId}),
       );
@@ -125,7 +125,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     try
     {
       final response = await client.post(
-        Uri.parse('https://$serverUrl/auth/refresh-client-token'),
+        Uri.parse('https://${AppConfig.serverUrl}/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
@@ -153,7 +153,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     try
     {
       final client = _createHttpClient();
-      final uri = Uri.parse('https://$serverUrl/users/${widget.userId}/accounts/${widget.accountId}/transactions');
+      final uri = Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/accounts/${widget.accountId}/transactions');
       final response = await client.get(uri, headers: {
         'Content-Type': 'application/json',
         if(clientToken != null) 'Authorization': 'Bearer $clientToken',
@@ -267,7 +267,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                     onPressed: () => Navigator.pop(context),
                     color: const Color(darkGreyColor),
                   ),
-                  Text('Istoric tranzacții', style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w600, color: const Color(darkGreyColor), letterSpacing: 0.2)),
+                  Text('Istoric tranzac??ii', style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w600, color: const Color(darkGreyColor), letterSpacing: 0.2)),
                 ],
               ),
             ),
@@ -285,9 +285,9 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 const SizedBox(height: 46),
-                                Text('Istoric tranzacții', style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: const Color(darkGreyColor), letterSpacing: -0.5)),
+                                Text('Istoric tranzac??ii', style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: const Color(darkGreyColor), letterSpacing: -0.5)),
                                 const SizedBox(height: 12),
-                                Text('Vizualizează ultimele tranzacții efectuate în contul tău', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w400, height: 1.5)),
+                                Text('Vizualizeaz?? ultimele tranzac??ii efectuate ??n contul t??u', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w400, height: 1.5)),
                               ],
                             ),
                           ),
@@ -296,7 +296,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                                 ? Center(
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                      child: Text('Nu există tranzacții recente realizate în acest cont bancar.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[700])),
+                                      child: Text('Nu exist?? tranzac??ii recente realizate ??n acest cont bancar.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[700])),
                                     ),
                                   )
                                 : ListView(
@@ -317,3 +317,4 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     );
   }
 }
+

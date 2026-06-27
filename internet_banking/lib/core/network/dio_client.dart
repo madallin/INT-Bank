@@ -31,7 +31,7 @@ class DioClient
   {
     _dio = Dio(
       BaseOptions(
-        baseUrl: 'https://$serverUrl',
+        baseUrl: 'https://${AppConfig.serverUrl}',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {
@@ -43,7 +43,7 @@ class DioClient
 
     _refreshDio = Dio(
       BaseOptions(
-        baseUrl: 'https://$serverUrl',
+        baseUrl: 'https://${AppConfig.serverUrl}',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {
@@ -199,4 +199,5 @@ class DioClient
   }) =>
       _dio.delete<T>(path, queryParameters: queryParameters, options: options);
 }
+
 

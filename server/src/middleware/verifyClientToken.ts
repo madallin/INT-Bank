@@ -30,7 +30,7 @@ function verifyClientToken(req: ClientTokenRequest, res: Response, next: NextFun
     req.client = payload;
     next();
   }
-  catch (err: any)
+  catch(err: any)
   {
     if(err.name === 'TokenExpiredError')
     {

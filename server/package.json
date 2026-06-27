@@ -26,7 +26,11 @@
     "libphonenumber-js": "^1.12.24",
     "node-fetch": "^2.7.0",
     "pg": "^8.16.3",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "reflect-metadata": "^0.2.2",
     "twilio": "^5.10.3",
+    "typeorm": "^1.0.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 
 import { TransferRepository } from '../../../../../../core/ports/out/transfer.repository.interface';
 import {
@@ -35,6 +35,7 @@ export class TransferRepositoryAdapter implements TransferRepository
     status: TransferStatus,
     completedAt?: Date,
     failureReason?: string,
+    entityManager?: unknown,
   ): Promise<void>
   {
     const updateData: Partial<TransferOrmEntity> = {
@@ -48,7 +49,16 @@ export class TransferRepositoryAdapter implements TransferRepository
     {
       updateData.failureReason = failureReason;
     }
-    await this.repo.update(id, updateData);
+
+    if(entityManager)
+    {
+      const em = entityManager as EntityManager;
+      await em.update(TransferOrmEntity, id, updateData);
+    }
+    else
+    {
+      await this.repo.update(id, updateData);
+    }
   }
 
   async findByAccountId(accountId: number): Promise<Transfer[]>

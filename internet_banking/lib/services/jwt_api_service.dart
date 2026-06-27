@@ -56,7 +56,6 @@ class JwtApiService
     }
     catch(_)
     {
-      // best-effort server notification
     }
     await SecureSessionManager.clearSession();
   }
@@ -79,6 +78,7 @@ class JwtApiService
         final refreshResponse = TokenRefreshResponse.fromJson(data);
 
         await SecureSessionManager.saveAccessToken(refreshResponse.accessToken);
+        await SecureSessionManager.saveRefreshToken(refreshResponse.refreshToken);
 
         if(refreshResponse.userId != null)
         {

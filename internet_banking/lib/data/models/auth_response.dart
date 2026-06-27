@@ -21,6 +21,7 @@ class TokenRefreshResponse with _$TokenRefreshResponse
 {
   const factory TokenRefreshResponse({
     required String accessToken,
+    required String refreshToken,
     int? userId,
   }) = _TokenRefreshResponse;
 

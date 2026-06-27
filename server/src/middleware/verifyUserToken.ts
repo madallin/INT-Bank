@@ -33,7 +33,7 @@ function verifyUserToken(req: UserTokenRequest, res: Response, next: NextFunctio
     req.userRole = payload.role || 'user';
     next();
   }
-  catch (err: any)
+  catch(err: any)
   {
     if(err.name === 'TokenExpiredError')
     {

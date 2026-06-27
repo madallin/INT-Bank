@@ -17,3 +17,6 @@ export const USERS_WINDOW_MS = 10 * 60 * 1000;
 export const USERS_MAX_REQUESTS = 200;
 export const GLOBAL_WINDOW_MS = 60 * 1000;
 export const GLOBAL_MAX_REQUESTS = 150;
+
+export const ACCESS_TOKEN_TTL = '15m';
+export const REFRESH_TOKEN_TTL = '7d';

@@ -1,4 +1,5 @@
 import { Account, AccountBalance } from '../../domain/account.entity';
+import { EntityManager } from 'typeorm';
 
 export abstract class AccountRepository
 {
@@ -18,4 +19,9 @@ export abstract class AccountRepository
   ): Promise<void>;
 
   abstract getBalance(accountId: number): Promise<AccountBalance>;
+
+  // ACID transaction wrapper: all operations inside cb share one EntityManager
+  abstract runInTransaction<T>(
+    cb: (entityManager: EntityManager) => Promise<T>,
+  ): Promise<T>;
 }

@@ -220,6 +220,7 @@ TokenRefreshResponse _$TokenRefreshResponseFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$TokenRefreshResponse {
   String get accessToken => throw _privateConstructorUsedError;
+  String get refreshToken => throw _privateConstructorUsedError;
   int? get userId => throw _privateConstructorUsedError;
 
   /// Serializes this TokenRefreshResponse to a JSON map.
@@ -239,7 +240,7 @@ abstract class $TokenRefreshResponseCopyWith<$Res> {
     $Res Function(TokenRefreshResponse) then,
   ) = _$TokenRefreshResponseCopyWithImpl<$Res, TokenRefreshResponse>;
   @useResult
-  $Res call({String accessToken, int? userId});
+  $Res call({String accessToken, String refreshToken, int? userId});
 }
 
 /// @nodoc
@@ -259,12 +260,16 @@ class _$TokenRefreshResponseCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? accessToken = null, Object? userId = freezed}) {
+  $Res call({Object? accessToken = null, Object? refreshToken = null, Object? userId = freezed}) {
     return _then(
       _value.copyWith(
             accessToken: null == accessToken
                 ? _value.accessToken
                 : accessToken // ignore: cast_nullable_to_non_nullable
+                      as String,
+            refreshToken: null == refreshToken
+                ? _value.refreshToken
+                : refreshToken // ignore: cast_nullable_to_non_nullable
                       as String,
             userId: freezed == userId
                 ? _value.userId
@@ -285,7 +290,7 @@ abstract class _$$TokenRefreshResponseImplCopyWith<$Res>
   ) = __$$TokenRefreshResponseImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String accessToken, int? userId});
+  $Res call({String accessToken, String refreshToken, int? userId});
 }
 
 /// @nodoc
@@ -301,12 +306,16 @@ class __$$TokenRefreshResponseImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? accessToken = null, Object? userId = freezed}) {
+  $Res call({Object? accessToken = null, Object? refreshToken = null, Object? userId = freezed}) {
     return _then(
       _$TokenRefreshResponseImpl(
         accessToken: null == accessToken
             ? _value.accessToken
             : accessToken // ignore: cast_nullable_to_non_nullable
+                  as String,
+        refreshToken: null == refreshToken
+            ? _value.refreshToken
+            : refreshToken // ignore: cast_nullable_to_non_nullable
                   as String,
         userId: freezed == userId
             ? _value.userId
@@ -320,7 +329,7 @@ class __$$TokenRefreshResponseImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$TokenRefreshResponseImpl implements _TokenRefreshResponse {
-  const _$TokenRefreshResponseImpl({required this.accessToken, this.userId});
+  const _$TokenRefreshResponseImpl({required this.accessToken, required this.refreshToken, this.userId});
 
   factory _$TokenRefreshResponseImpl.fromJson(Map<String, dynamic> json) =>
       _$$TokenRefreshResponseImplFromJson(json);
@@ -328,11 +337,13 @@ class _$TokenRefreshResponseImpl implements _TokenRefreshResponse {
   @override
   final String accessToken;
   @override
+  final String refreshToken;
+  @override
   final int? userId;
 
   @override
   String toString() {
-    return 'TokenRefreshResponse(accessToken: $accessToken, userId: $userId)';
+    return 'TokenRefreshResponse(accessToken: $accessToken, refreshToken: $refreshToken, userId: $userId)';
   }
 
   @override
@@ -342,12 +353,14 @@ class _$TokenRefreshResponseImpl implements _TokenRefreshResponse {
             other is _$TokenRefreshResponseImpl &&
             (identical(other.accessToken, accessToken) ||
                 other.accessToken == accessToken) &&
+            (identical(other.refreshToken, refreshToken) ||
+                other.refreshToken == refreshToken) &&
             (identical(other.userId, userId) || other.userId == userId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, accessToken, userId);
+  int get hashCode => Object.hash(runtimeType, accessToken, refreshToken, userId);
 
   /// Create a copy of TokenRefreshResponse
   /// with the given fields replaced by the non-null parameter values.
@@ -370,6 +383,7 @@ class _$TokenRefreshResponseImpl implements _TokenRefreshResponse {
 abstract class _TokenRefreshResponse implements TokenRefreshResponse {
   const factory _TokenRefreshResponse({
     required final String accessToken,
+    required final String refreshToken,
     final int? userId,
   }) = _$TokenRefreshResponseImpl;
 
@@ -378,6 +392,8 @@ abstract class _TokenRefreshResponse implements TokenRefreshResponse {
 
   @override
   String get accessToken;
+  @override
+  String get refreshToken;
   @override
   int? get userId;
 

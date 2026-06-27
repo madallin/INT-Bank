@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountOrmEntity } from './entities/account.orm-entity';
 import { TransferOrmEntity } from './entities/transfer.orm-entity';
+import { UserOrmEntity } from './entities/user.orm-entity';
+import { CardOrmEntity } from './entities/card.orm-entity';
+import { SessionOrmEntity } from './entities/session.orm-entity';
 import { AccountRepositoryAdapter } from './repositories/account.repository.adapter';
 import { TransferRepositoryAdapter } from './repositories/transfer.repository.adapter';
 import { AccountRepository } from '../../../../../core/ports/out/account.repository.interface';
@@ -21,7 +24,13 @@ import { TransferRepository } from '../../../../../core/ports/out/transfer.repos
             password: process.env.DB_PASSWORD || process.env.PGPASSWORD || 'postgres',
             database: process.env.DB_NAME || process.env.PGDATABASE || 'internet_banking',
           }),
-      entities: [AccountOrmEntity, TransferOrmEntity],
+      entities: [
+        AccountOrmEntity,
+        TransferOrmEntity,
+        UserOrmEntity,
+        CardOrmEntity,
+        SessionOrmEntity,
+      ],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
       ssl:
@@ -29,7 +38,13 @@ import { TransferRepository } from '../../../../../core/ports/out/transfer.repos
           ? { rejectUnauthorized: false }
           : false,
     }),
-    TypeOrmModule.forFeature([AccountOrmEntity, TransferOrmEntity]),
+    TypeOrmModule.forFeature([
+      AccountOrmEntity,
+      TransferOrmEntity,
+      UserOrmEntity,
+      CardOrmEntity,
+      SessionOrmEntity,
+    ]),
   ],
   providers: [
     {

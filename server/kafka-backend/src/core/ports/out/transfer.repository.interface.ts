@@ -12,6 +12,7 @@ export abstract class TransferRepository
     status: TransferStatus,
     completedAt?: Date,
     failureReason?: string,
+    entityManager?: unknown,
   ): Promise<void>;
   abstract findByAccountId(accountId: number): Promise<Transfer[]>;
 }

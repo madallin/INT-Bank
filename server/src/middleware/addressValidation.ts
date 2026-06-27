@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { Pool } from 'pg';
+import { DataSource } from 'typeorm';
+import { AppDataSource } from '../config/database';
+import { logger } from '../config/logger';
 
 export interface ValidatedAddress
 {
@@ -20,7 +22,7 @@ export interface ValidatedAddress
 export interface AddressValidationRequest extends Request
 {
   addressValidated?: ValidatedAddress;
-  pool?: Pool;
+  dataSource?: DataSource;
 }
 
 export async function validateAddress(
@@ -54,40 +56,41 @@ export async function validateAddress(
 
   try
   {
-    const client = await req.pool!.connect();
-    try
+    if(AppDataSource.isInitialized)
     {
-      const refResult = await client.query(
-        `SELECT 1 FROM localitati_referinta
-         WHERE LOWER(judet) = LOWER($1)
-           AND LOWER(localitate) = LOWER($2)
-         LIMIT 1`,
-        [judet, localitate],
-      );
-
-      if(refResult.rows.length === 0)
+      try
       {
-        res.status(400).json({
-          error: `Adresa „${localitate}, ${judet}” nu există în baza noastră de referință. Verifică județul și localitatea.`,
-        });
-        return;
+        const refResult = await AppDataSource.query(
+          `SELECT 1 FROM localitati_referinta
+           WHERE LOWER(judet) = LOWER($1)
+             AND LOWER(localitate) = LOWER($2)
+           LIMIT 1`,
+          [judet, localitate],
+        );
+
+        if(refResult.length === 0)
+        {
+          res.status(400).json({
+            error: `Adresa „${localitate}, ${judet}” nu există în baza noastră de referință. Verifică județul și localitatea.`,
+          });
+          return;
+        }
+      }
+      catch (dbErr: any)
+      {
+        logger.error(dbErr, 'Eroare la interogarea localitati_referinta');
+        if(dbErr.code !== '42P01')
+        {
+          res.status(500).json({ error: 'Eroare internă la validarea adresei' });
+          return;
+        }
+        logger.warn('Tabelul localitati_referinta nu există — se omite verificarea în SQL.');
       }
     }
-    finally
-    {
-      client.release();
-    }
   }
-  catch (dbErr: any)
+  catch (err)
   {
-    console.error('Eroare la interogarea localitati_referinta:', dbErr.message);
-    // Table might not exist — don't block registration in that case
-    if(dbErr.code !== '42P01')
-    {
-      res.status(500).json({ error: 'Eroare internă la validarea adresei' });
-      return;
-    }
-    console.warn('Tabelul localitati_referinta nu există — se omite verificarea în SQL.');
+    logger.warn('DataSource not initialized, skipping reference check');
   }
 
   const addressParts = [

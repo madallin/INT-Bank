@@ -13,6 +13,10 @@ dependencies:
   google_fonts: ^6.3.2
   http: ^1.5.0
   device_info_plus: ^12.1.0
+  dio: ^5.7.0
+
+  json_annotation: ^4.9.0
+
   flutter_secure_storage: ^9.2.4
   flutter_libphonenumber: ^2.5.1
   flutter_native_splash: ^2.4.7
@@ -22,11 +26,16 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_dotenv: ^6.0.1
   geolocator: ^13.0.2
+  freezed_annotation: ^2.4.1
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  build_runner: ^2.4.9
 
 flutter:
   uses-material-design: true

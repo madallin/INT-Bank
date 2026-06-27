@@ -29,9 +29,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   http.Client _createHttpClient()
   {
-    final ioc = HttpClient()
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-    return IOClient(ioc);
+    return IOClient(HttpClient());
   }
 
   Future<bool> _checkServerConnection() async

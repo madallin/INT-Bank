@@ -1,17 +1,15 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io' show HttpClient, Platform, X509Certificate;
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:dio/dio.dart';
 
 import '../../../config/app_config.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../data/models/card_model.dart';
 import '../../../services/currency_service.dart';
 import '../../transfer/screens/transfer_screen.dart';
@@ -31,6 +29,7 @@ class HomeScreen extends StatefulWidget
 class _HomeScreenState extends State<HomeScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver
 {
+  final DioClient _client = DioClient();
   final List<CardModel> _cardList = [];
   CardModel? _selectedCard;
   int _currentCardIndex = 0;
@@ -53,13 +52,10 @@ class _HomeScreenState extends State<HomeScreen>
   String? refreshToken;
   String _deviceId = 'dev-device';
 
-  late SharedPreferences _prefs;
   Timer? _refreshTimer;
 
   List<Map<String, dynamic>> _recentTransactions = [];
   bool _loadingTransactions = false;
-
-  final storage = const FlutterSecureStorage();
 
   @override
   void initState()
@@ -82,13 +78,8 @@ class _HomeScreenState extends State<HomeScreen>
     ).animate(CurvedAnimation(parent: _pageController, curve: Curves.easeOut));
     _pageController.forward();
 
-    _initPrefs().then((_) => _initialize());
+    _initialize();
     _startPeriodicRefresh();
-  }
-
-  Future<void> _initPrefs() async
-  {
-    _prefs = await SharedPreferences.getInstance();
   }
 
   Future<void> _initialize() async
@@ -122,28 +113,18 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  http.Client _createHttpClient()
-  {
-    final ioc = HttpClient();
-    ioc.badCertificateCallback =
-        (X509Certificate cert, String host, int port) => true;
-    return IOClient(ioc);
-  }
-
   Future<void> _getClientToken() async
   {
     try
     {
-      final client = _createHttpClient();
-      final response = await client.post(
-        Uri.parse('https://$serverUrl/auth/get-client-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'deviceId': _deviceId}),
+      final response = await _client.post(
+        '/auth/get-client-token',
+        data: {'deviceId': _deviceId},
       );
-      client.close();
+
       if(response.statusCode == 200)
       {
-        final data = jsonDecode(response.body);
+        final data = response.data as Map<String, dynamic>;
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
       }
@@ -157,17 +138,16 @@ class _HomeScreenState extends State<HomeScreen>
   Future<bool> _refreshClientToken() async
   {
     if(refreshToken == null) return false;
-    final client = _createHttpClient();
     try
     {
-      final response = await client.post(
-        Uri.parse('https://$serverUrl/auth/refresh-client-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
+      final response = await _client.post(
+        '/auth/refresh-client-token',
+        data: {'deviceId': _deviceId, 'refreshToken': refreshToken},
       );
+
       if(response.statusCode == 200)
       {
-        final data = jsonDecode(response.body);
+        final data = response.data as Map<String, dynamic>;
         if(mounted) setState(() => clientToken = data['client_token']);
         return true;
       }
@@ -177,10 +157,15 @@ class _HomeScreenState extends State<HomeScreen>
     {
       return false;
     }
-    finally
-    {
-      client.close();
-    }
+  }
+
+  Options _authOptions()
+  {
+    return Options(
+      headers: clientToken != null
+          ? {'Authorization': 'Bearer $clientToken'}
+          : null,
+    );
   }
 
   Future<void> _fetchCardsAndAccounts() async
@@ -188,19 +173,14 @@ class _HomeScreenState extends State<HomeScreen>
     setState(() => _loading = true);
     try
     {
-      final client = _createHttpClient();
-      final response = await client.get(
-        Uri.parse('https://$serverUrl/users/${widget.userId}/cards'),
-        headers: {
-          'Content-Type': 'application/json',
-          if(clientToken != null) 'Authorization': 'Bearer $clientToken',
-        },
+      final response = await _client.get(
+        '/users/${widget.userId}/cards',
+        options: _authOptions(),
       );
-      client.close();
 
-      if(response.statusCode == 200 && response.body.isNotEmpty)
+      if(response.statusCode == 200 && response.data != null)
       {
-        final data = jsonDecode(response.body);
+        final data = response.data as Map<String, dynamic>;
         if(data['cards'] != null)
         {
           final cards = List<Map<String, dynamic>>.from(data['cards']);
@@ -254,22 +234,18 @@ class _HomeScreenState extends State<HomeScreen>
     {
       try
       {
-        final client = _createHttpClient();
-        final resp = await client.get(
-          Uri.parse('https://$serverUrl/users/${widget.userId}/cards'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $clientToken',
-          },
+        final resp = await _client.get(
+          '/users/${widget.userId}/cards',
+          options: _authOptions(),
         );
-        client.close();
+
         if(resp.statusCode == 200)
         {
-          final data = jsonDecode(resp.body);
+          final data = resp.data as Map<String, dynamic>;
           final cards = data['cards'] as List?;
           if(cards != null && cards.isNotEmpty)
           {
-            accountId = cards.first['accountId'] as int?;
+            accountId = (cards.first as Map<String, dynamic>)['accountId'] as int?;
           }
         }
       }
@@ -283,19 +259,14 @@ class _HomeScreenState extends State<HomeScreen>
 
     try
     {
-      final client = _createHttpClient();
-      final response = await client.get(
-        Uri.parse('https://$serverUrl/users/${widget.userId}/accounts/$accountId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $clientToken',
-        },
+      final response = await _client.get(
+        '/users/${widget.userId}/accounts/$accountId',
+        options: _authOptions(),
       );
-      client.close();
 
       if(response.statusCode == 200)
       {
-        final data = jsonDecode(response.body);
+        final data = response.data as Map<String, dynamic>;
         if(data['account'] != null && data['account']['sold'] != null)
         {
           final sold = data['account']['sold'];
@@ -325,18 +296,14 @@ class _HomeScreenState extends State<HomeScreen>
     setState(() => _loadingTransactions = true);
     try
     {
-      final client = _createHttpClient();
-      final response = await client.get(
-        Uri.parse('https://$serverUrl/users/${widget.userId}/accounts/$_currentAccountId/transactions'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $clientToken',
-        },
+      final response = await _client.get(
+        '/users/${widget.userId}/accounts/$_currentAccountId/transactions',
+        options: _authOptions(),
       );
-      client.close();
-      if(response.statusCode == 200 && response.body.isNotEmpty)
+
+      if(response.statusCode == 200 && response.data != null)
       {
-        final data = jsonDecode(response.body);
+        final data = response.data as Map<String, dynamic>;
         if(data['transactions'] != null)
         {
           final all = List<Map<String, dynamic>>.from(data['transactions']);
@@ -520,7 +487,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _logout() async
   {
-    await _prefs.remove('loggedUserId');
+    const storage = FlutterSecureStorage();
+    await storage.delete(key: 'loggedUserIdKey');
     if(!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
@@ -998,36 +966,45 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: Colors.white60,
                                 letterSpacing: 1.5)),
                         const SizedBox(height: 2),
-                        Text(expiry,
+                        Text(cvv,
                             style: GoogleFonts.inter(
-                                fontSize: 12,
+                                fontSize: 13,
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600)),
                       ],
                     ),
-                    const SizedBox(width: 12),
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: CircularProgressIndicator(
-                            value: _revealCountdown / 60,
-                            backgroundColor: Colors.white24,
-                            valueColor:
-                                const AlwaysStoppedAnimation(Colors.white),
-                            strokeWidth: 2.5,
-                          ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('EXP: $expiry',
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w500)),
+                    GestureDetector(
+                      onTap: _onToggleCardReveal,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        Text(
-                          '$_revealCountdown',
-                          style: GoogleFonts.spaceMono(
-                              fontSize: 11,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700),
+                        child: Row(
+                          children: [
+                            Icon(Icons.lock_outline,
+                                size: 12, color: Colors.white.withOpacity(0.8)),
+                            const SizedBox(width: 4),
+                            Text('Ascunde',
+                                style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: Colors.white.withOpacity(0.8))),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -1043,415 +1020,354 @@ class _HomeScreenState extends State<HomeScreen>
   {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Sold disponibil',
                     style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.grey[500],
+                        fontSize: 13,
+                        color: Colors.grey[600],
                         fontWeight: FontWeight.w500)),
-                const SizedBox(height: 4),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
-                  transitionBuilder: (child, anim) =>
-                      FadeTransition(opacity: anim, child: child),
-                  child: _loadingBalance
-                      ? const SizedBox(
-                          key: ValueKey('loading'),
-                          height: 34,
-                          width: 120,
-                          child: Center(
-                              child: CircularProgressIndicator(strokeWidth: 2)),
-                        )
-                      : _balanceVisible
-                          ? Text(
-                              '${_formatBalance(_balance)} RON',
-                              key: ValueKey('bal_$_balance'),
-                              style: GoogleFonts.poppins(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(darkGreyColor),
-                                  letterSpacing: -0.5),
-                            )
-                          : Text(
-                              '•••••• RON',
-                              key: const ValueKey('hidden'),
-                              style: GoogleFonts.poppins(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(darkGreyColor)),
+                const SizedBox(height: 6),
+                _loadingBalance
+                    ? const SizedBox(
+                        width: 120,
+                        height: 18,
+                        child: LinearProgressIndicator(),
+                      )
+                    : Row(
+                        children: [
+                          Text(
+                            _balanceVisible
+                                ? '${_formatBalance(_balance)} RON'
+                                : '*****',
+                            style: GoogleFonts.poppins(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(darkGreyColor),
+                                letterSpacing: -0.5),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: _toggleBalance,
+                            child: Icon(
+                              _balanceVisible
+                                  ? Icons.visibility_rounded
+                                  : Icons.visibility_off_rounded,
+                              size: 20,
+                              color: Colors.grey[400],
                             ),
-                ),
+                          ),
+                        ],
+                      ),
               ],
             ),
-          ),
-          GestureDetector(
-            onTap: _toggleBalance,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                  shape: BoxShape.circle, color: Colors.grey[100]),
-              child: Icon(
-                _balanceVisible
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                size: 20,
-                color: Colors.grey[500],
+            GestureDetector(
+              onTap: _goToStatement,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(lightForestGreenColor).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.description_outlined,
+                        size: 16, color: Color(lightForestGreenColor)),
+                    const SizedBox(width: 6),
+                    Text('Extras',
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(lightForestGreenColor))),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildActionButtons()
   {
-    final showingBack = _cardShowingBack;
-
-    final List<_BtnData> buttons = [
-      _BtnData(Icons.send_rounded, 'Transfer', _goToTransfer),
-      _BtnData(Icons.receipt_long_rounded, 'Istoric\ntranzacții', _goToHistory),
-      _BtnData(
-        showingBack ? Icons.lock_rounded : Icons.credit_card_rounded,
-        showingBack ? 'Ascunde\ndatele' : 'Afișează\ndatele',
-        _onToggleCardReveal,
-        highlight: showingBack,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(child: _buildActionCard(Icons.send_rounded, 'Transfer', _goToTransfer)),
+          const SizedBox(width: 12),
+          Expanded(child: _buildActionCard(Icons.receipt_long_rounded, 'Istoric', _goToHistory)),
+          const SizedBox(width: 12),
+          Expanded(child: _buildActionCard(Icons.currency_exchange_rounded, 'Schimb', _goToExchange)),
+        ],
       ),
-      _BtnData(Icons.currency_exchange_rounded, 'Schimb\nvalutar', _goToExchange),
-      _BtnData(Icons.description_outlined, 'Extras\nde cont', _goToStatement),
-    ];
+    );
+  }
 
-    return SizedBox(
-      height: 92,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: buttons.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 10),
-        itemBuilder: (context, i)
-        {
-          final b = buttons[i];
-          return GestureDetector(
-            onTap: b.onTap,
-            child: SizedBox(
-              width: 74,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: b.highlight
-                          ? const Color(lightForestGreenColor)
-                          : const Color(lightForestGreenColor).withOpacity(0.1),
-                    ),
-                    child: Icon(b.icon,
-                        size: 22,
-                        color: b.highlight
-                            ? Colors.white
-                            : const Color(lightForestGreenColor)),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    b.label,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(darkGreyColor),
-                        height: 1.25),
-                  ),
-                ],
-              ),
+  Widget _buildActionCard(IconData icon, String label, VoidCallback onTap)
+  {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 22),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
-          );
-        },
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(lightForestGreenColor).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: const Color(lightForestGreenColor), size: 22),
+            ),
+            const SizedBox(height: 10),
+            Text(label,
+                style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(darkGreyColor))),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildExchangePreview()
   {
-    final service = CurrencyService.instance;
-    const currencies = ['EUR', 'USD', 'GBP'];
-    const symbols = {'EUR': '€', 'USD': r'$', 'GBP': '£'};
-    const names = {
-      'EUR': 'Euro',
-      'USD': 'Dolar american',
-      'GBP': 'Liră sterlină'
-    };
-
+    final rates = CurrencyService.instance;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Curs valutar',
-                  style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(darkGreyColor))),
-              GestureDetector(
-                onTap: _goToExchange,
-                child: Text('Vezi mai mult',
-                    style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: const Color(lightForestGreenColor),
-                        fontWeight: FontWeight.w600)),
-              ),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(lightForestGreenColor).withOpacity(0.08),
+              const Color(darkForestGreenColor).withOpacity(0.04),
             ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey[200]!, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2)),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: const Color(lightForestGreenColor).withOpacity(0.15)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.trending_up_rounded,
+                    size: 18, color: Color(lightForestGreenColor)),
+                const SizedBox(width: 8),
+                Text('Curs valutar',
+                    style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(darkGreyColor))),
               ],
             ),
-            child: !service.hasRates
-                ? Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Center(
-                        child: Text('Se încarcă...',
-                            style: GoogleFonts.inter(
-                                fontSize: 13, color: Colors.grey[400]))),
-                  )
-                : Column(
-                    children: List.generate(currencies.length, (i)
-                    {
-                      final code = currencies[i];
-                      final rate = service.rates?[code];
-                      if(rate == null) return const SizedBox();
-                      return Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: const Color(lightForestGreenColor)
-                                        .withOpacity(0.08),
-                                  ),
-                                  child: Center(
-                                    child: Text(symbols[code]!,
-                                        style: GoogleFonts.inter(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            color: const Color(
-                                                darkForestGreenColor))),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(code,
-                                          style: GoogleFonts.inter(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: const Color(darkGreyColor))),
-                                      Text(names[code]!,
-                                          style: GoogleFonts.inter(
-                                              fontSize: 11,
-                                              color: Colors.grey[500])),
-                                    ],
-                                  ),
-                                ),
-                                Text('${rate['RON']?.toStringAsFixed(4) ?? 'N/A'} RON',
-                                    style: GoogleFonts.inter(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: const Color(darkGreyColor))),
-                              ],
-                            ),
-                          ),
-                          if(i < currencies.length - 1)
-                            Divider(
-                                height: 1,
-                                color: Colors.grey[100],
-                                indent: 16,
-                                endIndent: 16),
-                        ],
-                      );
-                    }),
-                  ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            if(!rates.hasRates)
+              Center(
+                child: Text('Se încarcă...',
+                    style: GoogleFonts.inter(
+                        fontSize: 12, color: Colors.grey[500])),
+              )
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildRateTile('EUR', rates.getRate('EUR', 'RON')),
+                  _buildRateTile('USD', rates.getRate('USD', 'RON')),
+                  _buildRateTile('GBP', rates.getRate('GBP', 'RON')),
+                ],
+              ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildRateTile(String currency, double? rate)
+  {
+    return Column(
+      children: [
+        Text(currency,
+            style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: const Color(darkGreyColor))),
+        const SizedBox(height: 4),
+        Text(
+          rate != null ? rate.toStringAsFixed(4) : '---',
+          style: GoogleFonts.spaceMono(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(lightForestGreenColor)),
+        ),
+      ],
     );
   }
 
   Widget _buildRecentTransactions()
   {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Transferuri recente',
+              Text('Tranzacții recente',
                   style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: const Color(darkGreyColor))),
-              GestureDetector(
-                onTap: _goToHistory,
-                child: Text('Vezi toate',
-                    style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: const Color(lightForestGreenColor),
-                        fontWeight: FontWeight.w600)),
-              ),
+              if(_currentAccountId != null)
+                GestureDetector(
+                  onTap: _goToHistory,
+                  child: Text('Vezi toate',
+                      style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(lightForestGreenColor),
+                          fontWeight: FontWeight.w600)),
+                ),
             ],
           ),
           const SizedBox(height: 12),
+          if(_loadingTransactions)
+            const Center(child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ))
+          else if(_recentTransactions.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text('Nu există tranzacții recente',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                      fontSize: 14, color: Colors.grey[500])),
+            )
+          else
+            ...(_recentTransactions.asMap().entries.map((entry)
+            {
+              return Padding(
+                padding: EdgeInsets.only(bottom: entry.key < _recentTransactions.length - 1 ? 10 : 0),
+                child: _buildTransactionItem(entry.value),
+              );
+            })),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionItem(Map<String, dynamic> tx)
+  {
+    final isPositive = tx['type'] == 'received';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey[100]!),
+      ),
+      child: Row(
+        children: [
           Container(
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey[200]!, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2)),
+              shape: BoxShape.circle,
+              color: (isPositive
+                      ? const Color(lightForestGreenColor)
+                      : Colors.red)
+                  .withOpacity(0.1),
+            ),
+            child: Icon(
+              isPositive
+                  ? Icons.arrow_downward_rounded
+                  : Icons.arrow_upward_rounded,
+              size: 18,
+              color: isPositive
+                  ? const Color(lightForestGreenColor)
+                  : Colors.red,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tx['beneficiary'] ?? tx['motiv'] ?? '',
+                  style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(darkGreyColor)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _txDate(tx['dataTransfer'] ?? ''),
+                  style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: Colors.grey[500],
+                      fontWeight: FontWeight.w400),
+                ),
               ],
             ),
-            child: _loadingTransactions
-                ? const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Center(
-                        child: CircularProgressIndicator(strokeWidth: 2)),
-                  )
-                : _recentTransactions.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Center(
-                          child: Text('Nicio tranzacție recentă',
-                              style: GoogleFonts.inter(
-                                  fontSize: 14, color: Colors.grey[400])),
-                        ),
-                      )
-                    : Column(
-                        children: List.generate(_recentTransactions.length, (i)
-                        {
-                          final t = _recentTransactions[i];
-                          final isIn = t['type'] == 'received';
-                          final title =
-                              t['beneficiary'] ?? t['motiv'] ?? 'Tranzacție';
-                          final dateStr = (t['dataTransfer'] as String?) ?? '';
-
-                          return Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: isIn
-                                            ? Colors.green.withOpacity(0.1)
-                                            : Colors.red.withOpacity(0.08),
-                                      ),
-                                      child: Icon(
-                                        isIn
-                                            ? Icons.arrow_downward_rounded
-                                            : Icons.arrow_upward_rounded,
-                                        size: 18,
-                                        color: isIn
-                                            ? Colors.green[600]
-                                            : Colors.red[400],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(title,
-                                              style: GoogleFonts.inter(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: const Color(
-                                                      darkGreyColor)),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis),
-                                          if(dateStr.isNotEmpty)
-                                            Text(_txDate(dateStr),
-                                                style: GoogleFonts.inter(
-                                                    fontSize: 12,
-                                                    color: Colors.grey[500])),
-                                        ],
-                                      ),
-                                    ),
-                                    Text(
-                                      _txAmount(t),
-                                      style: GoogleFonts.inter(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w700,
-                                          color: isIn
-                                              ? Colors.green[600]
-                                              : Colors.red[400]),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if(i < _recentTransactions.length - 1)
-                                Divider(
-                                    height: 1,
-                                    color: Colors.grey[100],
-                                    indent: 16,
-                                    endIndent: 16),
-                            ],
-                          );
-                        }),
-                      ),
+          ),
+          Text(
+            _txAmount(tx),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: isPositive
+                  ? const Color(lightForestGreenColor)
+                  : Colors.red.shade600,
+            ),
           ),
         ],
       ),
     );
   }
-}
-
-class _BtnData
-{
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool highlight;
-
-  const _BtnData(this.icon, this.label, this.onTap, {this.highlight = false});
 }

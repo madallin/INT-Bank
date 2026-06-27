@@ -1,14 +1,11 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:http/io_client.dart';
-
-import '../config/app_config.dart';
+import '../core/network/dio_client.dart';
 
 class CurrencyService
 {
   CurrencyService._();
   static final CurrencyService instance = CurrencyService._();
+
+  final DioClient _client = DioClient();
 
   bool _hasRates = false;
   Map<String, Map<String, double>> _rates = {};
@@ -20,19 +17,13 @@ class CurrencyService
 
   Future<void> fetchRates() async
   {
-    final ioc = HttpClient()
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-    final client = IOClient(ioc);
-
     try
     {
-      final response = await client.get(
-        Uri.parse('https://$serverUrl/currency/api/v1/exchange-rates'),
-      );
+      final response = await _client.get('/currency/api/v1/exchange-rates');
 
       if(response.statusCode == 200)
       {
-        final data = jsonDecode(response.body);
+        final data = response.data as Map<String, dynamic>;
         final rawRates = data['rates'] as Map<String, dynamic>;
         _rates = {};
 
@@ -57,9 +48,9 @@ class CurrencyService
         _hasRates = true;
       }
     }
-    finally
+    catch(_)
     {
-      client.close();
+      _hasRates = false;
     }
   }
 

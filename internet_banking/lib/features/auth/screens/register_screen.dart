@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show HttpClient, X509Certificate;
+import 'dart:io' show HttpClient;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -85,10 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   http.Client _createHttpClient()
   {
-    final ioc = HttpClient();
-    ioc.badCertificateCallback =
-        (X509Certificate cert, String host, int port) => true;
-    return IOClient(ioc);
+    return IOClient(HttpClient());
   }
 
   void _showError(String message)

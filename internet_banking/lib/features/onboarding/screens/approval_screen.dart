@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show HttpClient, X509Certificate, WebSocket;
+import 'dart:io' show HttpClient, WebSocket;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -57,9 +57,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
   {
     try
     {
-      final client = HttpClient()
-        ..badCertificateCallback =
-            (X509Certificate cert, String host, int port) => true;
+      final client = HttpClient();
 
       final uri = 'wss://$serverUrl';
       debugPrint('Incerc conexiune WS la: $uri');
@@ -134,9 +132,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
       }
       try
       {
-        final client = HttpClient()
-          ..badCertificateCallback =
-              (X509Certificate cert, String host, int port) => true;
+        final client = HttpClient();
         final request = await client.getUrl(
           Uri.parse('https://$serverUrl/users/${widget.userId}/has-approved'),
         );

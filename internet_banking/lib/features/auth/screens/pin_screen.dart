@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show HttpClient, Platform, X509Certificate;
+import 'dart:io' show HttpClient, Platform;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -103,10 +103,7 @@ class _PinScreenState extends State<PinScreen>
 
   http.Client _createHttpClient()
   {
-    final ioc = HttpClient();
-    ioc.badCertificateCallback =
-        (X509Certificate cert, String host, int port) => true;
-    return IOClient(ioc);
+    return IOClient(HttpClient());
   }
 
   Future<void> _getClientToken() async

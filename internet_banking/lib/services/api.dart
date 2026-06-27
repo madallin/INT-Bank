@@ -1,120 +1,81 @@
-import 'dart:convert';
-import 'dart:io';
+import 'package:dio/dio.dart';
 
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
+import '../core/network/dio_client.dart';
 
-import '../config/app_config.dart';
+final DioClient _client = DioClient();
 
-http.Client _createHttpClient()
+Future<int?> fetchUserProfile(int userId) async
 {
-  final ioc = HttpClient()
-    ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-  return IOClient(ioc);
-}
-
-Future<Map<String, dynamic>?> fetchUserProfile(int userId) async
-{
-  final client = _createHttpClient();
   try
   {
-    final response = await client.get(
-      Uri.parse('https://$serverUrl/users/$userId'),
-    );
+    final response = await _client.get('/users/$userId');
     if(response.statusCode == 200)
     {
-      return jsonDecode(response.body);
+      final data = response.data as Map<String, dynamic>;
+      return data['id'] as int?;
     }
     return null;
   }
-  catch(e)
+  catch(_)
   {
     return null;
-  }
-  finally
-  {
-    client.close();
   }
 }
 
 Future<List<dynamic>?> fetchUserAccounts(int userId) async
 {
-  final client = _createHttpClient();
   try
   {
-    final response = await client.get(
-      Uri.parse('https://$serverUrl/users/$userId/accounts'),
-    );
+    final response = await _client.get('/users/$userId/accounts');
     if(response.statusCode == 200)
     {
-      final data = jsonDecode(response.body);
+      final data = response.data as Map<String, dynamic>;
       return data['accounts'] as List<dynamic>;
     }
     return null;
   }
-  catch(e)
+  catch(_)
   {
     return null;
-  }
-  finally
-  {
-    client.close();
   }
 }
 
 Future<List<dynamic>?> fetchUserCards(int userId, {String? clientToken}) async
 {
-  final client = _createHttpClient();
   try
   {
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
-    if(clientToken != null)
-    {
-      headers['Authorization'] = 'Bearer $clientToken';
-    }
-    final response = await client.get(
-      Uri.parse('https://$serverUrl/users/$userId/cards'),
-      headers: headers,
+    final response = await _client.get(
+      '/users/$userId/cards',
+      options: clientToken != null
+          ? Options(headers: {'Authorization': 'Bearer $clientToken'})
+          : null,
     );
     if(response.statusCode == 200)
     {
-      final data = jsonDecode(response.body);
+      final data = response.data as Map<String, dynamic>;
       return data['cards'] as List<dynamic>;
     }
     return null;
   }
-  catch(e)
+  catch(_)
   {
     return null;
-  }
-  finally
-  {
-    client.close();
   }
 }
 
 Future<Map<String, dynamic>?> fetchUserData(int userId) async
 {
-  final client = _createHttpClient();
   try
   {
-    final response = await client.get(
-      Uri.parse('https://$serverUrl/users/$userId'),
-    );
+    final response = await _client.get('/users/$userId');
     if(response.statusCode == 200)
     {
-      return jsonDecode(response.body);
+      return response.data as Map<String, dynamic>;
     }
     return null;
   }
-  catch(e)
+  catch(_)
   {
     return null;
-  }
-  finally
-  {
-    client.close();
   }
 }

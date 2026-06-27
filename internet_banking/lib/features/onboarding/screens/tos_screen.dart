@@ -1,5 +1,5 @@
 import 'dart:convert' show jsonDecode, jsonEncode;
-import 'dart:io' show HttpClient, X509Certificate, Platform;
+import 'dart:io' show HttpClient, Platform;
 
 import 'package:device_info_plus/device_info_plus.dart' show DeviceInfoPlugin;
 import 'package:flutter/material.dart';
@@ -29,10 +29,7 @@ class _TosScreenState extends State<TosScreen>
 
   http.Client _createHttpClient()
   {
-    final ioc = HttpClient();
-    ioc.badCertificateCallback =
-        (X509Certificate cert, String host, int port) => true;
-    return IOClient(ioc);
+    return IOClient(HttpClient());
   }
 
   Future<String> getDeviceId() async

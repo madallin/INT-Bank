@@ -1,124 +1,96 @@
-import 'dart:convert';
-import 'dart:io';
+import 'package:dio/dio.dart';
 
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
-
-import '../config/app_config.dart';
+import '../core/network/dio_client.dart';
 import '../core/storage/secure_session_manager.dart';
+import '../data/models/auth_response.dart';
 
 class JwtApiService
 {
-  static http.Client _createHttpClient()
-  {
-    final ioc = HttpClient()
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-    return IOClient(ioc);
-  }
+  static final DioClient _client = DioClient();
 
-  static Future<Map<String, dynamic>?> login(String phone, String pin) async
+  static Future<AuthResponse?> login(String phone, String pin) async
   {
-    final client = _createHttpClient();
     try
     {
-      final response = await client.post(
-        Uri.parse('https://$serverUrl/auth-session/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phone': phone, 'pin': pin}),
+      final response = await _client.post(
+        '/auth-session/login',
+        data: {'phone': phone, 'pin': pin},
       );
 
       if(response.statusCode == 200)
       {
-        final data = jsonDecode(response.body);
-        if(data['accessToken'] != null && data['refreshToken'] != null)
+        final data = response.data as Map<String, dynamic>;
+        final authResponse = AuthResponse.fromJson(data);
+
+        if(authResponse.accessToken.isNotEmpty && authResponse.refreshToken.isNotEmpty)
         {
-          await SecureSessionManager.saveAccessToken(data['accessToken']);
-          await SecureSessionManager.saveRefreshToken(data['refreshToken']);
-          if(data['userId'] != null)
+          await SecureSessionManager.saveAccessToken(authResponse.accessToken);
+          await SecureSessionManager.saveRefreshToken(authResponse.refreshToken);
+          if(authResponse.userId != null)
           {
-            await SecureSessionManager.saveUserId(data['userId']);
+            await SecureSessionManager.saveUserId(authResponse.userId!);
           }
         }
-        return data;
+        return authResponse;
       }
       return null;
     }
-    catch(e)
+    on DioException
     {
       return null;
-    }
-    finally
-    {
-      client.close();
     }
   }
 
   static Future<void> logout() async
   {
-    final client = _createHttpClient();
     try
     {
       final accessToken = await SecureSessionManager.getAccessToken();
       if(accessToken != null)
       {
-        await client.post(
-          Uri.parse('https://$serverUrl/auth-session/logout'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $accessToken',
-          },
+        await _client.post(
+          '/auth-session/logout',
+          options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
         );
       }
     }
-    finally
+    catch(_)
     {
-      client.close();
+      // best-effort server notification
     }
     await SecureSessionManager.clearSession();
   }
 
   static Future<int?> tryRefreshSession() async
   {
-    final client = _createHttpClient();
     try
     {
       final refreshToken = await SecureSessionManager.getRefreshToken();
       if(refreshToken == null) return null;
 
-      final response = await client.post(
-        Uri.parse('https://$serverUrl/auth-session/refresh'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'refreshToken': refreshToken}),
+      final response = await _client.post(
+        '/auth-session/refresh',
+        data: {'refreshToken': refreshToken},
       );
 
       if(response.statusCode == 200)
       {
-        final data = jsonDecode(response.body);
-        if(data['accessToken'] != null)
+        final data = response.data as Map<String, dynamic>;
+        final refreshResponse = TokenRefreshResponse.fromJson(data);
+
+        await SecureSessionManager.saveAccessToken(refreshResponse.accessToken);
+
+        if(refreshResponse.userId != null)
         {
-          await SecureSessionManager.saveAccessToken(data['accessToken']);
-        }
-        if(data['userId'] != null)
-        {
-          final userId = data['userId'] is int
-              ? data['userId']
-              : int.tryParse(data['userId'].toString());
-          if(userId != null)
-          {
-            await SecureSessionManager.saveUserId(userId);
-          }
-          return userId;
+          await SecureSessionManager.saveUserId(refreshResponse.userId!);
+          return refreshResponse.userId;
         }
       }
       return null;
     }
-    catch(e)
+    on DioException
     {
       return null;
-    }
-    finally
-    {
-      client.close();
     }
   }
 }

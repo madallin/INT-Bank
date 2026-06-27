@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Param, Body, UseGuards, Logger } from '@nestjs/common';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import { AccountOrmEntity } from '../../out/persistence/typeorm/entities/account.orm-entity';

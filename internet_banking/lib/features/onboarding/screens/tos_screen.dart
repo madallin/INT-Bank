@@ -36,12 +36,12 @@ class _TosScreenState extends State<TosScreen>
   {
     final deviceInfo = DeviceInfoPlugin();
     if(Platform.isAndroid)
-    {
+{
       final androidInfo = await deviceInfo.androidInfo;
       return androidInfo.id;
     }
     else if(Platform.isIOS)
-    {
+{
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor!;
     }
@@ -77,7 +77,7 @@ class _TosScreenState extends State<TosScreen>
 
       if(!mounted) return;
       if(tosResponse.statusCode != 200)
-      {
+{
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eroare la verificarea TOS')),
         );
@@ -88,7 +88,7 @@ class _TosScreenState extends State<TosScreen>
       final acceptedTerms = tosData['termeniAcceptati'] ?? false;
 
       if(!acceptedTerms)
-      {
+{
         final putResponse = await client.put(
           Uri.parse('https://$serverUrl/users/${widget.userId}/accept-tos'),
           headers: {
@@ -98,7 +98,7 @@ class _TosScreenState extends State<TosScreen>
         );
         if(!mounted) return;
         if(putResponse.statusCode != 200)
-        {
+{
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Eroare la actualizarea TOS')),
           );
@@ -116,7 +116,7 @@ class _TosScreenState extends State<TosScreen>
 
       if(!mounted) return;
       if(approvedResponse.statusCode != 200)
-      {
+{
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eroare la verificarea contului')),
         );
@@ -127,9 +127,9 @@ class _TosScreenState extends State<TosScreen>
       final isApproved = approvedData['contaprobat'] ?? false;
 
       if(!isApproved)
-      {
+{
         if(mounted)
-        {
+{
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
@@ -140,9 +140,9 @@ class _TosScreenState extends State<TosScreen>
         }
       }
       else
-      {
+{
         if(mounted)
-        {
+{
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const WelcomeScreen()),
@@ -156,9 +156,9 @@ class _TosScreenState extends State<TosScreen>
       }
     }
     catch (e)
-    {
+{
       if(mounted)
-      {
+{
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Nu se poate conecta la server')),
         );
@@ -373,7 +373,7 @@ class _TosScreenState extends State<TosScreen>
     _scrollController.addListener(() {
       if(_scrollController.offset >=
           _scrollController.position.maxScrollExtent)
-      {
+{
         setState(() => _canAccept = true);
       }
     });
@@ -394,9 +394,9 @@ class _TosScreenState extends State<TosScreen>
     int start = 0;
 
     for(final match in exp.allMatches(rule))
-    {
+{
       if(match.start > start)
-      {
+{
         spans.add(TextSpan(text: rule.substring(start, match.start)));
       }
       spans.add(
@@ -411,7 +411,7 @@ class _TosScreenState extends State<TosScreen>
       start = match.end;
     }
     if(start < rule.length)
-    {
+{
       spans.add(TextSpan(text: rule.substring(start)));
     }
 

@@ -74,14 +74,14 @@ class _LoginScreenState extends State<LoginScreen>
     String cleanPhone = phone.replaceAll(RegExp(r'\D'), '');
     if(_countryUsesTrunkPrefix(_selectedCountry!.countryCode) &&
         cleanPhone.startsWith('0'))
-    {
+{
       cleanPhone = cleanPhone.substring(1);
     }
     final fullNumber = '+${_selectedCountry!.phoneCode}$cleanPhone';
     if(cleanPhone.length < 8 || cleanPhone.length > 15)
-    {
+{
       if(mounted)
-      {
+{
         setState(() => textEroare = 'Lungimea numărului nu este validă');
       }
       return null;
@@ -102,19 +102,19 @@ class _LoginScreenState extends State<LoginScreen>
       );
 
       if(response.statusCode == 200)
-      {
+{
         final data = jsonDecode(response.body);
 
         if(data['exists'] == true)
-        {
+{
           final userId = data['userId'];
           final isApproved = data['approved'] == true;
           final hasTOS = data['acceptedterms'] == true;
 
           if(!hasTOS)
-          {
+{
             if(mounted)
-            {
+{
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => TosScreen(userId: userId)),
@@ -123,9 +123,9 @@ class _LoginScreenState extends State<LoginScreen>
             }
           }
           else if(isApproved)
-          {
+{
             if(mounted)
-            {
+{
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
@@ -139,9 +139,9 @@ class _LoginScreenState extends State<LoginScreen>
             }
           }
           else
-          {
+{
             if(mounted)
-            {
+{
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
@@ -153,9 +153,9 @@ class _LoginScreenState extends State<LoginScreen>
           }
         }
         else
-        {
+{
           if(mounted)
-          {
+{
             setState(
               () => textEroare = 'Numărul de telefon nu aparține unui client',
             );
@@ -163,9 +163,9 @@ class _LoginScreenState extends State<LoginScreen>
         }
       }
       else
-      {
+{
         if(mounted)
-        {
+{
           setState(
             () => textEroare =
                 'Eroare la comunicarea cu serverul (cod: ${response.statusCode})',
@@ -174,9 +174,9 @@ class _LoginScreenState extends State<LoginScreen>
       }
     }
     catch (e)
-    {
+{
       if(mounted)
-      {
+{
         setState(
           () => textEroare =
               'Nu te poți conecta la server. Verifică conexiunea la internet',
@@ -195,14 +195,14 @@ class _LoginScreenState extends State<LoginScreen>
     if(_selectedCountry == null) return;
     final phoneRaw = _phoneController.text.trim();
     if(phoneRaw.isEmpty)
-    {
+{
       setState(() => textEroare = 'Introdu numărul de telefon');
       return;
     }
 
     final fullPhoneNumber = _formatPhoneForServer(phoneRaw);
     if(fullPhoneNumber == null)
-    {
+{
       setState(() => textEroare = 'Numărul de telefon nu este valid');
       return;
     }
@@ -237,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen>
     final countryCode = _selectedCountry!.countryCode;
     final example = _selectedCountry!.exampleNumberMobileNational;
     if(_countryUsesTrunkPrefix(countryCode))
-    {
+{
       String hint = example.replaceAll(RegExp(r'[^\d\s]'), '');
       if(hint.startsWith('0')) hint = hint.substring(1).trim();
       return hint.isEmpty ? '712 345 678' : hint;
@@ -257,25 +257,25 @@ class _LoginScreenState extends State<LoginScreen>
     String digits = input.replaceAll(RegExp(r'\D'), '');
     if(_countryUsesTrunkPrefix(_selectedCountry!.countryCode) &&
         digits.startsWith('0'))
-    {
+{
       digits = digits.substring(1);
     }
     if(_selectedCountry!.countryCode == 'RO')
-    {
+{
       if(digits.length <= 3) return digits;
       if(digits.length <= 6)
-      {
+{
         return '${digits.substring(0, 3)} ${digits.substring(3)}';
       }
       return '${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}';
     }
     if(digits.length <= 3) return digits;
     if(digits.length <= 6)
-    {
+{
       return '${digits.substring(0, 3)} ${digits.substring(3)}';
     }
     if(digits.length <= 9)
-    {
+{
       return '${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}';
     }
     return '${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6, 9)} ${digits.substring(9)}';
@@ -352,7 +352,7 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildCountryDropdown()
   {
     if(_countries.isEmpty)
-    {
+{
       return Container(
         width: 110,
         height: 58,
@@ -428,7 +428,7 @@ class _LoginScreenState extends State<LoginScreen>
           onChanged: (CountryWithPhoneCode? newCountry)
           {
             if(newCountry != null)
-            {
+{
               setState(() {
                 _selectedCountry = newCountry;
                 _phoneController.clear();

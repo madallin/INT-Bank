@@ -97,7 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   void _nextStep()
   {
     if(_currentStep < 2)
-    {
+{
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -109,7 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   void _previousStep()
   {
     if(_currentStep > 0)
-    {
+{
       _pageController.previousPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -154,10 +154,10 @@ class _RegisterScreenState extends State<RegisterScreen>
       final data = jsonDecode(response.body);
 
       if(response.statusCode == 200 || response.statusCode == 201)
-      {
+{
         final userId = data['userId'];
         if(mounted)
-        {
+{
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
@@ -168,12 +168,12 @@ class _RegisterScreenState extends State<RegisterScreen>
         }
       }
       else if(response.statusCode == 409)
-      {
+{
         final userId = data['userId'];
         if(userId != null)
-        {
+{
           if(mounted)
-          {
+{
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
@@ -184,17 +184,17 @@ class _RegisterScreenState extends State<RegisterScreen>
           }
         }
         else
-        {
+{
           _showError(data['error'] ?? 'Contul există deja');
         }
       }
       else
-      {
+{
         _showError(data['error'] ?? 'Eroare la înregistrare');
       }
     }
     catch(e)
-    {
+{
       _showError('Nu te poți conecta la server. Verifică conexiunea');
     }
     finally
@@ -216,7 +216,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     final countryCode = _selectedCountry!.countryCode;
     final example = _selectedCountry!.exampleNumberMobileNational;
     if(_countryUsesTrunkPrefix(countryCode))
-    {
+{
       String hint = example.replaceAll(RegExp(r'[^\d\s]'), '');
       if(hint.startsWith('0')) hint = hint.substring(1).trim();
       return hint.isEmpty ? '712 345 678' : hint;
@@ -229,11 +229,11 @@ class _RegisterScreenState extends State<RegisterScreen>
     if(_selectedCountry == null) return input;
     String digits = input.replaceAll(RegExp(r'\D'), '');
     if(_countryUsesTrunkPrefix(_selectedCountry!.countryCode) && digits.startsWith('0'))
-    {
+{
       digits = digits.substring(1);
     }
     if(_selectedCountry!.countryCode == 'RO')
-    {
+{
       if(digits.length <= 3) return digits;
       if(digits.length <= 6) return '${digits.substring(0, 3)} ${digits.substring(3)}';
       return '${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}';
@@ -494,7 +494,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   Widget _buildCountryDropdown()
   {
     if(_countries.isEmpty)
-    {
+{
       return Container(
         width: 110,
         height: 58,

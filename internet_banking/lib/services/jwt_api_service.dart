@@ -18,16 +18,16 @@ class JwtApiService
       );
 
       if(response.statusCode == 200)
-      {
+{
         final data = response.data as Map<String, dynamic>;
         final authResponse = AuthResponse.fromJson(data);
 
         if(authResponse.accessToken.isNotEmpty && authResponse.refreshToken.isNotEmpty)
-        {
+{
           await SecureSessionManager.saveAccessToken(authResponse.accessToken);
           await SecureSessionManager.saveRefreshToken(authResponse.refreshToken);
           if(authResponse.userId != null)
-          {
+{
             await SecureSessionManager.saveUserId(authResponse.userId!);
           }
         }
@@ -47,15 +47,18 @@ class JwtApiService
     {
       final accessToken = await SecureSessionManager.getAccessToken();
       if(accessToken != null)
-      {
+{
         await _client.post(
           '/auth-session/logout',
           options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
         );
       }
     }
-    catch(_)
-    {
+    catch(e)
+{
+      // Server-side logout failed (network/server error).
+      // Local session must still be cleared regardless.
+
     }
     await SecureSessionManager.clearSession();
   }
@@ -73,7 +76,7 @@ class JwtApiService
       );
 
       if(response.statusCode == 200)
-      {
+{
         final data = response.data as Map<String, dynamic>;
         final refreshResponse = TokenRefreshResponse.fromJson(data);
 
@@ -81,7 +84,7 @@ class JwtApiService
         await SecureSessionManager.saveRefreshToken(refreshResponse.refreshToken);
 
         if(refreshResponse.userId != null)
-        {
+{
           await SecureSessionManager.saveUserId(refreshResponse.userId!);
           return refreshResponse.userId;
         }

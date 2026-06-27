@@ -63,14 +63,14 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     _swapAnimation = CurvedAnimation(parent: _swapController!, curve: Curves.easeInOut);
 
     if(!CurrencyService.instance.hasRates)
-    {
+{
       CurrencyService.instance.fetchRates().then((_)
       {
         if(mounted) _recalculate();
       });
     }
     else
-    {
+{
       _recalculate();
     }
 
@@ -103,7 +103,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     final rate = service.getRate(_fromCurrency, _toCurrency);
 
     if(rate == null)
-    {
+{
       setState(() => _hasRate = false);
       return;
     }
@@ -164,14 +164,14 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     String reversed = intPart.split('').reversed.join('');
     String formatted = '';
     for(int i = 0; i < reversed.length; i++)
-    {
+{
       if(i > 0 && i % 3 == 0) formatted += ',';
       formatted += reversed[i];
     }
     intPart = formatted.split('').reversed.join('');
 
     if(parts.length > 1)
-    {
+{
       return '$intPart.${parts[1]}';
     }
     return intPart;
@@ -233,7 +233,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                       TextInputFormatter.withFunction((oldValue, newValue)
                       {
                         if(newValue.text.contains('.'))
-                        {
+{
                           final parts = newValue.text.split('.');
                           if(parts.length > 2) return oldValue;
                           if(parts.length == 2 && parts[1].length > 2) return oldValue;

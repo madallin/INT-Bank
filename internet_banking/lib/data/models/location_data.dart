@@ -29,7 +29,7 @@ extension LocationDataGetters on LocationData
     parts.add(city);
     parts.add(county);
     if(postalCode != null && postalCode!.isNotEmpty)
-    {
+{
       parts.add(postalCode!);
     }
     parts.add(country);

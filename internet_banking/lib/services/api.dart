@@ -10,14 +10,14 @@ Future<int?> fetchUserProfile(int userId) async
   {
     final response = await _client.get('/users/$userId');
     if(response.statusCode == 200)
-    {
+{
       final data = response.data as Map<String, dynamic>;
       return data['id'] as int?;
     }
     return null;
   }
-  catch(_)
-  {
+  catch(e)
+{
     return null;
   }
 }
@@ -28,14 +28,14 @@ Future<List<dynamic>?> fetchUserAccounts(int userId) async
   {
     final response = await _client.get('/users/$userId/accounts');
     if(response.statusCode == 200)
-    {
+{
       final data = response.data as Map<String, dynamic>;
       return data['accounts'] as List<dynamic>;
     }
     return null;
   }
-  catch(_)
-  {
+  catch(e)
+{
     return null;
   }
 }
@@ -51,14 +51,14 @@ Future<List<dynamic>?> fetchUserCards(int userId, {String? clientToken}) async
           : null,
     );
     if(response.statusCode == 200)
-    {
+{
       final data = response.data as Map<String, dynamic>;
       return data['cards'] as List<dynamic>;
     }
     return null;
   }
-  catch(_)
-  {
+  catch(e)
+{
     return null;
   }
 }
@@ -69,13 +69,13 @@ Future<Map<String, dynamic>?> fetchUserData(int userId) async
   {
     final response = await _client.get('/users/$userId');
     if(response.statusCode == 200)
-    {
+{
       return response.data as Map<String, dynamic>;
     }
     return null;
   }
-  catch(_)
-  {
+  catch(e)
+{
     return null;
   }
 }

@@ -90,18 +90,18 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     try
     {
       if(Platform.isAndroid)
-      {
+{
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
       }
       else if(Platform.isIOS)
-      {
+{
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
     }
     catch(_)
-    {
+{
       _deviceId = 'dev-device';
     }
     if(mounted) setState(() {});
@@ -118,19 +118,19 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
         body: jsonEncode({'deviceId': _deviceId}),
       );
       if(response.statusCode == 200)
-      {
+{
         final data = jsonDecode(response.body);
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
         await _sendCode();
       }
       else
-      {
+{
         _showError('Eroare la obținerea tokenului client');
       }
     }
     catch(e)
-    {
+{
       _showError('Eroare de rețea: $e');
     }
   }
@@ -144,7 +144,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
   {
     if(isVerifying) return;
     if(pin.length < 6)
-    {
+{
       _showError('');
       setState(() => pin += number);
       if(pin.length == 6) _verifyPin();
@@ -155,7 +155,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
   {
     if(isVerifying) return;
     if(pin.isNotEmpty)
-    {
+{
       _showError('');
       setState(() => pin = pin.substring(0, pin.length - 1));
     }
@@ -168,11 +168,11 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer)
     {
       if(_cooldownSeconds > 0)
-      {
+{
         setState(() => _cooldownSeconds--);
       }
       else
-      {
+{
         timer.cancel();
       }
     });
@@ -197,7 +197,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
       );
 
       if(response.statusCode == 401)
-      {
+{
         _showError('Timpul pentru verificare a expirat. Te rugăm să reîncepi procesul.');
         setState(() => pin = '');
         return;
@@ -205,16 +205,16 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
 
       final data = jsonDecode(response.body);
       if(response.statusCode == 200 && data['success'] == true)
-      {
+{
         await _startCooldown();
       }
       else
-      {
+{
         if(mounted) _showError(data['error'] ?? 'Eroare la trimiterea codului');
       }
     }
     catch(e)
-    {
+{
       if(mounted) _showError('Eroare de rețea: $e');
     }
     finally
@@ -243,14 +243,14 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
       );
 
       if(response.statusCode == 401)
-      {
+{
         final refreshed = await _refreshToken();
         if(refreshed)
-        {
+{
           await _verifyPin();
         }
         else if(mounted)
-        {
+{
           _showError('Sesiune expirată. Te rugăm să te reconectezi');
           setState(() => pin = '');
         }
@@ -259,7 +259,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
 
       final data = jsonDecode(response.body);
       if(response.statusCode == 200 && data['success'] == true)
-      {
+{
         if(!mounted) return;
         setState(() => isVerifying = true);
         _showSuccess('Verificare reușită! Vei fi redirecționat...');
@@ -274,7 +274,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
         );
 
         if(hasPinResponse.statusCode == 200)
-        {
+{
           final hasPinData = jsonDecode(hasPinResponse.body);
           setPin = !(hasPinData['hasPin'] ?? false);
         }
@@ -299,14 +299,14 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
         });
       }
       else if(mounted)
-      {
+{
         final serverError = (data['error'] as String?) ?? 'Cod invalid sau ai depasit numarul de incercari';
         _showError(serverError);
         setState(() => pin = '');
       }
     }
     catch(e)
-    {
+{
       if(mounted) _showError('Eroare de rețea: $e');
     }
     finally
@@ -327,7 +327,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
       if(response.statusCode == 200)
-      {
+{
         final data = jsonDecode(response.body);
         if(mounted) setState(() => clientToken = data['client_token']);
         return true;
@@ -335,7 +335,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
       return false;
     }
     catch(_)
-    {
+{
       return false;
     }
     finally

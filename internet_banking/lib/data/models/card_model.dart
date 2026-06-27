@@ -31,7 +31,7 @@ extension CardModelGetters on CardModel
   String get last4
   {
     if(cardNumber.length >= 4)
-    {
+{
       return cardNumber.substring(cardNumber.length - 4);
     }
     return cardNumber;
@@ -44,7 +44,7 @@ extension CardModelGetters on CardModel
   String get maskedCardNumber
   {
     if(cardNumber.length >= 8)
-    {
+{
       return '**** **** **** ${cardNumber.substring(cardNumber.length - 4)}';
     }
     return cardNumber;

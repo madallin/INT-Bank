@@ -35,7 +35,7 @@ void showSuccessSnackBar(BuildContext context, String message)
 String formatPhoneDisplay(String phone)
 {
   if(phone.length >= 12)
-  {
+{
     final countryCode = phone.substring(0, 3);
     final rest = phone.substring(3);
     final formattedRest = '${rest.substring(0, 3)} ${rest.substring(3, 6)} ${rest.substring(6)}';
@@ -59,7 +59,7 @@ String formatDate(String dateStr)
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
   }
   catch(e)
-  {
+{
     return dateStr;
   }
 }
@@ -71,7 +71,7 @@ double? parseRomanianNumber(String text)
     return double.parse(text.replaceAll('.', '').replaceAll(',', '.'));
   }
   catch(e)
-  {
+{
     return null;
   }
 }
@@ -96,7 +96,7 @@ String formatIBAN(String iban)
   final cleaned = iban.replaceAll(' ', '');
   final buffer = StringBuffer();
   for(int i = 0; i < cleaned.length; i++)
-  {
+{
     if(i > 0 && i % 4 == 0) buffer.write(' ');
     buffer.write(cleaned[i]);
   }

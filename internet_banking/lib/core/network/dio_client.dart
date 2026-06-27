@@ -59,7 +59,7 @@ class DioClient
         {
           final token = await _storage.read(key: _accessTokenKey);
           if(token != null && token.isNotEmpty)
-          {
+{
             options.headers['Authorization'] = 'Bearer $token';
           }
           handler.next(options);
@@ -67,19 +67,19 @@ class DioClient
         onError: (error, handler) async
         {
           if(error.response?.statusCode != 401)
-          {
+{
             handler.next(error);
             return;
           }
 
           if(error.requestOptions.path.contains('/auth-session/refresh'))
-          {
+{
             handler.next(error);
             return;
           }
 
           if(_isRefreshing)
-          {
+{
             _pendingRequests.add(_PendingRequest(error.requestOptions, handler));
             return;
           }
@@ -90,7 +90,7 @@ class DioClient
           {
             final refreshToken = await _storage.read(key: _refreshTokenKey);
             if(refreshToken == null || refreshToken.isEmpty)
-            {
+{
               await _clearSession();
               handler.next(error);
               return;
@@ -102,7 +102,7 @@ class DioClient
             );
 
             if(refreshResponse.statusCode == 200)
-            {
+{
               final data = refreshResponse.data as Map<String, dynamic>;
               final refreshResult = TokenRefreshResponse.fromJson(data);
 
@@ -110,14 +110,14 @@ class DioClient
               await _storage.write(key: _refreshTokenKey, value: refreshResult.refreshToken);
 
               if(refreshResult.userId != null)
-              {
+{
                 await _storage.write(key: 'userId', value: refreshResult.userId.toString());
               }
 
               error.requestOptions.headers['Authorization'] = 'Bearer ${refreshResult.accessToken}';
 
               for(final pending in _pendingRequests)
-              {
+{
                 pending.options.headers['Authorization'] = 'Bearer ${refreshResult.accessToken}';
                 try
                 {
@@ -125,7 +125,7 @@ class DioClient
                   pending.handler.resolve(retry);
                 }
                 catch(e)
-                {
+{
                   pending.handler.reject(error);
                 }
               }
@@ -135,14 +135,15 @@ class DioClient
               return handler.resolve(retryResponse);
             }
           }
-          catch(_)
-          {
+          catch(e)
+{
+            // Refresh failed (e.g., expired/invalid refresh token, network error).
+            // Proceed with cleanup: clear session, reject pending requests, pass error to handler.
           }
-
           await _clearSession();
 
           for(final pending in _pendingRequests)
-          {
+{
             pending.handler.reject(error);
           }
           _pendingRequests.clear();
@@ -198,3 +199,4 @@ class DioClient
   }) =>
       _dio.delete<T>(path, queryParameters: queryParameters, options: options);
 }
+

@@ -4,7 +4,8 @@ class Validators
   {
     if(value == null || value.isEmpty) return 'IBAN is required';
     final cleaned = value.replaceAll(' ', '');
-    if(cleaned.length < 16 || cleaned.length > 34) {
+    if(cleaned.length < 16 || cleaned.length > 34)
+{
       return 'IBAN must be between 16 and 34 characters';
     }
     if(!RegExp(r'^[A-Z]{2}[0-9A-Z]+$').hasMatch(cleaned.toUpperCase())) {
@@ -25,7 +26,8 @@ class Validators
   {
     if(value == null || value.isEmpty) return 'Phone number is required';
     final cleaned = value.replaceAll(RegExp(r'\D'), '');
-    if(cleaned.length < 8 || cleaned.length > 15) {
+    if(cleaned.length < 8 || cleaned.length > 15)
+{
       return 'Phone number must be between 8 and 15 digits';
     }
     return null;
@@ -41,7 +43,8 @@ class Validators
 
   static String? validateRequired(String? value, [String fieldName = 'This field'])
   {
-    if(value == null || value.trim().isEmpty) {
+    if(value == null || value.trim().isEmpty)
+{
       return '$fieldName is required';
     }
     return null;
@@ -61,7 +64,8 @@ class Validators
     if(value == null || value.isEmpty) return 'Name is required';
     final cleaned = value.trim().split(RegExp(r'\s+'));
     if(cleaned.length < 2) return 'Please enter both first and last name';
-    if(value.length < 7 || value.length > 128) {
+    if(value.length < 7 || value.length > 128)
+{
       return 'Name must be between 7 and 128 characters';
     }
     return null;

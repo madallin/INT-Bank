@@ -22,34 +22,34 @@ class CurrencyService
       final response = await _client.get('/currency/api/v1/exchange-rates');
 
       if(response.statusCode == 200)
-      {
+{
         final data = response.data as Map<String, dynamic>;
         final rawRates = data['rates'] as Map<String, dynamic>;
         _rates = {};
 
         for(final entry in rawRates.entries)
-        {
+{
           final fromCurrency = entry.key;
           final toRates = entry.value as Map<String, dynamic>;
           _rates[fromCurrency] = {};
 
           for(final toEntry in toRates.entries)
-          {
+{
             final toCurrency = toEntry.key;
             _rates[fromCurrency]![toCurrency] = (toEntry.value as num).toDouble();
           }
         }
 
         if(data['commission_percent'] != null)
-        {
+{
           _commissionPercent = (data['commission_percent'] as num).toDouble();
         }
 
         _hasRates = true;
       }
     }
-    catch(_)
-    {
+    catch(e)
+{
       _hasRates = false;
     }
   }
@@ -60,12 +60,12 @@ class CurrencyService
     if(from == to) return 1.0;
 
     if(_rates.containsKey(from) && _rates[from]!.containsKey(to))
-    {
+{
       return _rates[from]![to];
     }
 
     if(_rates.containsKey(to) && _rates[to]!.containsKey(from))
-    {
+{
       final inverseRate = _rates[to]![from];
       return inverseRate != 0 ? 1.0 / inverseRate! : null;
     }

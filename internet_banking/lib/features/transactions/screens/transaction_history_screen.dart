@@ -72,18 +72,18 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     try
     {
       if(Platform.isAndroid)
-      {
+{
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
       }
       else if(Platform.isIOS)
-      {
+{
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
     }
     catch (_)
-    {
+{
       _deviceId = 'dev-device';
     }
   }
@@ -106,14 +106,14 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       client.close();
 
       if(response.statusCode == 200)
-      {
+{
         final data = jsonDecode(response.body);
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
       }
     }
     catch (e)
-    {
+{
       debugPrint('Error getting client token: $e');
     }
   }
@@ -130,7 +130,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
       if(response.statusCode == 200)
-      {
+{
         final data = jsonDecode(response.body);
         if(mounted) setState(() => clientToken = data['client_token']);
         return true;
@@ -138,7 +138,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       return false;
     }
     catch (_)
-    {
+{
       return false;
     }
     finally
@@ -161,21 +161,21 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
       client.close();
 
       if(response.statusCode == 200 && response.body.isNotEmpty)
-      {
+{
         final data = jsonDecode(response.body);
         if(data['transactions'] != null)
-        {
+{
           setState(() => _transactions = List<Map<String, dynamic>>.from(data['transactions']));
         }
       }
       else if(response.statusCode == 401)
-      {
+{
         final refreshed = await _refreshClientToken();
         if(refreshed) await _fetchTransactions();
       }
     }
     catch (e)
-    {
+{
       debugPrint('Error fetching transactions: $e');
     }
     finally

@@ -1,18 +1,4 @@
-# docker-compose.yml
-# INT Bank - Full Stack Application
-# Run: docker compose up -d --build
-#
-# Architecture:
-#   - PostgreSQL 16 (Primary DB)
-#   - Redis 7 (Cache / Session)
-#   - Express.js Backend (Existing REST API)
-#   - Apache Kafka + Zookeeper (Event Bus)
-#   - NestJS Kafka Backend (Async Transfer Microservice)
-
-version: '3.8'
-
 services:
-  # --- PostgreSQL Database ---
   postgres:
     image: postgres:16-alpine
     container_name: intbank-db
@@ -20,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: intbank
       POSTGRES_USER: intbank_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme_in_prod}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?err}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -34,11 +20,13 @@ services:
     networks:
       - intbank-network
 
-  # --- Redis Cache ---
   redis:
     image: redis:7-alpine
     container_name: intbank-redis
     restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
     ports:
       - "6379:6379"
     healthcheck:
@@ -49,7 +37,6 @@ services:
     networks:
       - intbank-network
 
-  # --- Express.js Backend (Existing) ---
   backend:
     build:
       context: ./server
@@ -67,7 +54,7 @@ services:
       DB_PORT: 5432
       DB_NAME: intbank
       DB_USER: intbank_user
-      DB_PASSWORD: ${DB_PASSWORD:-changeme_in_prod}
+      DB_PASSWORD: ${DB_PASSWORD:?err}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PORT: 8443
@@ -87,7 +74,6 @@ services:
     networks:
       - intbank-network
 
-  # --- Zookeeper (Kafka Dependency) ---
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
     container_name: intbank-zookeeper
@@ -96,6 +82,9 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
       ZOOKEEPER_SYNC_LIMIT: 2
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
     ports:
       - "2181:2181"
     healthcheck:
@@ -107,7 +96,6 @@ services:
     networks:
       - intbank-network
 
-  # --- Apache Kafka Broker ---
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: intbank-kafka
@@ -128,6 +116,8 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
     ports:
       - "9092:9092"
     healthcheck:
@@ -139,7 +129,6 @@ services:
     networks:
       - intbank-network
 
-  # --- Kafka UI (Optional: for development monitoring) ---
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: intbank-kafka-ui
@@ -156,7 +145,6 @@ services:
     networks:
       - intbank-network
 
-  # --- NestJS Kafka Backend (Async Transfer Microservice) ---
   kafka-backend:
     build:
       context: ./server/kafka-backend
@@ -166,8 +154,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3001
@@ -175,7 +165,9 @@ services:
       DB_PORT: 5432
       DB_NAME: intbank
       DB_USER: intbank_user
-      DB_PASSWORD: ${DB_PASSWORD:-changeme_in_prod}
+      DB_PASSWORD: ${DB_PASSWORD:?err}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       KAFKA_BROKERS: kafka:9092
       KAFKA_CLIENT_ID: banking-producer
       KAFKA_CONSUMER_GROUP: banking-transfer-group
@@ -197,6 +189,14 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  kafka_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  zookeeper_log:
     driver: local
   server_logs:
     driver: local

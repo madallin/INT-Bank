@@ -72,7 +72,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
         debugPrint('Trimis userId la server: ${widget.userId}');
       }
       catch (e)
-      {
+{
         debugPrint('Eroare la trimiterea userId: $e');
       }
 
@@ -86,7 +86,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
             data = jsonDecode(message);
           }
           catch (e)
-          {
+{
             debugPrint('Nu s-a putut decoda JSON: $e');
             return;
           }
@@ -99,7 +99,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
 
           if((messageType == 'contAprobat' || messageType == null) &&
               incomingIdInt == widget.userId)
-          {
+{
             debugPrint('Approval matched for user ${widget.userId}');
             _onApprovalReceived();
           }
@@ -116,7 +116,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
       );
     }
     catch (e, st)
-    {
+{
       debugPrint('Eroare la conectarea WebSocket: $e\n$st');
     }
   }
@@ -126,7 +126,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async
     {
       if(_isApproved)
-      {
+{
         _pollTimer?.cancel();
         return;
       }
@@ -141,13 +141,13 @@ class _ApprovalScreenState extends State<ApprovalScreen>
         final data = jsonDecode(body);
         final isApproved = data['contaprobat'] ?? false;
         if(isApproved)
-        {
+{
           debugPrint('Polling: cont aprobat pentru user ${widget.userId}');
           _onApprovalReceived();
         }
       }
       catch (e)
-      {
+{
         debugPrint('Polling error: $e');
       }
     });
@@ -164,14 +164,14 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     Future.delayed(const Duration(milliseconds: 1000), ()
     {
       if(mounted)
-      {
+{
         setState(() => _showSuccessMessage = true);
         _fadeController.forward();
 
         Future.delayed(const Duration(seconds: 5), ()
         {
           if(mounted)
-          {
+{
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (_) => const WelcomeScreen()),

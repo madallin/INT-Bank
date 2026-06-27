@@ -59,42 +59,42 @@ class _ErrorScreenState extends State<ErrorScreen>
       const double putTimeEnd = 0.56;
 
       if(_cycle1Active)
-      {
+{
         if(value > takeTimeStart && value < takeTimeEnd)
-        {
+{
           if(_pillar1InBank) setState(() => _pillar1InBank = false);
           if(_pillar5OnGround) setState(() => _pillar5OnGround = false);
         }
         if(value > putTimeStart && value < putTimeEnd)
-        {
+{
           if(!_pillar1OnGround) setState(() => _pillar1OnGround = true);
           if(!_pillar5InBank) setState(() => _pillar5InBank = true);
         }
       }
       else
-      {
+{
         if(value > takeTimeStart && value < takeTimeEnd)
-        {
+{
           if(_pillar1OnGround) setState(() => _pillar1OnGround = false);
           if(_pillar5InBank) setState(() => _pillar5InBank = false);
         }
         if(value > putTimeStart && value < putTimeEnd)
-        {
+{
           if(!_pillar1InBank) setState(() => _pillar1InBank = true);
           if(!_pillar5OnGround) setState(() => _pillar5OnGround = true);
         }
       }
 
       if(value > 0.98)
-      {
+{
         if(!_cycleFlipped)
-        {
+{
           setState(() => _cycle1Active = !_cycle1Active);
           _cycleFlipped = true;
         }
       }
       else if(value < 0.1)
-      {
+{
         _cycleFlipped = false;
       }
     });
@@ -108,7 +108,7 @@ class _ErrorScreenState extends State<ErrorScreen>
     {
       final isConnected = await _checkServerConnection();
       if(isConnected && mounted)
-      {
+{
         _connectionTimer?.cancel();
         widget.onConnectionRestored(context);
       }
@@ -133,7 +133,7 @@ class _ErrorScreenState extends State<ErrorScreen>
       return response.statusCode == 200;
     }
     catch (e)
-    {
+{
       return false;
     }
     finally
@@ -281,7 +281,7 @@ class ScenePainter extends CustomPainter
     final double pillarsY = bankY + bankHeight - baseHeight - pillarHeight;
 
     if(pillar1InBank)
-    {
+{
       final double x = pillarsStartX;
       canvas.drawRect(
         Rect.fromLTWH(x, pillarsY, pillarWidth, pillarHeight),
@@ -289,7 +289,7 @@ class ScenePainter extends CustomPainter
       );
     }
     for(int i = 1; i <= 3; i++)
-    {
+{
       final double x = pillarsStartX + i * (pillarWidth + spacing);
       canvas.drawRect(
         Rect.fromLTWH(x, pillarsY, pillarWidth, pillarHeight),
@@ -297,7 +297,7 @@ class ScenePainter extends CustomPainter
       );
     }
     if(pillar5InBank)
-    {
+{
       final double x = pillarsStartX + 4 * (pillarWidth + spacing);
       canvas.drawRect(
         Rect.fromLTWH(x, pillarsY, pillarWidth, pillarHeight),
@@ -317,7 +317,7 @@ class ScenePainter extends CustomPainter
     final double groundY = bankY + bankHeight;
 
     if(pillar1OnGround)
-    {
+{
       final double groundPillarX = w * 0.12;
       canvas.drawRect(
         Rect.fromLTWH(groundPillarX, groundY - pillarHeight, pillarWidth, pillarHeight),
@@ -325,7 +325,7 @@ class ScenePainter extends CustomPainter
       );
     }
     if(pillar5OnGround)
-    {
+{
       final double groundPillarX = w * 0.88 - pillarWidth / 2;
       canvas.drawRect(
         Rect.fromLTWH(groundPillarX, groundY - pillarHeight, pillarWidth, pillarHeight),
@@ -378,89 +378,89 @@ class ScenePainter extends CustomPainter
     const double groundPos = 0.2;
 
     if(cycle1Active)
-    {
+{
       if(progress < 0.12)
-      {
+{
         trolleyXProgress = idlePos + (bankPos - idlePos) * (progress / 0.12);
         hookY = jibY;
       }
       else if(progress < 0.20)
-      {
+{
         trolleyXProgress = bankPos;
         hookY = jibY + (bankEntranceY - jibY) * ((progress - 0.12) / 0.08);
       }
       else if(progress < 0.30)
-      {
+{
         trolleyXProgress = bankPos;
         final liftProgress = (progress - 0.20) / 0.10;
         hookY = bankEntranceY - (bankEntranceY - jibY) * liftProgress;
         drawPillar = liftProgress > 0.8;
       }
       else if(progress < 0.42)
-      {
+{
         trolleyXProgress = bankPos - (bankPos - groundPos) * ((progress - 0.30) / 0.12);
         hookY = jibY;
         drawPillar = true;
       }
       else if(progress < 0.52)
-      {
+{
         trolleyXProgress = groundPos;
         hookY = jibY + (groundPillarY - jibY) * ((progress - 0.42) / 0.10);
         drawPillar = true;
       }
       else if(progress < 0.62)
-      {
+{
         trolleyXProgress = groundPos;
         final liftProgress = (progress - 0.52) / 0.10;
         hookY = groundPillarY - (groundPillarY - jibY) * liftProgress;
         drawPillar = liftProgress < 0.2;
       }
       else
-      {
+{
         trolleyXProgress = groundPos + (idlePos - groundPos) * ((progress - 0.62) / 0.38);
         hookY = jibY;
       }
     }
     else
-    {
+{
       if(progress < 0.12)
-      {
+{
         trolleyXProgress = idlePos - (idlePos - groundPos) * (progress / 0.12);
         hookY = jibY;
       }
       else if(progress < 0.20)
-      {
+{
         trolleyXProgress = groundPos;
         hookY = jibY + (groundPillarY - jibY) * ((progress - 0.12) / 0.08);
       }
       else if(progress < 0.30)
-      {
+{
         trolleyXProgress = groundPos;
         final liftProgress = (progress - 0.20) / 0.10;
         hookY = groundPillarY - (groundPillarY - jibY) * liftProgress;
         drawPillar = liftProgress > 0.8;
       }
       else if(progress < 0.42)
-      {
+{
         trolleyXProgress = groundPos + (bankPos - groundPos) * ((progress - 0.30) / 0.12);
         hookY = jibY;
         drawPillar = true;
       }
       else if(progress < 0.52)
-      {
+{
         trolleyXProgress = bankPos;
         hookY = jibY + (bankEntranceY - jibY) * ((progress - 0.42) / 0.10);
         drawPillar = true;
       }
       else if(progress < 0.62)
-      {
+{
         trolleyXProgress = bankPos;
         final liftProgress = (progress - 0.52) / 0.10;
         hookY = bankEntranceY - (bankEntranceY - jibY) * liftProgress;
         drawPillar = liftProgress < 0.2;
       }
       else
-      {
+{
         trolleyXProgress = bankPos - (bankPos - idlePos) * ((progress - 0.62) / 0.38);
         hookY = jibY;
       }
@@ -472,7 +472,7 @@ class ScenePainter extends CustomPainter
     canvas.drawRect(Rect.fromLTWH(hookX - 4, hookY, 8, 4), hookPaint);
 
     if(drawPillar)
-    {
+{
       canvas.drawRect(
         Rect.fromLTWH(hookX - pillarWidth / 2, hookY + 4, pillarWidth, pillarHeight),
         bankPaint,
@@ -516,89 +516,89 @@ class ScenePainter extends CustomPainter
     const double groundPos = 0.2;
 
     if(cycle1Active)
-    {
+{
       if(progress < 0.12)
-      {
+{
         trolleyXProgress = idlePos - (idlePos - groundPos) * (progress / 0.12);
         hookY = jibY;
       }
       else if(progress < 0.20)
-      {
+{
         trolleyXProgress = groundPos;
         hookY = jibY + (groundPillarY - jibY) * ((progress - 0.12) / 0.08);
       }
       else if(progress < 0.30)
-      {
+{
         trolleyXProgress = groundPos;
         final liftProgress = (progress - 0.20) / 0.10;
         hookY = groundPillarY - (groundPillarY - jibY) * liftProgress;
         drawPillar = liftProgress > 0.8;
       }
       else if(progress < 0.42)
-      {
+{
         trolleyXProgress = groundPos + (bankPos - groundPos) * ((progress - 0.30) / 0.12);
         hookY = jibY;
         drawPillar = true;
       }
       else if(progress < 0.52)
-      {
+{
         trolleyXProgress = bankPos;
         hookY = jibY + (bankEntranceY - jibY) * ((progress - 0.42) / 0.10);
         drawPillar = true;
       }
       else if(progress < 0.62)
-      {
+{
         trolleyXProgress = bankPos;
         final liftProgress = (progress - 0.52) / 0.10;
         hookY = bankEntranceY - (bankEntranceY - jibY) * liftProgress;
         drawPillar = liftProgress < 0.2;
       }
       else
-      {
+{
         trolleyXProgress = bankPos + (idlePos - bankPos) * ((progress - 0.62) / 0.38);
         hookY = jibY;
       }
     }
     else
-    {
+{
       if(progress < 0.12)
-      {
+{
         trolleyXProgress = idlePos - (idlePos - bankPos) * (progress / 0.12);
         hookY = jibY;
       }
       else if(progress < 0.20)
-      {
+{
         trolleyXProgress = bankPos;
         hookY = jibY + (bankEntranceY - jibY) * ((progress - 0.12) / 0.08);
       }
       else if(progress < 0.30)
-      {
+{
         trolleyXProgress = bankPos;
         final liftProgress = (progress - 0.20) / 0.10;
         hookY = bankEntranceY - (bankEntranceY - jibY) * liftProgress;
         drawPillar = liftProgress > 0.8;
       }
       else if(progress < 0.42)
-      {
+{
         trolleyXProgress = bankPos - (bankPos - groundPos) * ((progress - 0.30) / 0.12);
         hookY = jibY;
         drawPillar = true;
       }
       else if(progress < 0.52)
-      {
+{
         trolleyXProgress = groundPos;
         hookY = jibY + (groundPillarY - jibY) * ((progress - 0.42) / 0.10);
         drawPillar = true;
       }
       else if(progress < 0.62)
-      {
+{
         trolleyXProgress = groundPos;
         final liftProgress = (progress - 0.52) / 0.10;
         hookY = groundPillarY - (groundPillarY - jibY) * liftProgress;
         drawPillar = liftProgress < 0.2;
       }
       else
-      {
+{
         trolleyXProgress = groundPos + (idlePos - groundPos) * ((progress - 0.62) / 0.38);
         hookY = jibY;
       }
@@ -610,7 +610,7 @@ class ScenePainter extends CustomPainter
     canvas.drawRect(Rect.fromLTWH(hookX - 4, hookY, 8, 4), hookPaint);
 
     if(drawPillar)
-    {
+{
       canvas.drawRect(
         Rect.fromLTWH(hookX - pillarWidth / 2, hookY + 4, pillarWidth, pillarHeight),
         bankPaint,

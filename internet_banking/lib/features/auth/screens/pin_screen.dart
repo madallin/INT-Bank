@@ -85,18 +85,18 @@ class _PinScreenState extends State<PinScreen>
     try
     {
       if(Platform.isAndroid)
-      {
+{
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
       }
       else if(Platform.isIOS)
-      {
+{
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
     }
     catch(_)
-    {
+{
       _deviceId = 'dev-device';
     }
   }
@@ -117,14 +117,14 @@ class _PinScreenState extends State<PinScreen>
         body: jsonEncode({'deviceId': _deviceId}),
       );
       if(response.statusCode == 200)
-      {
+{
         final data = jsonDecode(response.body);
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
       }
     }
     catch(e)
-    {
+{
       _showError('Eroare de rețea: $e');
     }
   }
@@ -140,7 +140,7 @@ class _PinScreenState extends State<PinScreen>
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
       if(response.statusCode == 200)
-      {
+{
         final data = jsonDecode(response.body);
         if(mounted) setState(() => clientToken = data['client_token']);
         return true;
@@ -148,7 +148,7 @@ class _PinScreenState extends State<PinScreen>
       return false;
     }
     catch(_)
-    {
+{
       return false;
     }
     finally
@@ -163,27 +163,27 @@ class _PinScreenState extends State<PinScreen>
     _showError('');
 
     if(!isConfirming)
-    {
+{
       if(pin.length < 6)
-      {
+{
         setState(() => pin += number);
         if(pin.length == 6 && widget.set)
-        {
+{
           setState(() => isConfirming = true);
         }
         else if(pin.length == 6 && !widget.set)
-        {
+{
           _verifyExistingPin();
         }
       }
     }
     else
-    {
+{
       if(confirmPin.length < 6)
-      {
+{
         setState(() => confirmPin += number);
         if(confirmPin.length == 6)
-        {
+{
           _setNewPin();
         }
       }
@@ -195,17 +195,17 @@ class _PinScreenState extends State<PinScreen>
     if(isVerifying) return;
     _showError('');
     if(!isConfirming)
-    {
+{
       if(pin.isNotEmpty) setState(() => pin = pin.substring(0, pin.length - 1));
     }
     else
-    {
+{
       if(confirmPin.isNotEmpty)
-      {
+{
         setState(() => confirmPin = confirmPin.substring(0, confirmPin.length - 1));
       }
       else
-      {
+{
         setState(() => isConfirming = false);
       }
     }
@@ -229,10 +229,10 @@ class _PinScreenState extends State<PinScreen>
       );
 
       if(response.statusCode == 401)
-      {
+{
         final refreshed = await _refreshToken();
         if(refreshed)
-        {
+{
           await _verifyExistingPin();
           return;
         }
@@ -240,12 +240,12 @@ class _PinScreenState extends State<PinScreen>
 
       final data = jsonDecode(response.body);
       if(response.statusCode == 200 && data['success'] == true)
-      {
+{
         if(widget.useJwtLogin)
-        {
+{
           final success = await _performJwtLogin();
           if(!success)
-          {
+{
             _showError('Eroare la autentificare. Încearcă din nou.');
             setState(() => pin = '');
             return;
@@ -255,7 +255,7 @@ class _PinScreenState extends State<PinScreen>
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('loggedUserId', widget.userId);
         if(mounted)
-        {
+{
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
@@ -266,13 +266,13 @@ class _PinScreenState extends State<PinScreen>
         }
       }
       else
-      {
+{
         _showError(data['error'] ?? 'PIN incorect');
         setState(() => pin = '');
       }
     }
     catch(e)
-    {
+{
       _showError('Eroare: Nu te poți conecta la server');
       setState(() => pin = '');
     }
@@ -289,11 +289,11 @@ class _PinScreenState extends State<PinScreen>
     {
       String? phone = widget.phoneNumber;
       if(phone == null || phone.isEmpty)
-      {
+{
         phone = await SecureSessionManager.getPhone();
       }
       if(phone == null || phone.isEmpty)
-      {
+{
         return true;
       }
 
@@ -301,7 +301,7 @@ class _PinScreenState extends State<PinScreen>
       return result != null;
     }
     catch(_)
-    {
+{
       return false;
     }
   }
@@ -309,7 +309,7 @@ class _PinScreenState extends State<PinScreen>
   Future<void> _setNewPin() async
   {
     if(pin != confirmPin)
-    {
+{
       _showError('PIN-urile nu coincid');
       setState(() {
         pin = '';
@@ -333,10 +333,10 @@ class _PinScreenState extends State<PinScreen>
       );
 
       if(response.statusCode == 401)
-      {
+{
         final refreshed = await _refreshToken();
         if(refreshed)
-        {
+{
           await _setNewPin();
           return;
         }
@@ -344,16 +344,16 @@ class _PinScreenState extends State<PinScreen>
 
       final data = jsonDecode(response.body);
       if(response.statusCode == 200 && data['success'] == true)
-      {
+{
         if(widget.useJwtLogin)
-        {
+{
           await _performJwtLogin();
         }
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('loggedUserId', widget.userId);
         if(mounted)
-        {
+{
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
@@ -364,7 +364,7 @@ class _PinScreenState extends State<PinScreen>
         }
       }
       else
-      {
+{
         _showError(data['error'] ?? 'Eroare la setarea PIN-ului');
         setState(() {
           pin = '';
@@ -374,7 +374,7 @@ class _PinScreenState extends State<PinScreen>
       }
     }
     catch(e)
-    {
+{
       _showError('Eroare: Nu te poți conecta la server');
       setState(() {
         pin = '';

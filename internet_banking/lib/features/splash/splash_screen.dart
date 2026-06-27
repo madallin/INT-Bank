@@ -45,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen>
       return response.statusCode == 200;
     }
     catch (e)
-    {
+{
       debugPrint('Server connection error: $e');
       return false;
     }
@@ -64,7 +64,7 @@ class _SplashScreenState extends State<SplashScreen>
     if(!mounted) return;
 
     if(!serverAvailable)
-    {
+{
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => ErrorScreen(
@@ -88,7 +88,7 @@ class _SplashScreenState extends State<SplashScreen>
     if(!mounted) return;
 
     if(userId != null)
-    {
+{
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => PinScreen(userId: userId, set: false, popOnSuccess: false, useJwtLogin: true),

@@ -97,18 +97,18 @@ class _HomeScreenState extends State<HomeScreen>
     try
     {
       if(Platform.isAndroid)
-      {
+{
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
       }
       else if(Platform.isIOS)
-      {
+{
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
     }
     catch(_)
-    {
+{
       _deviceId = 'dev-device';
     }
   }
@@ -123,14 +123,14 @@ class _HomeScreenState extends State<HomeScreen>
       );
 
       if(response.statusCode == 200)
-      {
+{
         final data = response.data as Map<String, dynamic>;
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
       }
     }
     catch(e)
-    {
+{
       debugPrint('Error getting client token: $e');
     }
   }
@@ -146,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen>
       );
 
       if(response.statusCode == 200)
-      {
+{
         final data = response.data as Map<String, dynamic>;
         if(mounted) setState(() => clientToken = data['client_token']);
         return true;
@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen>
       return false;
     }
     catch(_)
-    {
+{
       return false;
     }
   }
@@ -179,19 +179,19 @@ class _HomeScreenState extends State<HomeScreen>
       );
 
       if(response.statusCode == 200 && response.data != null)
-      {
+{
         final data = response.data as Map<String, dynamic>;
         if(data['cards'] != null)
-        {
+{
           final cards = List<Map<String, dynamic>>.from(data['cards']);
           setState(() {
             _cardList.clear();
             for(final card in cards)
-            {
+{
               _cardList.add(CardModel.fromJson(card));
             }
             if(_cardList.isNotEmpty)
-            {
+{
               _selectedCard = _cardList[_currentCardIndex];
               _currentAccountId = _selectedCard!.accountId;
             }
@@ -199,13 +199,13 @@ class _HomeScreenState extends State<HomeScreen>
         }
       }
       else if(response.statusCode == 401)
-      {
+{
         final refreshed = await _refreshClientToken();
         if(refreshed) await _fetchCardsAndAccounts();
       }
     }
     catch(e)
-    {
+{
       debugPrint('Error fetching cards: $e');
     }
     finally
@@ -213,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen>
       if(mounted) setState(() => _loading = false);
     }
     if(_selectedCard != null)
-    {
+{
       await _fetchBalance();
       await _fetchRecentTransactions();
     }
@@ -223,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen>
   {
     setState(() => _loadingBalance = true);
     if(clientToken == null)
-    {
+{
       setState(() => _loadingBalance = false);
       return;
     }
@@ -231,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen>
     int? accountId = _currentAccountId;
 
     if(accountId == null)
-    {
+{
       try
       {
         final resp = await _client.get(
@@ -240,18 +240,19 @@ class _HomeScreenState extends State<HomeScreen>
         );
 
         if(resp.statusCode == 200)
-        {
+{
           final data = resp.data as Map<String, dynamic>;
           final cards = data['cards'] as List?;
           if(cards != null && cards.isNotEmpty)
-          {
+{
             accountId = (cards.first as Map<String, dynamic>)['accountId'] as int?;
           }
         }
       }
-      catch(_) {}
+      catch(_)
+{}
       if(accountId == null)
-      {
+{
         setState(() => _loadingBalance = false);
         return;
       }
@@ -265,23 +266,23 @@ class _HomeScreenState extends State<HomeScreen>
       );
 
       if(response.statusCode == 200)
-      {
+{
         final data = response.data as Map<String, dynamic>;
         if(data['account'] != null && data['account']['sold'] != null)
-        {
+{
           final sold = data['account']['sold'];
           setState(() => _balance =
               (sold is String ? double.parse(sold) : (sold as num).toDouble()));
         }
       }
       else if(response.statusCode == 401)
-      {
+{
         final refreshed = await _refreshClientToken();
         if(refreshed) await _fetchBalance();
       }
     }
     catch(e)
-    {
+{
       debugPrint('Error fetching balance: $e');
     }
     finally
@@ -302,17 +303,17 @@ class _HomeScreenState extends State<HomeScreen>
       );
 
       if(response.statusCode == 200 && response.data != null)
-      {
+{
         final data = response.data as Map<String, dynamic>;
         if(data['transactions'] != null)
-        {
+{
           final all = List<Map<String, dynamic>>.from(data['transactions']);
           if(mounted) setState(() => _recentTransactions = all.take(3).toList());
         }
       }
     }
     catch(e)
-    {
+{
       debugPrint('Error fetching recent transactions: $e');
     }
     finally
@@ -326,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen>
     _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_)
     {
       if(mounted)
-      {
+{
         _fetchBalance();
         _fetchCardsAndAccounts();
       }
@@ -347,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _nextCard()
   {
     if(_currentCardIndex < _cardList.length - 1)
-    {
+{
       _cancelCardReveal();
       setState(() {
         _currentCardIndex++;
@@ -362,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _prevCard()
   {
     if(_currentCardIndex > 0)
-    {
+{
       _cancelCardReveal();
       setState(() {
         _currentCardIndex--;
@@ -388,7 +389,7 @@ class _HomeScreenState extends State<HomeScreen>
   {
     if(_flipController.isAnimating) return;
     if(_cardShowingBack)
-    {
+{
       _cardRevealTimer?.cancel();
       setState(() {
         _revealCountdown = 60;
@@ -398,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen>
           duration: const Duration(milliseconds: 600), curve: Curves.easeInOut);
     }
     else
-    {
+{
       if(_selectedCard == null) return;
       setState(() => _cardShowingBack = true);
       await _flipController.animateTo(1,
@@ -414,14 +415,14 @@ class _HomeScreenState extends State<HomeScreen>
     _cardRevealTimer = Timer.periodic(const Duration(seconds: 1), (timer)
     {
       if(!mounted)
-      {
+{
         timer.cancel();
         return;
       }
       setState(() {
         _revealCountdown--;
         if(_revealCountdown <= 0)
-        {
+{
           timer.cancel();
           _revealCountdown = 60;
           _cardShowingBack = false;
@@ -512,7 +513,7 @@ class _HomeScreenState extends State<HomeScreen>
     final clean = raw.replaceAll(' ', '');
     final buf = StringBuffer();
     for(int i = 0; i < clean.length; i++)
-    {
+{
       if(i > 0 && i % 4 == 0) buf.write(' ');
       buf.write(clean[i]);
     }
@@ -527,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen>
       return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
     }
     catch(_)
-    {
+{
       return dateStr;
     }
   }
@@ -641,7 +642,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildCardSection()
   {
     if(_cardList.isEmpty)
-    {
+{
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Center(

@@ -74,7 +74,7 @@ class _TransferScreenState extends State<TransferScreen>
     String clean = input.replaceAll(' ', '').toUpperCase();
     String formatted = '';
     for(int i = 0; i < clean.length; i++)
-    {
+{
       if(i > 0 && i % 4 == 0) formatted += ' ';
       formatted += clean[i];
     }
@@ -88,7 +88,7 @@ class _TransferScreenState extends State<TransferScreen>
     String reversed = clean.split('').reversed.join('');
     String formatted = '';
     for(int i = 0; i < reversed.length; i++)
-    {
+{
       if(i > 0 && i % 3 == 0) formatted += '.';
       formatted += reversed[i];
     }
@@ -127,18 +127,18 @@ class _TransferScreenState extends State<TransferScreen>
     try
     {
       if(Platform.isAndroid)
-      {
+{
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
       }
       else if(Platform.isIOS)
-      {
+{
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
     }
     catch (_)
-    {
+{
       _deviceId = 'dev-device';
     }
   }
@@ -159,18 +159,18 @@ class _TransferScreenState extends State<TransferScreen>
         body: jsonEncode({'deviceId': _deviceId}),
       );
       if(response.statusCode == 200)
-      {
+{
         final data = jsonDecode(response.body);
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
       }
       else
-      {
+{
         _showError('Eroare la obținerea tokenului client');
       }
     }
     catch (e)
-    {
+{
       _showError('Eroare de rețea: $e');
     }
   }
@@ -186,7 +186,7 @@ class _TransferScreenState extends State<TransferScreen>
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
       if(response.statusCode == 200)
-      {
+{
         final data = jsonDecode(response.body);
         if(mounted) clientToken = data['client_token'];
         return true;
@@ -194,7 +194,7 @@ class _TransferScreenState extends State<TransferScreen>
       return false;
     }
     catch (_)
-    {
+{
       return false;
     }
     finally
@@ -231,10 +231,10 @@ class _TransferScreenState extends State<TransferScreen>
       );
 
       if(response.statusCode == 401)
-      {
+{
         final refreshed = await _refreshToken();
         if(refreshed)
-        {
+{
           return await fetchTransferApi(iban: iban, name: name, amount: amount, reason: reason);
         }
         return {'success': false, 'error': 'Sesiune expirat. Reconectează-te.'};
@@ -244,7 +244,7 @@ class _TransferScreenState extends State<TransferScreen>
       return {'success': data['success'] ?? false, 'error': data['error']};
     }
     catch (e)
-    {
+{
       return {'success': false, 'error': 'Eroare de rețea: $e'};
     }
     finally
@@ -267,7 +267,7 @@ class _TransferScreenState extends State<TransferScreen>
     if(reason.length < 3) return _showError('Motiv prea scurt');
     if(amount == null || amount <= 0) return _showError('Sumă invalidă');
     if(iban.toUpperCase() == widget.userIban.replaceAll(' ', '').toUpperCase())
-    {
+{
       return _showError('Nu poți trimite bani în propriul cont');
     }
 
@@ -280,7 +280,7 @@ class _TransferScreenState extends State<TransferScreen>
     );
 
     if(result['success'] == true)
-    {
+{
       _showSuccess('Transfer efectuat cu succes!');
       _ibanController.clear();
       _nameController.clear();
@@ -288,7 +288,7 @@ class _TransferScreenState extends State<TransferScreen>
       _reasonController.clear();
     }
     else
-    {
+{
       _showError(result['error'] ?? 'Eroare la transfer');
     }
   }

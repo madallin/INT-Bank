@@ -9,7 +9,7 @@ class IBANInputFormatter extends TextInputFormatter
     final cleaned = newValue.text.replaceAll(' ', '').toUpperCase();
     final buffer = StringBuffer();
     for(int i = 0; i < cleaned.length; i++)
-    {
+{
       if(i > 0 && i % 4 == 0) buffer.write(' ');
       buffer.write(cleaned[i]);
     }
@@ -51,7 +51,7 @@ class AmountInputFormatter extends TextInputFormatter
     if(value.isEmpty) return '0';
     final buffer = StringBuffer();
     for(int i = 0; i < value.length; i++)
-    {
+{
       if(i > 0 && (value.length - i) % 3 == 0) buffer.write('.');
       buffer.write(value[i]);
     }
@@ -68,7 +68,7 @@ class PhoneInputFormatter extends TextInputFormatter
     final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
     final buffer = StringBuffer();
     for(int i = 0; i < digits.length; i++)
-    {
+{
       if(i == 3 || i == 6) buffer.write(' ');
       buffer.write(digits[i]);
     }
@@ -102,9 +102,9 @@ class CNPInputFormatter extends TextInputFormatter
     final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
     final buffer = StringBuffer();
     for(int i = 0; i < digits.length && i < 13; i++)
-    {
+{
       if(i == 1 || i == 3 || i == 5 || i == 7 || i == 9 || i == 11)
-      {
+{
         buffer.write(' ');
       }
       buffer.write(digits[i]);

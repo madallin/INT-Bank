@@ -7,7 +7,8 @@ import 'package:internet_banking/main.dart';
 void main() {
   testWidgets('App renders MaterialApp', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
-    await tester.pump();
+    // Advance past the 4-second SplashScreen timer
+    await tester.pump(const Duration(seconds: 5));
 
     expect(find.byType(MaterialApp), findsOneWidget);
   });

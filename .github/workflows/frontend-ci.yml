@@ -36,5 +36,5 @@ jobs:
         working-directory: internet_banking
 
       - name: Run tests
-        run: flutter test
+        run: flutter test --dart-define=SERVER_URL=api-internet-banking.onrender.com
         working-directory: internet_banking

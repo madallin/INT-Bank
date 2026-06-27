@@ -13,8 +13,10 @@ import { PlacesController } from './adapters/in/rest/places.controller';
 import { RegisterController } from './adapters/in/rest/register.controller';
 import { CurrencyController } from './adapters/in/rest/currency.controller';
 import { AuthSessionController } from './adapters/in/rest/auth-session.controller';
+import { HealthController } from './adapters/in/rest/health.controller';
 
 import { BankingService } from './services/banking.service';
+import { ApprovalWsGateway } from './adapters/in/websocket/approval-ws.gateway';
 import { CryptoService } from './services/crypto.service';
 import { CurrencyService } from './services/currency.service';
 
@@ -38,9 +40,11 @@ import { HmacGuard } from './common/guards/hmac.guard';
     RegisterController,
     CurrencyController,
     AuthSessionController,
+    HealthController,
   ],
   providers: [
     BankingService,
+    ApprovalWsGateway,
     CryptoService,
     CurrencyService,
     ClientTokenGuard,

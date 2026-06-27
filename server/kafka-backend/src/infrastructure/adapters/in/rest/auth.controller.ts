@@ -9,7 +9,7 @@ import
 import { Throttle } from '@nestjs/throttler';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import twilio from 'twilio';
+import * as twilio from 'twilio';
 import { redis } from '../../../../config/redis';
 import { ClientTokenGuard } from '../../../common/guards/client-token.guard';
 

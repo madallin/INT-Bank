@@ -6,7 +6,7 @@ import
     UseGuards,
     Logger,
 } from '@nestjs/common';
-import twilio from 'twilio';
+import * as twilio from 'twilio';
 import { redis } from '../../../../config/redis';
 import { ClientTokenGuard } from '../../../common/guards/client-token.guard';
 

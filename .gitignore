@@ -36,3 +36,7 @@ Thumbs.db
 *.class
 *.pyc
 build/
+ 
+# --- Build output --- 
+dist/ 
+*.tsbuildinfo

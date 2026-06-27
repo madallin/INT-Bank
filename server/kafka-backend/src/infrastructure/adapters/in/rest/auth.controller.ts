@@ -3,11 +3,21 @@ import
     Controller,
     Post,
     Body,
+    UseGuards,
     Logger,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import twilio from 'twilio';
 import { redis } from '../../../../config/redis';
+import { ClientTokenGuard } from '../../../common/guards/client-token.guard';
+
+const twilioClient = twilio(
+    process.env.TWILIO_ACCOUNT_SID!,
+    process.env.TWILIO_AUTH_TOKEN!,
+);
+const SERVICE_SID = process.env.TWILIO_SERVICE_SID!;
 
 @Controller('auth')
 export class AuthController
@@ -76,6 +86,46 @@ export class AuthController
         {
             this.logger.error(err, 'Error refreshing client token');
             return { statusCode: 500, error: 'Server error' };
+        }
+    }
+
+    @UseGuards(ClientTokenGuard)
+    @Throttle({ default: { limit: 1, ttl: 60000 } })
+    @Post('send-otp-sms')
+    async sendOtpSms(@Body() body: { phone?: string })
+    {
+        const { phone } = body;
+        if(!phone)
+        {
+            return { statusCode: 400, error: 'Numar de telefon lipsa' };
+        }
+
+        const lastSentKey = `otp:sms:last:${phone}`;
+        const lastSent = await redis.get(lastSentKey);
+
+        if(lastSent && Date.now() - parseInt(lastSent) < 60 * 1000)
+        {
+            return {
+                statusCode: 429,
+                error: 'Asteapta 1 minut inainte de a solicita un nou cod',
+            };
+        }
+
+        try
+        {
+            await twilioClient.verify.v2.services(SERVICE_SID).verifications.create(
+            {
+                to: phone,
+                channel: 'sms',
+            });
+
+            await redis.set(lastSentKey, Date.now(), 'EX', 61);
+            return { success: true };
+        }
+        catch (err)
+        {
+            this.logger.error(err, 'Eroare la trimiterea SMS-ului OTP');
+            return { statusCode: 500, error: 'Eroare la trimiterea SMS-ului' };
         }
     }
 }

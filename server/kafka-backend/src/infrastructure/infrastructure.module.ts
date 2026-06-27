@@ -20,6 +20,7 @@ import { CurrencyService } from './services/currency.service';
 
 import { ClientTokenGuard } from './common/guards/client-token.guard';
 import { UserTokenGuard } from './common/guards/user-token.guard';
+import { HmacGuard } from './common/guards/hmac.guard';
 
 @Module({
   imports: [
@@ -44,7 +45,10 @@ import { UserTokenGuard } from './common/guards/user-token.guard';
     CurrencyService,
     ClientTokenGuard,
     UserTokenGuard,
+    HmacGuard,
   ],
-  exports: [],
+  exports: [
+    HmacGuard,
+  ],
 })
 export class InfrastructureModule {}

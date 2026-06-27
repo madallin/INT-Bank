@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { KafkaProducerAdapter } from './kafka-producer.adapter';
 import { KafkaConsumerAdapter } from './kafka-consumer.adapter';
 import { EventPublisher } from '../../../../../core/ports/out/event-publisher.interface';
 import { ApplicationModule } from '../../../../../application/application.module';
 
 @Module({
-  imports: [ApplicationModule],
+  imports: [forwardRef(() => ApplicationModule)],
   providers: [
     {
       provide: EventPublisher,

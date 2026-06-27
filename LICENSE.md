@@ -1,6 +1,6 @@
 PROPRIETARY AND CONFIDENTIAL LICENSE
 
-Copyright (c) 2026 Ioan-Madalin Munteanu. All rights reserved.
+Copyright (c) 2025-2026 Ioan-Madalin Munteanu. All rights reserved.
 
 This software and its documentation are the sole property of Ioan-Madalin Munteanu. 
 

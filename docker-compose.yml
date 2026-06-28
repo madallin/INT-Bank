@@ -39,8 +39,7 @@ services:
 
   backend:
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: ./server/kafka-backend
     container_name: intbank-backend
     restart: unless-stopped
     depends_on:

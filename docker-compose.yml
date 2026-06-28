@@ -1,4 +1,4 @@
-services:
+﻿services:
   postgres:
     image: postgres:16-alpine
     container_name: intbank-db
@@ -39,14 +39,14 @@ services:
 
   backend:
     build:
-      context: ./server/kafka-backend
+      context: .
     container_name: intbank-backend
     restart: unless-stopped
     depends_on:
       postgres:
-        condition: service_healthy
+     condition: service_healthy
       redis:
-        condition: service_healthy
+     condition: service_healthy
     environment:
       NODE_ENV: production
       DB_HOST: postgres
@@ -101,7 +101,7 @@ services:
     restart: unless-stopped
     depends_on:
       zookeeper:
-        condition: service_started
+     condition: service_started
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -134,7 +134,7 @@ services:
     restart: unless-stopped
     depends_on:
       kafka:
-        condition: service_started
+     condition: service_started
     environment:
       KAFKA_CLUSTERS_0_NAME: intbank-local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
@@ -146,17 +146,17 @@ services:
 
   kafka-backend:
     build:
-      context: ./server/kafka-backend
-      dockerfile: Dockerfile
+      context: .
+      
     container_name: intbank-kafka-backend
     restart: unless-stopped
     depends_on:
       postgres:
-        condition: service_healthy
+     condition: service_healthy
       redis:
-        condition: service_healthy
+     condition: service_healthy
       kafka:
-        condition: service_healthy
+     condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3001

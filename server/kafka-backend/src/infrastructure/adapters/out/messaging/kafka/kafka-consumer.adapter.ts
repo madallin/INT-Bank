@@ -28,6 +28,8 @@ export class KafkaConsumerAdapter implements OnModuleInit, OnModuleDestroy
 
   async onModuleInit(): Promise<void>
   {
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
     try
     {
       await this.consumer.connect();

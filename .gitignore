@@ -8,9 +8,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# --- Server certs (private keys) ---
-server/certs/*.pem
-server/certs/*.key
+# --- Certificate files (local development) ---
+certs/
+server/certs/
 
 # --- Logs ---
 logs/

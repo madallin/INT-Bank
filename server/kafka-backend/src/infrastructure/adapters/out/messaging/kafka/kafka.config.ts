@@ -1,14 +1,45 @@
 import { logLevel as KafkaLogLevel } from 'kafkajs';
+import * as fs from 'fs';
+import * as path from 'path';
 
-function normalizeCert(value: string | undefined): string
+function loadCert(fileName: string): string
 {
-  return value?.replace(/\\n/g, '\n') ?? '';
+  const productionPath = path.join('/etc/secrets', fileName);
+  const localPath = path.join(__dirname, '..', '..', '..', '..', '..', '..', '..', 'certs', fileName);
+
+  if(fs.existsSync(productionPath))
+  {
+    return fs.readFileSync(productionPath, 'utf-8');
+  }
+
+  if(fs.existsSync(localPath))
+  {
+    return fs.readFileSync(localPath, 'utf-8');
+  }
+
+  return '';
 }
 
 export function getKafkaSslConfig():
   | boolean
   | { rejectUnauthorized: boolean; ca: string[]; cert: string; key: string }
 {
+  const caCert   = loadCert('ca.pem');
+  const cert     = loadCert('service.cert');
+  const key      = loadCert('service.key');
+
+  // Daca avem certificate citite de pe disc, le folosim
+  if(caCert && cert && key)
+  {
+    return {
+      rejectUnauthorized: false,
+      ca: [caCert],
+      cert,
+      key,
+    };
+  }
+
+  // Fallback: citeste din variabile de mediu (compatibilitate)
   const accessKey = process.env.KAFKA_SSL_ACCESS_KEY;
 
   if(accessKey)
@@ -27,6 +58,11 @@ export function getKafkaSslConfig():
   }
 
   return false;
+}
+
+function normalizeCert(value: string | undefined): string
+{
+  return value?.replace(/\\n/g, '\n') ?? '';
 }
 
 export function getKafkaSaslConfig():

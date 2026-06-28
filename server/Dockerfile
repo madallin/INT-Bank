@@ -5,10 +5,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY server/kafka-backend/package*.json server/kafka-backend/tsconfig.json server/kafka-backend/nest-cli.json ./
+COPY kafka-backend/package*.json kafka-backend/tsconfig.json kafka-backend/nest-cli.json ./
 RUN npm ci --ignore-scripts
 
-COPY server/kafka-backend/src/ ./src/
+COPY kafka-backend/src/ ./src/
 
 RUN npm run build
 
@@ -18,7 +18,7 @@ WORKDIR /app
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY server/kafka-backend/package*.json ./
+COPY kafka-backend/package*.json ./
 RUN npm ci --only=production --ignore-scripts
 
 COPY --from=builder --chown=appuser:appgroup /app/dist ./dist

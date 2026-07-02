@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { DatabaseModule } from './adapters/out/persistence/typeorm/database.module';
 import { KafkaModule } from './adapters/out/messaging/kafka/kafka.module';
 import { ApplicationModule } from '../application/application.module';
+import { OutboxOrmEntity } from './adapters/out/persistence/typeorm/entities/outbox.orm-entity';
 
 import { TransferController } from './adapters/in/rest/transfer.controller';
 import { UsersController } from './adapters/in/rest/users.controller';
@@ -37,6 +39,7 @@ import { SagaOrchestrator } from '../application/saga/saga-orchestrator';
     DatabaseModule,
     KafkaModule,
     ApplicationModule,
+    TypeOrmModule.forFeature([OutboxOrmEntity]),
   ],
   controllers: [
     TransferController,

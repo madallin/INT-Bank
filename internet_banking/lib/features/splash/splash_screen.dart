@@ -69,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen>
         MaterialPageRoute(
           builder: (_) => ErrorScreen(
             errorMessage:
-                'Nu s-a putut realiza conexiunea cu serverul. A??tept??m conexiunea...',
+                'Nu s-a putut realiza conexiunea cu serverul. Așteptăm conexiunea...',
             onConnectionRestored: (context)
             {
               Navigator.of(context).pushAndRemoveUntil(

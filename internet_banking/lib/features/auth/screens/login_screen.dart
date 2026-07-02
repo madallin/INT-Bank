@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen>
 {
       if(mounted)
 {
-        setState(() => textEroare = 'Lungimea num??rului nu este valid??');
+        setState(() => textEroare = 'Lungimea numărului nu este validă');
       }
       return null;
     }
@@ -157,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen>
           if(mounted)
 {
             setState(
-              () => textEroare = 'Num??rul de telefon nu apar??ine unui client',
+              () => textEroare = 'Numărul de telefon nu aparține unui client',
             );
           }
         }
@@ -179,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen>
 {
         setState(
           () => textEroare =
-              'Nu te po??i conecta la server. Verific?? conexiunea la internet',
+              'Nu te poți conecta la server. Verifică conexiunea la internet',
         );
       }
       debugPrint('Eroare _attemptLogin: $e');
@@ -196,14 +196,14 @@ class _LoginScreenState extends State<LoginScreen>
     final phoneRaw = _phoneController.text.trim();
     if(phoneRaw.isEmpty)
 {
-      setState(() => textEroare = 'Introdu num??rul de telefon');
+      setState(() => textEroare = 'Introdu numărul de telefon');
       return;
     }
 
     final fullPhoneNumber = _formatPhoneForServer(phoneRaw);
     if(fullPhoneNumber == null)
 {
-      setState(() => textEroare = 'Num??rul de telefon nu este valid');
+      setState(() => textEroare = 'Numărul de telefon nu este valid');
       return;
     }
 
@@ -331,7 +331,7 @@ class _LoginScreenState extends State<LoginScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Confirm??',
+                          'Confirmă',
                           style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -556,7 +556,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             const SizedBox(height: 54),
                             Text(
-                              'Introdu num??rul de telefon',
+                              'Introdu numărul de telefon',
                               style: GoogleFonts.poppins(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w700,
@@ -566,7 +566,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Te rug??m s?? introduci num??rul declarat b??ncii',
+                              'Te rugăm să introduci numărul declarat băncii',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
                                 fontSize: 14,
@@ -586,7 +586,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       const Icon(Icons.phone_outlined, size: 16, color: Color(0xFF6B7280)),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'Num??r de telefon',
+                                        'Număr de telefon',
                                         style: GoogleFonts.inter(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
@@ -651,7 +651,7 @@ class _LoginScreenState extends State<LoginScreen>
                                               borderSide: const BorderSide(color: Color(lightForestGreenColor), width: 2),
                                             ),
                                             contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-                                            hintText: _countries.isEmpty ? '??nc??rcare...' : _getHintForCountry(),
+                                            hintText: _countries.isEmpty ? 'Încărcare...' : _getHintForCountry(),
                                             hintStyle: GoogleFonts.inter(
                                               fontSize: 15,
                                               color: Colors.grey[400],

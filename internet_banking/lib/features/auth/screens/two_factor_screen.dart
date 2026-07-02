@@ -126,12 +126,12 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
       }
       else
 {
-        _showError('Eroare la ob??inerea tokenului client');
+        _showError('Eroare la obținerea tokenului client');
       }
     }
     catch(e)
 {
-      _showError('Eroare de re??ea: $e');
+      _showError('Eroare de rețea: $e');
     }
   }
 
@@ -198,7 +198,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
 
       if(response.statusCode == 401)
 {
-        _showError('Timpul pentru verificare a expirat. Te rug??m s?? re??ncepi procesul.');
+        _showError('Timpul pentru verificare a expirat. Te rugăm să reîncepi procesul.');
         setState(() => pin = '');
         return;
       }
@@ -215,7 +215,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     }
     catch(e)
 {
-      if(mounted) _showError('Eroare de re??ea: $e');
+      if(mounted) _showError('Eroare de rețea: $e');
     }
     finally
     {
@@ -251,7 +251,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
         }
         else if(mounted)
 {
-          _showError('Sesiune expirat??. Te rug??m s?? te reconectezi');
+          _showError('Sesiune expirată. Te rugăm să te reconectezi');
           setState(() => pin = '');
         }
         return;
@@ -262,7 +262,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
 {
         if(!mounted) return;
         setState(() => isVerifying = true);
-        _showSuccess('Verificare reu??it??! Vei fi redirec??ionat...');
+        _showSuccess('Verificare reușită! Vei fi redirecționat...');
 
         bool setPin = true;
         final hasPinResponse = await client.get(
@@ -307,7 +307,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
     }
     catch(e)
 {
-      if(mounted) _showError('Eroare de re??ea: $e');
+      if(mounted) _showError('Eroare de rețea: $e');
     }
     finally
     {

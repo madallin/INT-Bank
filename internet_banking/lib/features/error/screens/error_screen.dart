@@ -186,7 +186,7 @@ class _ErrorScreenState extends State<ErrorScreen>
               ),
               const SizedBox(height: 48),
               Text(
-                'Ups, ceva nu a func??ionat...',
+                'Ups, ceva nu a funcționat...',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 28,

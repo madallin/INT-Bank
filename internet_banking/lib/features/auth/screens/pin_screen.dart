@@ -125,7 +125,7 @@ class _PinScreenState extends State<PinScreen>
     }
     catch(e)
 {
-      _showError('Eroare de re??ea: $e');
+      _showError('Eroare de rețea: $e');
     }
   }
 
@@ -246,7 +246,7 @@ class _PinScreenState extends State<PinScreen>
           final success = await _performJwtLogin();
           if(!success)
 {
-            _showError('Eroare la autentificare. ??ncearc?? din nou.');
+            _showError('Eroare la autentificare. Încearcă din nou.');
             setState(() => pin = '');
             return;
           }
@@ -273,7 +273,7 @@ class _PinScreenState extends State<PinScreen>
     }
     catch(e)
 {
-      _showError('Eroare: Nu te po??i conecta la server');
+      _showError('Eroare: Nu te poți conecta la server');
       setState(() => pin = '');
     }
     finally
@@ -375,7 +375,7 @@ class _PinScreenState extends State<PinScreen>
     }
     catch(e)
 {
-      _showError('Eroare: Nu te po??i conecta la server');
+      _showError('Eroare: Nu te poți conecta la server');
       setState(() {
         pin = '';
         confirmPin = '';
@@ -393,13 +393,13 @@ class _PinScreenState extends State<PinScreen>
   Widget build(BuildContext context)
   {
     final title = widget.set
-        ? (isConfirming ? 'Confirm?? PIN-ul' : 'Seteaz?? PIN-ul')
+        ? (isConfirming ? 'Confirmă PIN-ul' : 'Setează PIN-ul')
         : 'Introdu PIN-ul';
     final subtitle = widget.set
         ? (isConfirming
-            ? 'Reintroduce??i codul PIN pentru confirmare'
-            : 'Alege??i un cod PIN din 6 cifre')
-        : 'Pentru a continua, te rug??m s?? introduci codul t??u PIN';
+            ? 'Reintroduceți codul PIN pentru confirmare'
+            : 'Alegeți un cod PIN din 6 cifre')
+        : 'Pentru a continua, te rugăm să introduci codul tău PIN';
 
     final currentPin = isConfirming ? confirmPin : pin;
 

@@ -40,7 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   final TextEditingController _cnpController = TextEditingController();
 
   String _selectedGender = 'Masculin';
-  String _selectedMaritalStatus = 'Nec??s??torit';
+  String _selectedMaritalStatus = 'Necăsătorit';
 
   DateTime? _selectedDate;
 
@@ -185,17 +185,17 @@ class _RegisterScreenState extends State<RegisterScreen>
         }
         else
 {
-          _showError(data['error'] ?? 'Contul exist?? deja');
+          _showError(data['error'] ?? 'Contul există deja');
         }
       }
       else
 {
-        _showError(data['error'] ?? 'Eroare la ??nregistrare');
+        _showError(data['error'] ?? 'Eroare la înregistrare');
       }
     }
     catch(e)
 {
-      _showError('Nu te po??i conecta la server. Verific?? conexiunea');
+      _showError('Nu te poți conecta la server. Verifică conexiunea');
     }
     finally
     {
@@ -286,9 +286,9 @@ class _RegisterScreenState extends State<RegisterScreen>
             child: const Icon(Icons.phone_android_rounded, size: 48, color: Colors.white),
           ),
           const SizedBox(height: 32),
-          Text('Verificare num??r', style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: const Color(darkGreyColor))),
+          Text('Verificare număr', style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: const Color(darkGreyColor))),
           const SizedBox(height: 12),
-          Text('Introdu num??rul t??u de telefon', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600])),
+          Text('Introdu numărul tău de telefon', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600])),
           const SizedBox(height: 40),
           _buildPhoneField(),
           const SizedBox(height: 24),
@@ -318,7 +318,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           const SizedBox(height: 32),
           Text('Date personale', style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: const Color(darkGreyColor))),
           const SizedBox(height: 8),
-          Text('Completeaz?? datele tale', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600])),
+          Text('Completează datele tale', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600])),
           const SizedBox(height: 32),
           _buildTextField(controller: _firstNameController, label: 'Prenume', icon: Icons.person_outline, hint: 'Introdu prenumele'),
           const SizedBox(height: 16),
@@ -360,17 +360,17 @@ class _RegisterScreenState extends State<RegisterScreen>
           const SizedBox(height: 32),
           Text('Confirmare date', style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: const Color(darkGreyColor))),
           const SizedBox(height: 8),
-          Text('Verific?? datele introduse', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600])),
+          Text('Verifică datele introduse', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600])),
           const SizedBox(height: 32),
           _buildReviewItem('Telefon', _phoneController.text),
           _buildReviewItem('Prenume', _firstNameController.text),
           _buildReviewItem('Nume', _lastNameController.text),
           _buildReviewItem('Email', _emailController.text),
-          if(_selectedDate != null) _buildReviewItem('Data na??terii',
+          if(_selectedDate != null) _buildReviewItem('Data nașterii',
               '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'),
           _buildReviewItem('Gen', _selectedGender),
           _buildReviewItem('CNP', _cnpController.text),
-          _buildReviewItem('Stare civil??', _selectedMaritalStatus),
+          _buildReviewItem('Stare civilă', _selectedMaritalStatus),
           const SizedBox(height: 24),
         ],
       ),
@@ -480,7 +480,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     borderSide: const BorderSide(color: Color(lightForestGreenColor), width: 2),
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-                  hintText: _countries.isEmpty ? '??nc??rcare...' : _getHintForCountry(),
+                  hintText: _countries.isEmpty ? 'Încărcare...' : _getHintForCountry(),
                   hintStyle: GoogleFonts.inter(fontSize: 15, color: Colors.grey[400], fontWeight: FontWeight.w400),
                 ),
               ),
@@ -555,7 +555,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             children: [
               const Icon(Icons.calendar_today_outlined, size: 16, color: Color(0xFF6B7280)),
               const SizedBox(width: 6),
-              Text('Data na??terii', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF6B7280))),
+              Text('Data nașterii', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF6B7280))),
             ],
           ),
         ),
@@ -587,7 +587,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             child: Text(
               _selectedDate != null
                   ? '${_selectedDate!.day.toString().padLeft(2, '0')}.${_selectedDate!.month.toString().padLeft(2, '0')}.${_selectedDate!.year}'
-                  : 'Selecteaz?? data',
+                  : 'Selectează data',
               style: GoogleFonts.inter(
                 fontSize: 15,
                 color: _selectedDate != null ? const Color(darkGreyColor) : Colors.grey[400],
@@ -655,7 +655,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             children: [
               const Icon(Icons.favorite_outline_rounded, size: 16, color: Color(0xFF6B7280)),
               const SizedBox(width: 6),
-              Text('Stare civil??', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF6B7280))),
+              Text('Stare civilă', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF6B7280))),
             ],
           ),
         ),
@@ -673,7 +673,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               isExpanded: true,
               icon: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey[400], size: 20),
               style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: const Color(darkGreyColor)),
-              items: ['Nec??s??torit', 'C??s??torit', 'Divor??at', 'V??duv'].map((s)
+              items: ['Necăsătorit', 'Căsătorit', 'Divorțat'].map((s)
               {
                 return DropdownMenuItem<String>(value: s, child: Text(s));
               }).toList(),
@@ -690,7 +690,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   Widget _buildNavigationButton(bool isNext)
   {
-    final label = isNext ? 'Continu??' : '??napoi';
+    final label = isNext ? 'Continuă' : 'Înapoi';
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -746,7 +746,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             child: Center(
               child: _loading
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                  : Text('Confirm?? ??nregistrarea', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                  : Text('Confirmă înregistrarea', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
             ),
           ),
         ),
@@ -775,7 +775,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     onPressed: () => Navigator.pop(context),
                     color: const Color(darkGreyColor),
                   ),
-                  Text('??nregistrare', style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
+                  Text('Înregistrare', style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
                 ],
               ),
             ),

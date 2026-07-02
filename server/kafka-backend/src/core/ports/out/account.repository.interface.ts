@@ -24,4 +24,15 @@ export abstract class AccountRepository
   abstract runInTransaction<T>(
     cb: (entityManager: EntityManager) => Promise<T>,
   ): Promise<T>;
+
+  // Serializable isolation for critical multi-account operations
+  abstract runInSerializableTransaction<T>(
+    cb: (entityManager: EntityManager) => Promise<T>,
+  ): Promise<T>;
+
+  // Optimistic locking variant: find by ID with version for OCC conflict detection
+  abstract findByIdWithVersion(
+    id: number,
+    entityManager?: unknown,
+  ): Promise<{ account: Account | null; version: number }>;
 }

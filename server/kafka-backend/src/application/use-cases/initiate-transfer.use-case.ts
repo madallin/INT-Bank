@@ -70,9 +70,10 @@ export class InitiateTransferUseCase implements TransferUseCase
       initiatedAt: new Date().toISOString(),
     };
 
+    // Use fromAccountId as partition key to guarantee ordering per sender account
     await this.eventPublisher.publish(
       'transfer.initiated',
-      trackingId,
+      String(sourceAccount.id),
       event as unknown as Record<string, unknown>,
     );
 

@@ -22,6 +22,8 @@ export class KafkaProducerAdapter
     this.producer = this.kafka.producer({
       allowAutoTopicCreation: true,
       transactionTimeout: 30000,
+      idempotent: true,
+      maxInFlightRequests: 5,
     });
   }
 

@@ -33,6 +33,25 @@ export class ProcessTransferUseCase
             `Processing transfer [${transferId}]: ${fromAccountId} -> ${toAccountId} | ${amount} ${currency}`,
         );
 
+        // IDEMPOTENCY CHECK: verify transfer hasn't already been processed
+        const existingTransfer = await this.transferRepository.findById(transferId);
+        if(existingTransfer)
+        {
+            if(
+                existingTransfer.status === TransferStatus.COMPLETED ||
+                existingTransfer.status === TransferStatus.FAILED
+            )
+            {
+                this.logger.warn(
+                    `Transfer [${transferId}] already in terminal state: ${existingTransfer.status}. Skipping reprocessing.`,
+                );
+                return;
+            }
+            this.logger.warn(
+                `Transfer [${transferId}] exists with status ${existingTransfer.status}. Will retry processing.`,
+            );
+        }
+
         const transferRecord: Transfer = {
             id: transferId,
             fromAccountId,

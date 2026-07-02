@@ -5,6 +5,7 @@ import { TransferOrmEntity } from './entities/transfer.orm-entity';
 import { UserOrmEntity } from './entities/user.orm-entity';
 import { CardOrmEntity } from './entities/card.orm-entity';
 import { SessionOrmEntity } from './entities/session.orm-entity';
+import { OutboxOrmEntity } from './entities/outbox.orm-entity';
 import { AccountRepositoryAdapter } from './repositories/account.repository.adapter';
 import { TransferRepositoryAdapter } from './repositories/transfer.repository.adapter';
 import { AccountRepository } from '../../../../../core/ports/out/account.repository.interface';
@@ -30,6 +31,7 @@ import { TransferRepository } from '../../../../../core/ports/out/transfer.repos
         UserOrmEntity,
         CardOrmEntity,
         SessionOrmEntity,
+        OutboxOrmEntity,
       ],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
@@ -44,6 +46,7 @@ import { TransferRepository } from '../../../../../core/ports/out/transfer.repos
       UserOrmEntity,
       CardOrmEntity,
       SessionOrmEntity,
+      OutboxOrmEntity,
     ]),
   ],
   providers: [

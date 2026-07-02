@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  VersionColumn,
 } from 'typeorm';
 
 @Entity({ name: 'conturiBancare' })
@@ -25,4 +26,7 @@ export class AccountOrmEntity
 
   @CreateDateColumn({ name: 'createdat' })
   createdAt!: Date;
+
+  @VersionColumn()
+  version!: number;
 }

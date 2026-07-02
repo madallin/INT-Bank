@@ -18,7 +18,7 @@ export class TransferOrmEntity
   @Column({ name: 'toaccountid', type: 'int' })
   toAccountId!: number;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'decimal', precision: 15, scale: 2 })
   amount!: number;
 
   @Column({ type: 'varchar', length: 3, default: 'RON' })

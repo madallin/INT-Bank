@@ -6,6 +6,9 @@ import { AccountRepository } from '../../../../../../core/ports/out/account.repo
 import { Account, AccountBalance } from '../../../../../../core/domain/account.entity';
 import { AccountOrmEntity } from '../entities/account.orm-entity';
 
+const DEFAULT_ISOLATION: 'REPEATABLE READ' = 'REPEATABLE READ';
+const SERIALIZABLE_ISOLATION: 'SERIALIZABLE' = 'SERIALIZABLE';
+
 @Injectable()
 export class AccountRepositoryAdapter implements AccountRepository
 {
@@ -92,7 +95,33 @@ export class AccountRepositoryAdapter implements AccountRepository
         fn: (em: EntityManager) => Promise<T>,
     ): Promise<T>
     {
-        return await this.dataSource.transaction(fn);
+        return await this.dataSource.transaction(DEFAULT_ISOLATION, fn);
+    }
+
+    async runInSerializableTransaction<T>(
+        fn: (em: EntityManager) => Promise<T>,
+    ): Promise<T>
+    {
+        return await this.dataSource.transaction(SERIALIZABLE_ISOLATION, fn);
+    }
+
+    async findByIdWithVersion(
+        id: number,
+        entityManager?: unknown,
+    ): Promise<{ account: Account | null; version: number }>
+    {
+        const em = entityManager
+            ? (entityManager as EntityManager)
+            : this.repo.manager;
+
+        const entity = await em.findOne(AccountOrmEntity, {
+            where: { id },
+        });
+
+        return {
+            account: entity ? this.toDomain(entity) : null,
+            version: entity?.version ?? 0,
+        };
     }
 
     private toDomain(entity: AccountOrmEntity): Account

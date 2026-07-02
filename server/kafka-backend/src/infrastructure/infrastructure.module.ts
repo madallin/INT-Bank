@@ -14,15 +14,23 @@ import { RegisterController } from './adapters/in/rest/register.controller';
 import { CurrencyController } from './adapters/in/rest/currency.controller';
 import { AuthSessionController } from './adapters/in/rest/auth-session.controller';
 import { HealthController } from './adapters/in/rest/health.controller';
+import { AdminController } from './adapters/in/rest/admin.controller';
 
 import { BankingService } from './services/banking.service';
 import { ApprovalWsGateway } from './adapters/in/websocket/approval-ws.gateway';
 import { CryptoService } from './services/crypto.service';
 import { CurrencyService } from './services/currency.service';
+import { ExchangeRateCacheService } from './services/exchange-rate-cache.service';
+import { OutboxProcessorService } from './services/outbox-processor.service';
+import { RetryService } from './services/retry.service';
+import { TokenBlacklistService } from './services/token-blacklist.service';
+import { ReadModelProjectorService } from './services/read-model-projector.service';
 
 import { ClientTokenGuard } from './common/guards/client-token.guard';
 import { UserTokenGuard } from './common/guards/user-token.guard';
 import { HmacGuard } from './common/guards/hmac.guard';
+
+import { SagaOrchestrator } from '../application/saga/saga-orchestrator';
 
 @Module({
   imports: [
@@ -41,18 +49,30 @@ import { HmacGuard } from './common/guards/hmac.guard';
     CurrencyController,
     AuthSessionController,
     HealthController,
+    AdminController,
   ],
   providers: [
     BankingService,
     ApprovalWsGateway,
     CryptoService,
     CurrencyService,
+    ExchangeRateCacheService,
+    OutboxProcessorService,
+    RetryService,
+    TokenBlacklistService,
+    ReadModelProjectorService,
+    SagaOrchestrator,
     ClientTokenGuard,
     UserTokenGuard,
     HmacGuard,
   ],
   exports: [
     HmacGuard,
+    ExchangeRateCacheService,
+    RetryService,
+    TokenBlacklistService,
+    ReadModelProjectorService,
+    SagaOrchestrator,
   ],
 })
 export class InfrastructureModule {}

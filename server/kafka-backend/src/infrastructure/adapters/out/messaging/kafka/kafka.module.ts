@@ -6,6 +6,7 @@ import { DlqConsumerAdapter } from './dlq-consumer.adapter';
 import { EventPublisher } from '../../../../../core/ports/out/event-publisher.interface';
 import { ApplicationModule } from '../../../../../application/application.module';
 import { OutboxOrmEntity } from '../../../out/persistence/typeorm/entities/outbox.orm-entity';
+import { RetryService } from '../../../../services/retry.service';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { OutboxOrmEntity } from '../../../out/persistence/typeorm/entities/outbo
     KafkaProducerAdapter,
     KafkaConsumerAdapter,
     DlqConsumerAdapter,
+    RetryService,
   ],
   exports: [
     EventPublisher,

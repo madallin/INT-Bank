@@ -12,7 +12,6 @@ import { OutboxOrmEntity, OutboxStatus } from '../../../out/persistence/typeorm/
 const DLQ_TOPIC = 'transfer.initiated.dlq';
 const MAX_DLQ_RETRIES = 3;
 const RETRY_DELAYS_MS = [120000, 300000, 900000]; // 2min, 5min, 15min
-const TOPIC_RETRY_INTERVAL_MS = 30000; // Retry subscription every 30s if topic doesn't exist yet
 
 interface DlqMessageMetadata
 {
@@ -29,8 +28,6 @@ export class DlqConsumerAdapter implements OnModuleInit, OnModuleDestroy
   private readonly logger = new Logger(DlqConsumerAdapter.name);
   private readonly kafka: Kafka;
   private consumer: Consumer;
-  private isRunning = false;
-  private subscriptionTimer: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly processTransferUseCase: ProcessTransferUseCase,
@@ -52,19 +49,35 @@ export class DlqConsumerAdapter implements OnModuleInit, OnModuleDestroy
   async onModuleInit(): Promise<void>
   {
     await new Promise(resolve => setTimeout(resolve, 5000));
-    await this.connectAndSubscribe();
+
+    try
+    {
+      await this.consumer.connect();
+      this.logger.log('DLQ Consumer connected');
+
+      await this.consumer.subscribe({
+        topic: DLQ_TOPIC,
+        fromBeginning: false,
+      });
+
+      await this.consumer.run({
+        autoCommit: false,
+        eachMessage: async (payload: EachMessagePayload) =>
+        {
+          await this.handleDlqMessage(payload);
+        },
+      });
+
+      this.logger.log(`DLQ Consumer subscribed to "${DLQ_TOPIC}" and running`);
+    }
+    catch(error)
+    {
+      this.logger.error('Failed to start DLQ Consumer', error);
+    }
   }
 
   async onModuleDestroy(): Promise<void>
   {
-    this.isRunning = false;
-
-    if(this.subscriptionTimer)
-    {
-      clearInterval(this.subscriptionTimer);
-      this.subscriptionTimer = null;
-    }
-
     try
     {
       await this.consumer.disconnect();
@@ -96,84 +109,6 @@ export class DlqConsumerAdapter implements OnModuleInit, OnModuleDestroy
       pendingRetries,
       permanentlyFailed: deadInOutbox,
     };
-  }
-
-  // Topic may not exist yet — retry subscription periodically until it's created
-  // by the main consumer's publishToDlq() (which has allowAutoTopicCreation: true)
-  private async connectAndSubscribe(): Promise<void>
-  {
-    try
-    {
-      await this.consumer.connect();
-      this.logger.log('DLQ Consumer connected');
-
-      await this.subscribe();
-    }
-    catch(error)
-    {
-      this.logger.warn(
-        `DLQ consumer failed to connect: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
-        `Retrying in ${TOPIC_RETRY_INTERVAL_MS / 1000}s...`,
-      );
-
-      this.scheduleSubscriptionRetry();
-    }
-  }
-
-  private scheduleSubscriptionRetry(): void
-  {
-    if(this.subscriptionTimer)
-    {
-      return;
-    }
-
-    this.subscriptionTimer = setInterval(async () =>
-    {
-      if(this.isRunning)
-      {
-        clearInterval(this.subscriptionTimer!);
-        this.subscriptionTimer = null;
-        return;
-      }
-
-      try
-      {
-        await this.subscribe();
-
-        if(this.subscriptionTimer)
-        {
-          clearInterval(this.subscriptionTimer);
-          this.subscriptionTimer = null;
-        }
-      }
-      catch(error)
-      {
-        this.logger.warn(
-          `DLQ subscription retry failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        );
-      }
-    }, TOPIC_RETRY_INTERVAL_MS);
-
-    this.subscriptionTimer.unref();
-  }
-
-  private async subscribe(): Promise<void>
-  {
-    await this.consumer.subscribe({
-      topic: DLQ_TOPIC,
-      fromBeginning: false,
-    });
-
-    await this.consumer.run({
-      autoCommit: false,
-      eachMessage: async (payload: EachMessagePayload) =>
-      {
-        await this.handleDlqMessage(payload);
-      },
-    });
-
-    this.isRunning = true;
-    this.logger.log(`DLQ Consumer subscribed to "${DLQ_TOPIC}" and running`);
   }
 
   private async handleDlqMessage(payload: EachMessagePayload): Promise<void>
@@ -287,7 +222,7 @@ export class DlqConsumerAdapter implements OnModuleInit, OnModuleDestroy
       ssl: getKafkaSslConfig(),
       ...(getKafkaSaslConfig() ? { sasl: getKafkaSaslConfig() } : {}),
     });
-    const dlqProducer = dlqKafka.producer({ idempotent: true });
+    const dlqProducer = dlqKafka.producer();
 
     try
     {

@@ -20,7 +20,6 @@ export class KafkaProducerAdapter
     this.kafka = new Kafka(getKafkaClientConfig('banking-nestjs-producer'));
 
     this.producer = this.kafka.producer({
-      allowAutoTopicCreation: true,
       transactionTimeout: 30000,
       idempotent: true,
       maxInFlightRequests: 5,

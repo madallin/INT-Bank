@@ -5,12 +5,6 @@ import { SkipThrottle } from '@nestjs/throttler';
 @SkipThrottle()
 export class HealthController
 {
-    @Get('express_status')
-    getStatus(): { status: string }
-    {
-        return { status: 'ok' };
-    }
-
     @Get('health')
     getHealth(): { status: string }
     {

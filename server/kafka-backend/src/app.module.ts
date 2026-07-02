@@ -54,7 +54,7 @@ const hmacEnabled = process.env.HMAC_ENABLED !== 'false';
           }),
         },
         autoLogging: {
-          ignore: (req) => req.url === '/health' || req.url === '/express_status',
+          ignore: (req) => req.url === '/health',
         },
       },
     }),

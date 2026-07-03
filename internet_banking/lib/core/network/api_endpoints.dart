@@ -45,5 +45,5 @@ class ApiEndpoints
   static String verifyPin(int userId) => '$baseUrl/users/$userId/verify-pin';
 
   static String transfer(int userId) => '$baseUrl/users/$userId/transfer';
-  static String expressStatus = '$baseUrl/express_status';
+  static String healthStatus = '$baseUrl/health';
 }

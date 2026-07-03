@@ -273,19 +273,73 @@ class _RegisterScreenState extends State<RegisterScreen>
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
-          const SizedBox(height: 40),
+          const SizedBox(height: 60),
           Container(
-            width: 100,
-            height: 100,
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
-                colors: [const Color(lightForestGreenColor), const Color(darkForestGreenColor)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(lightForestGreenColor), Color(darkForestGreenColor)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(lightForestGreenColor).withOpacity(0.3),
+                  blurRadius: 25,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Color(lightForestGreenColor), width: 2),
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 4),
+                    Container(
+                      width: 12,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[400],
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: Color(lightForestGreenColor).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Center(
+                          child: Icon(Icons.phone, size: 16, color: Color(lightForestGreenColor)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.grey[400]!, width: 1.5),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            child: const Icon(Icons.phone_android_rounded, size: 48, color: Colors.white),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 40),
           Text('Verificare număr', style: GoogleFonts.poppins(fontSize: 26, fontWeight: FontWeight.w700, color: const Color(darkGreyColor))),
           const SizedBox(height: 12),
           Text('Introdu numărul tău de telefon', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600])),

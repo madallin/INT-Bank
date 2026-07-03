@@ -11,6 +11,6 @@ class AppConfig
   );
 }
 
-const int lightForestGreenColor = 0xFF2E7D32;
+const int lightForestGreenColor = 0xFF00695C;
 const int darkForestGreenColor = 0xFF1B5E20;
 const int darkGreyColor = 0xFF1F2937;

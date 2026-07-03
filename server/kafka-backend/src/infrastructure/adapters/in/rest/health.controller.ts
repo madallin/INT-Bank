@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
-import { SkipHmac } from '../../common/guards/skip-hmac.decorator';
+import { SkipHmac } from '../../../common/guards/skip-hmac.decorator';
 
 @Controller()
 @SkipThrottle()

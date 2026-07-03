@@ -37,7 +37,7 @@ class _SplashScreenState extends State<SplashScreen>
     final client = _createHttpClient();
     try
     {
-      final uri = Uri.parse('https://${AppConfig.serverUrl}/express_status');
+      final uri = Uri.parse('https://${AppConfig.serverUrl}/health');
       final response = await client.get(uri).timeout(
         const Duration(seconds: 8),
         onTimeout: () => throw Exception('Timeout'),

@@ -156,7 +156,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         text: 'Sunt client deja',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Color(lightForestGreenColor),
+                          color: Color(0xFF00695C),
                         ),
                       ),
                       const TextSpan(text: '.\n\nDacă nu ai cont, '),

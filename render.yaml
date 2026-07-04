@@ -6,7 +6,7 @@ services:
     plan: free
     rootDir: server
     dockerfilePath: server/backend/Dockerfile
-    dockerBuildContext: server/backend
+    dockerContext: backend
     healthCheckPath: /health
     envVars:
       - key: SPRING_PROFILES_ACTIVE

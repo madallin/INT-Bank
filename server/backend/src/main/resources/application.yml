@@ -8,21 +8,22 @@ spring:
     name: intbank-backend
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:intbank}
-    username: ${DB_USER:intbank_user}
-    password: ${DB_PASSWORD:}
+    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:intbank}
+    username: ${PGUSER:intbank_user}
+    password: ${PGPASSWORD:}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
       idle-timeout: 300000
       connection-timeout: 20000
+      data-source-properties:
+        sslmode: ${DB_SSL:require}
 
   jpa:
     hibernate:
       ddl-auto: none
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
     show-sql: false
     open-in-view: false

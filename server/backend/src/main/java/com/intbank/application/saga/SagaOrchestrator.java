@@ -60,7 +60,7 @@ public class SagaOrchestrator
                     try
                     {
                         log.info("Saga [{}] step {}/{}: {}", transferId, i + 1, steps.size(), step.name());
-                        step.execute(context);
+                        step.execute().execute(context);
                         executedSteps.add(i);
                     }
                     catch (Exception error)
@@ -112,7 +112,7 @@ public class SagaOrchestrator
             {
                 retryService.execute(() ->
                 {
-                    step.compensate(context);
+                    step.compensate().compensate(context);
                     return null;
                 }, new RetryService.RetryOptions(3, 500, 30000, RetryService.BackoffStrategy.EXPONENTIAL, null));
                 log.info("Saga [{}] compensated step: {}", context.transferId(), step.name());

@@ -18,6 +18,7 @@ spring:
       connection-timeout: 20000
       data-source-properties:
         sslmode: ${DB_SSL:require}
+        prepareThreshold: 0
 
   jpa:
     hibernate:
@@ -60,7 +61,13 @@ spring:
         spring.json.trusted.packages: "com.intbank.core.domain.event"
     listener:
       ack-mode: manual
+      auto-startup: ${KAFKA_LISTENER_AUTO_START:false}
     client-id: ${KAFKA_CLIENT_ID:banking-producer}
+    properties:
+      security.protocol: ${KAFKA_SECURITY_PROTOCOL:SASL_SSL}
+      sasl.mechanism: SCRAM-SHA-256
+      sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="${KAFKA_USERNAME:}" password="${KAFKA_PASSWORD:}";
+      ssl.endpoint.identification.algorithm: ${KAFKA_SSL_ENDPOINT_ID:""}
 
   security:
     user:

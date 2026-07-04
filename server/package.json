@@ -1,12 +1,12 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "INT Bank Backend (NestJS) — built via Dockerfile from kafka-backend/",
+  "description": "INT Bank Backend — Java Spring Boot in backend/",
   "private": true,
   "scripts": {
-    "build": "echo 'Build is handled by kafka-backend/'",
-    "start": "echo 'Start is handled by kafka-backend/'",
-    "test": "echo 'Tests are handled by kafka-backend/'"
+    "build": "echo 'Build is handled by Maven in backend/'",
+    "start": "echo 'Start via docker-compose up backend'",
+    "test": "echo 'Tests run via Maven in backend/'"
   },
   "dependencies": {
     "dotenv": "^17.2.3"

@@ -3,34 +3,35 @@ name: Backend CI
 on:
   push:
     branches: [main, dev]
+    paths:
+      - 'server/backend/**'
   pull_request:
     branches: [main, dev]
+    paths:
+      - 'server/backend/**'
 
 jobs:
-  lint-and-test:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: server/kafka-backend/package-lock.json
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
 
-      - name: Install dependencies
-        run: npm ci
-        working-directory: server/kafka-backend
+      - name: Compile
+        run: mvn compile -q
+        working-directory: server/backend
 
-      - name: Type check
-        run: npx tsc --noEmit
-        working-directory: server/kafka-backend
+      - name: Test
+        run: mvn test
+        working-directory: server/backend
 
-      - name: Run tests
-        run: npm run test --if-present
-        working-directory: server/kafka-backend
-
-      - name: Build
-        run: npm run build
-        working-directory: server/kafka-backend
+      - name: Package
+        run: mvn package -DskipTests -q
+        working-directory: server/backend

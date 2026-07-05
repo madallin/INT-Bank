@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "libphonenumber-js": "^1.12.24",
-    "twilio": "^5.10.3"
-  }
-}

@@ -112,7 +112,7 @@ class _PinScreenState extends State<PinScreen>
     {
       final client = _createHttpClient();
       final response = await client.post(
-        Uri.parse('https://${AppConfig.serverUrl}/auth/get-client-token'),
+        Uri.parse('${AppConfig.baseUrl}/auth/get-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId}),
       );
@@ -135,7 +135,7 @@ class _PinScreenState extends State<PinScreen>
     try
     {
       final response = await client.post(
-        Uri.parse('https://${AppConfig.serverUrl}/auth/refresh-client-token'),
+        Uri.parse('${AppConfig.baseUrl}/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
@@ -220,7 +220,7 @@ class _PinScreenState extends State<PinScreen>
     try
     {
       final response = await client.post(
-        Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/verify-pin'),
+        Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/verify-pin'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',
@@ -324,7 +324,7 @@ class _PinScreenState extends State<PinScreen>
     try
     {
       final response = await client.put(
-        Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/set-pin'),
+        Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/set-pin'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',

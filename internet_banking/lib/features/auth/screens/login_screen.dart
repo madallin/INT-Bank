@@ -94,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen>
     final client = _createHttpClient();
     try
     {
-      final uri = Uri.parse('https://${AppConfig.serverUrl}/login');
+      final uri = Uri.parse('${AppConfig.baseUrl}/login');
       final response = await client.post(
         uri,
         headers: {'Content-Type': 'application/json'},

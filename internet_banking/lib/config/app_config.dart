@@ -1,14 +1,16 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AppConfig
 {
-  static const String serverUrl = String.fromEnvironment(
-    'SERVER_URL',
-    defaultValue: 'localhost',
-  );
+  static String get serverUrl => dotenv.env['SERVER_URL'] ?? 'localhost';
 
-  static const int serverPort = int.fromEnvironment(
-    'SERVER_PORT',
-    defaultValue: 8443,
-  );
+  static int get serverPort => int.tryParse(dotenv.env['SERVER_PORT'] ?? '') ?? 8443;
+
+  static String get baseUrl => serverPort == 443
+      ? 'https://$serverUrl'
+      : 'https://$serverUrl:$serverPort';
+
+  static String get wsUrl => 'wss://$serverUrl';
 }
 
 const int lightForestGreenColor = 0xFF00695C;

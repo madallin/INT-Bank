@@ -137,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           : '';
 
       final response = await client.post(
-        Uri.parse('https://${AppConfig.serverUrl}/register'),
+        Uri.parse('${AppConfig.baseUrl}/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'phone': fullPhone,

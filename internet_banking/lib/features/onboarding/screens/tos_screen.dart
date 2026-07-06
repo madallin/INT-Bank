@@ -58,7 +58,7 @@ class _TosScreenState extends State<TosScreen>
     {
       final deviceId = await getDeviceId();
       final tokenResponse = await client.post(
-        Uri.parse('https://${AppConfig.serverUrl}/auth/get-client-token'),
+        Uri.parse('${AppConfig.baseUrl}/auth/get-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': deviceId}),
       );
@@ -68,7 +68,7 @@ class _TosScreenState extends State<TosScreen>
       final clientToken = tokenData['client_token'];
 
       final tosResponse = await client.get(
-        Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/has-tos'),
+        Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/has-tos'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',
@@ -90,7 +90,7 @@ class _TosScreenState extends State<TosScreen>
       if(!acceptedTerms)
 {
         final putResponse = await client.put(
-          Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/accept-tos'),
+          Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/accept-tos'),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $clientToken',
@@ -107,7 +107,7 @@ class _TosScreenState extends State<TosScreen>
       }
 
       final approvedResponse = await client.get(
-        Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/has-approved/'),
+        Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/has-approved/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $clientToken',

@@ -87,7 +87,7 @@ class DioClient
   {
     _dio = Dio(
       BaseOptions(
-        baseUrl: 'https://${AppConfig.serverUrl}:${AppConfig.serverPort}',
+        baseUrl: AppConfig.baseUrl,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {
@@ -99,7 +99,7 @@ class DioClient
 
     _refreshDio = Dio(
       BaseOptions(
-        baseUrl: 'https://${AppConfig.serverUrl}:${AppConfig.serverPort}',
+        baseUrl: AppConfig.baseUrl,
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {

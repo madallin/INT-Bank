@@ -2,7 +2,7 @@ import '../../config/app_config.dart';
 
 class ApiEndpoints
 {
-  static String get baseUrl => 'https://${AppConfig.serverUrl}:${AppConfig.serverPort}';
+  static String get baseUrl => AppConfig.baseUrl;
 
   static String login = '$baseUrl/login';
 

@@ -99,7 +99,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     {
       final client = _createHttpClient();
       final response = await client.post(
-        Uri.parse('https://${AppConfig.serverUrl}/auth/get-client-token'),
+        Uri.parse('${AppConfig.baseUrl}/auth/get-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId}),
       );
@@ -125,7 +125,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     try
     {
       final response = await client.post(
-        Uri.parse('https://${AppConfig.serverUrl}/auth/refresh-client-token'),
+        Uri.parse('${AppConfig.baseUrl}/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
@@ -153,7 +153,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     try
     {
       final client = _createHttpClient();
-      final uri = Uri.parse('https://${AppConfig.serverUrl}/users/${widget.userId}/accounts/${widget.accountId}/transactions');
+      final uri = Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/accounts/${widget.accountId}/transactions');
       final response = await client.get(uri, headers: {
         'Content-Type': 'application/json',
         if(clientToken != null) 'Authorization': 'Bearer $clientToken',

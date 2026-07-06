@@ -24,6 +24,7 @@ dependencies:
   shared_preferences: ^2.5.3
   rename_app: ^1.6.5
   flutter_launcher_icons: ^0.14.4
+  flutter_dotenv: ^5.2.1
 
 
   geolocator: ^13.0.2
@@ -44,6 +45,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - .env
     - assets/judete.json
     - assets/images/foreground.png
     - assets/images/logo.png

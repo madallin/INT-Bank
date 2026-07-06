@@ -11,10 +11,12 @@ import 'package:device_info_plus/device_info_plus.dart';
 import '../../../config/app_config.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../core/storage/secure_session_manager.dart';
+import '../../../widgets/error_banner.dart';
+import '../../../widgets/numpad_button.dart';
+import '../../../widgets/simple_app_bar.dart';
 import 'pin_screen.dart';
 
-class TwoFactorScreen extends StatefulWidget
-{
+class TwoFactorScreen extends StatefulWidget {
   final String phoneNumber;
   final int userId;
 
@@ -28,8 +30,7 @@ class TwoFactorScreen extends StatefulWidget
   State<TwoFactorScreen> createState() => _TwoFactorScreenState();
 }
 
-class _TwoFactorScreenState extends State<TwoFactorScreen>
-{
+class _TwoFactorScreenState extends State<TwoFactorScreen> {
   String pin = '';
   String textEroare = '';
   bool isVerifying = false;
@@ -42,151 +43,125 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
   Timer? _cooldownTimer;
 
   @override
-  void initState()
-  {
+  void initState() {
     super.initState();
     _userId = widget.userId;
     _initDeviceId().then((_) => _getClientTokenAndSendCode());
   }
 
   @override
-  void dispose()
-  {
+  void dispose() {
     _cooldownTimer?.cancel();
     super.dispose();
   }
 
-  void _showError(String message)
-  {
-    if(!mounted) return;
+  void _showError(String message) {
+    if (!mounted) return;
     setState(() => textEroare = message);
   }
 
-  void _showSuccess(String message)
-  {
-    if(!mounted) return;
+  void _showSuccess(String message) {
+    if (!mounted) return;
     _showError('');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const Icon(Icons.check_circle_outline,
+                color: Colors.white, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(message, style: const TextStyle(color: Colors.white))),
+            Expanded(
+                child: Text(message,
+                    style: const TextStyle(color: Colors.white))),
           ],
         ),
         backgroundColor: const Color(lightForestGreenColor),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  Future<void> _initDeviceId() async
-  {
+  Future<void> _initDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
-    try
-    {
-      if(Platform.isAndroid)
-{
+    try {
+      if (Platform.isAndroid) {
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
-      }
-      else if(Platform.isIOS)
-{
+      } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
-    }
-    catch(_)
-{
+    } catch (_) {
       _deviceId = 'dev-device';
     }
-    if(mounted) setState(() {});
+    if (mounted) setState(() {});
   }
 
-  Future<void> _getClientTokenAndSendCode() async
-  {
-    try
-    {
+  Future<void> _getClientTokenAndSendCode() async {
+    try {
       final client = _createHttpClient();
       final response = await client.post(
         Uri.parse('${AppConfig.baseUrl}/auth/get-client-token'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'deviceId': _deviceId}),
       );
-      if(response.statusCode == 200)
-{
+      if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
         await _sendCode();
-      }
-      else
-{
+      } else {
         _showError('Eroare la obținerea tokenului client');
       }
-    }
-    catch(e)
-{
+    } catch (e) {
       _showError('Eroare de rețea: $e');
     }
   }
 
-  http.Client _createHttpClient()
-  {
+  http.Client _createHttpClient() {
     return IOClient(HttpClient());
   }
 
-  void _onNumberPress(String number)
-  {
-    if(isVerifying) return;
-    if(pin.length < 6)
-{
+  void _onNumberPress(String number) {
+    if (isVerifying) return;
+    if (pin.length < 6) {
       _showError('');
       setState(() => pin += number);
-      if(pin.length == 6) _verifyPin();
+      if (pin.length == 6) _verifyPin();
     }
   }
 
-  void _onDeletePress()
-  {
-    if(isVerifying) return;
-    if(pin.isNotEmpty)
-{
+  void _onDeletePress() {
+    if (isVerifying) return;
+    if (pin.isNotEmpty) {
       _showError('');
       setState(() => pin = pin.substring(0, pin.length - 1));
     }
   }
 
-  Future<void> _startCooldown() async
-  {
+  Future<void> _startCooldown() async {
     setState(() => _cooldownSeconds = 60);
     _cooldownTimer?.cancel();
-    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer)
-    {
-      if(_cooldownSeconds > 0)
-{
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_cooldownSeconds > 0) {
         setState(() => _cooldownSeconds--);
-      }
-      else
-{
+      } else {
         timer.cancel();
       }
     });
   }
 
-  Future<void> _sendCode() async
-  {
-    if(isVerifying || _cooldownSeconds > 0) return;
+  Future<void> _sendCode() async {
+    if (isVerifying || _cooldownSeconds > 0) return;
     _showError('');
     setState(() => isVerifying = true);
 
     final client = _createHttpClient();
-    try
-    {
+    try {
       final response = await client.post(
         Uri.parse('${AppConfig.baseUrl}/2fa/request'),
         headers: {
@@ -196,43 +171,36 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
         body: jsonEncode({'phone': widget.phoneNumber}),
       );
 
-      if(response.statusCode == 401)
-{
-        _showError('Timpul pentru verificare a expirat. Te rugăm să reîncepi procesul.');
+      if (response.statusCode == 401) {
+        _showError(
+            'Timpul pentru verificare a expirat. Te rugăm să reîncepi procesul.');
         setState(() => pin = '');
         return;
       }
 
       final data = jsonDecode(response.body);
-      if(response.statusCode == 200 && data['success'] == true)
-{
+      if (response.statusCode == 200 && data['success'] == true) {
         await _startCooldown();
+      } else {
+        if (mounted) {
+          _showError(data['error'] ?? 'Eroare la trimiterea codului');
+        }
       }
-      else
-{
-        if(mounted) _showError(data['error'] ?? 'Eroare la trimiterea codului');
-      }
-    }
-    catch(e)
-{
-      if(mounted) _showError('Eroare de rețea: $e');
-    }
-    finally
-    {
+    } catch (e) {
+      if (mounted) _showError('Eroare de rețea: $e');
+    } finally {
       client.close();
-      if(mounted) setState(() => isVerifying = false);
+      if (mounted) setState(() => isVerifying = false);
     }
   }
 
-  Future<void> _verifyPin() async
-  {
-    if(isVerifying) return;
+  Future<void> _verifyPin() async {
+    if (isVerifying) return;
     _showError('');
     setState(() => isVerifying = true);
 
     final client = _createHttpClient();
-    try
-    {
+    try {
       final response = await client.post(
         Uri.parse('${AppConfig.baseUrl}/2fa/verify'),
         headers: {
@@ -242,15 +210,11 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
         body: jsonEncode({'phone': widget.phoneNumber, 'code': pin}),
       );
 
-      if(response.statusCode == 401)
-{
+      if (response.statusCode == 401) {
         final refreshed = await _refreshToken();
-        if(refreshed)
-{
+        if (refreshed) {
           await _verifyPin();
-        }
-        else if(mounted)
-{
+        } else if (mounted) {
           _showError('Sesiune expirată. Te rugăm să te reconectezi');
           setState(() => pin = '');
         }
@@ -258,9 +222,8 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
       }
 
       final data = jsonDecode(response.body);
-      if(response.statusCode == 200 && data['success'] == true)
-{
-        if(!mounted) return;
+      if (response.statusCode == 200 && data['success'] == true) {
+        if (!mounted) return;
         setState(() => isVerifying = true);
         _showSuccess('Verificare reușită! Vei fi redirecționat...');
 
@@ -273,17 +236,15 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
           },
         );
 
-        if(hasPinResponse.statusCode == 200)
-{
+        if (hasPinResponse.statusCode == 200) {
           final hasPinData = jsonDecode(hasPinResponse.body);
           setPin = !(hasPinData['hasPin'] ?? false);
         }
 
         await SecureSessionManager.savePhone(widget.phoneNumber);
 
-        Future.delayed(const Duration(seconds: 3), ()
-        {
-          if(!mounted) return;
+        Future.delayed(const Duration(seconds: 3), () {
+          if (!mounted) return;
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
@@ -297,90 +258,135 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
             (route) => false,
           );
         });
-      }
-      else if(mounted)
-{
-        final serverError = (data['error'] as String?) ?? 'Cod invalid sau ai depasit numarul de incercari';
+      } else if (mounted) {
+        final serverError = (data['error'] as String?) ??
+            'Cod invalid sau ai depasit numarul de incercari';
         _showError(serverError);
         setState(() => pin = '');
       }
-    }
-    catch(e)
-{
-      if(mounted) _showError('Eroare de rețea: $e');
-    }
-    finally
-    {
+    } catch (e) {
+      if (mounted) _showError('Eroare de rețea: $e');
+    } finally {
       client.close();
-      if(mounted) setState(() => isVerifying = false);
+      if (mounted) setState(() => isVerifying = false);
     }
   }
 
-  Future<bool> _refreshToken() async
-  {
+  Future<bool> _refreshToken() async {
     final client = _createHttpClient();
-    try
-    {
+    try {
       final response = await client.post(
         Uri.parse('${AppConfig.baseUrl}/auth/refresh-client-token'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'deviceId': _deviceId, 'refreshToken': refreshToken}),
+        body: jsonEncode(
+            {'deviceId': _deviceId, 'refreshToken': refreshToken}),
       );
-      if(response.statusCode == 200)
-{
+      if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if(mounted) setState(() => clientToken = data['client_token']);
+        if (mounted) setState(() => clientToken = data['client_token']);
         return true;
       }
       return false;
-    }
-    catch(_)
-{
+    } catch (_) {
       return false;
-    }
-    finally
-    {
+    } finally {
       client.close();
     }
   }
 
-  void _resendCode()
-  {
-    if(_cooldownSeconds == 0) _sendCode();
+  void _resendCode() {
+    if (_cooldownSeconds == 0) _sendCode();
+  }
+
+  Widget _buildPinDisplay() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(6, (index) {
+        bool isFilled = index < pin.length;
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: 40,
+          height: 48,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isFilled
+                  ? const Color(darkForestGreenColor)
+                  : Colors.grey,
+              width: 1.5,
+            ),
+          ),
+          child: Center(
+            child: isFilled
+                ? Text(pin[index],
+                    style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(darkForestGreenColor)))
+                : const SizedBox.shrink(),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildNumpad() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 72),
+      child: Column(
+        children: [
+          ...List.generate(3, (row) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(3, (col) {
+                  return NumpadButton(
+                    label: (row * 3 + col + 1).toString(),
+                    onTap: () =>
+                        _onNumberPress((row * 3 + col + 1).toString()),
+                  );
+                }),
+              ),
+            );
+          }),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              const SizedBox(width: 64, height: 64),
+              NumpadButton(
+                label: '0',
+                onTap: () => _onNumberPress('0'),
+              ),
+              NumpadDeleteButton(onTap: _onDeletePress),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
-  Widget build(BuildContext context)
-  {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 2))],
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
-                    onPressed: () => Navigator.pop(context),
-                    color: const Color(darkGreyColor),
-                  ),
-                  Text('Verificare', style: GoogleFonts.poppins(fontSize: 19, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
-                ],
-              ),
+            SimpleAppBar(
+              title: 'Verificare',
+              onBack: () => Navigator.pop(context),
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
                 child: Column(
                   children: [
                     const SizedBox(height: 60),
-                    Text('Introdu codul de verificare', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
+                    Text('Introdu codul de verificare',
+                        style: GoogleFonts.poppins(
+                            fontSize: 22, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     RichText(
                       textAlign: TextAlign.center,
@@ -388,149 +394,62 @@ class _TwoFactorScreenState extends State<TwoFactorScreen>
                         children: [
                           TextSpan(
                             text: 'Am trimis un cod de verificare la\n',
-                            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600], height: 1.5),
+                            style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                                height: 1.5),
                           ),
                           TextSpan(
                             text: formatPhoneDisplay(widget.phoneNumber),
-                            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(lightForestGreenColor), height: 1.5),
+                            style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(lightForestGreenColor),
+                                height: 1.5),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(6, (index)
-                      {
-                        bool isFilled = index < pin.length;
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: 40,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isFilled ? const Color(darkForestGreenColor) : Colors.grey,
-                              width: 1.5,
+                    _buildPinDisplay(),
+                    if (textEroare.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      ErrorBanner(message: textEroare),
+                    ],
+                    const SizedBox(height: 22),
+                    GestureDetector(
+                      onTap: _resendCode,
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                                text: "Nu ai primit codul? ",
+                                style: GoogleFonts.inter(
+                                    color: const Color(lightForestGreenColor),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400)),
+                            TextSpan(
+                              text: _cooldownSeconds == 0
+                                  ? "Retrimite"
+                                  : "Retrimite (${_cooldownSeconds}s)",
+                              style: GoogleFonts.inter(
+                                  color: const Color(lightForestGreenColor),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold),
                             ),
-                          ),
-                          child: Center(
-                            child: isFilled
-                                ? Text(pin[index], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(darkForestGreenColor)))
-                                : const SizedBox.shrink(),
-                          ),
-                        );
-                      }),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        if(textEroare.isNotEmpty) ...[
-                          const SizedBox(height: 20),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red.shade200, width: 1),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.error_outline_rounded, color: Colors.red.shade700, size: 20),
-                                const SizedBox(width: 12),
-                                Expanded(child: Text(textEroare, style: GoogleFonts.inter(color: Colors.red.shade700, fontSize: 13, fontWeight: FontWeight.w500))),
-                              ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 22),
-                        GestureDetector(
-                          onTap: _resendCode,
-                          child: RichText(
-                            textAlign: TextAlign.center,
-                            text: TextSpan(
-                              children: [
-                                TextSpan(text: "Nu ai primit codul? ", style: GoogleFonts.inter(color: const Color(lightForestGreenColor), fontSize: 14, fontWeight: FontWeight.w400)),
-                                TextSpan(
-                                  text: _cooldownSeconds == 0 ? "Retrimite" : "Retrimite (${_cooldownSeconds}s)",
-                                  style: GoogleFonts.inter(color: const Color(lightForestGreenColor), fontSize: 14, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 72),
-              child: Column(
-                children: [
-                  ...List.generate(3, (row)
-                  {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: List.generate(3, (col)
-                        {
-                          return _buildNumberButton((row * 3 + col + 1).toString());
-                        }),
-                      ),
-                    );
-                  }),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      const SizedBox(width: 64, height: 64),
-                      _buildNumberButton('0'),
-                      _buildDeleteButton(),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            _buildNumpad(),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildNumberButton(String number)
-  {
-    return GestureDetector(
-      onTap: () => _onNumberPress(number),
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white,
-          border: Border.all(color: Colors.grey, width: 1.5),
-        ),
-        child: Center(child: Text(number, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
-      ),
-    );
-  }
-
-  Widget _buildDeleteButton()
-  {
-    return GestureDetector(
-      onTap: _onDeletePress,
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white,
-          border: Border.all(color: Colors.grey, width: 1.5),
-        ),
-        child: const Center(child: Icon(Icons.backspace_outlined)),
-      ),
-    );
-  }
 }
-

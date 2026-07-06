@@ -12,13 +12,14 @@ import '../../../config/app_config.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../data/models/card_model.dart';
 import '../../../services/currency_service.dart';
+import '../../../widgets/empty_state_placeholder.dart';
+import '../../../widgets/transaction_list_item.dart';
 import '../../transfer/screens/transfer_screen.dart';
 import '../../transactions/screens/transaction_history_screen.dart';
 import '../../exchange/screens/exchange_screen.dart';
 import '../../welcome/welcome_screen.dart';
 
-class HomeScreen extends StatefulWidget
-{
+class HomeScreen extends StatefulWidget {
   final int userId;
   const HomeScreen({super.key, required this.userId});
 
@@ -27,8 +28,7 @@ class HomeScreen extends StatefulWidget
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver
-{
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final DioClient _client = DioClient();
   final List<CardModel> _cardList = [];
   CardModel? _selectedCard;
@@ -58,8 +58,7 @@ class _HomeScreenState extends State<HomeScreen>
   bool _loadingTransactions = false;
 
   @override
-  void initState()
-  {
+  void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
@@ -75,92 +74,74 @@ class _HomeScreenState extends State<HomeScreen>
     _pageAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.06),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _pageController, curve: Curves.easeOut));
+    ).animate(
+        CurvedAnimation(parent: _pageController, curve: Curves.easeOut));
     _pageController.forward();
 
     _initialize();
     _startPeriodicRefresh();
   }
 
-  Future<void> _initialize() async
-  {
+  Future<void> _initialize() async {
     await _initDeviceId();
     await _getClientToken();
     await _fetchCardsAndAccounts();
     await CurrencyService.instance.fetchRates();
-    if(mounted) setState(() {});
+    if (mounted) setState(() {});
   }
 
-  Future<void> _initDeviceId() async
-  {
+  Future<void> _initDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
-    try
-    {
-      if(Platform.isAndroid)
-{
+    try {
+      if (Platform.isAndroid) {
         final androidInfo = await deviceInfo.androidInfo;
         _deviceId = androidInfo.id;
-      }
-      else if(Platform.isIOS)
-{
+      } else if (Platform.isIOS) {
         final iosInfo = await deviceInfo.iosInfo;
         _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
       }
-    }
-    catch(_)
-{
+    } catch (_) {
       _deviceId = 'dev-device';
     }
   }
 
-  Future<void> _getClientToken() async
-  {
-    try
-    {
+  Future<void> _getClientToken() async {
+    try {
       final response = await _client.post(
         '/auth/get-client-token',
         data: {'deviceId': _deviceId},
       );
 
-      if(response.statusCode == 200)
-{
+      if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         clientToken = data['client_token'];
         refreshToken = data['refresh_token'];
       }
-    }
-    catch(e)
-{
+    } catch (e) {
       debugPrint('Error getting client token: $e');
     }
   }
 
-  Future<bool> _refreshClientToken() async
-  {
-    if(refreshToken == null) return false;
-    try
-    {
+  Future<bool> _refreshClientToken() async {
+    if (refreshToken == null) return false;
+    try {
       final response = await _client.post(
         '/auth/refresh-client-token',
         data: {'deviceId': _deviceId, 'refreshToken': refreshToken},
       );
 
-      if(response.statusCode == 200)
-{
+      if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        if(mounted) setState(() => clientToken = data['client_token']);
+        if (mounted) setState(() => clientToken = data['client_token']);
         return true;
       }
       return false;
-    }
-    catch(_)
-{
+    } catch (_) {
       return false;
     }
   }
 
-  Options _authOptions()
-  {
+  Options _authOptions() {
     return Options(
       headers: clientToken != null
           ? {'Authorization': 'Bearer $clientToken'}
@@ -168,166 +149,129 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Future<void> _fetchCardsAndAccounts() async
-  {
+  Future<void> _fetchCardsAndAccounts() async {
     setState(() => _loading = true);
-    try
-    {
+    try {
       final response = await _client.get(
         '/users/${widget.userId}/cards',
         options: _authOptions(),
       );
 
-      if(response.statusCode == 200 && response.data != null)
-{
+      if (response.statusCode == 200 && response.data != null) {
         final data = response.data as Map<String, dynamic>;
-        if(data['cards'] != null)
-{
+        if (data['cards'] != null) {
           final cards = List<Map<String, dynamic>>.from(data['cards']);
           setState(() {
             _cardList.clear();
-            for(final card in cards)
-{
+            for (final card in cards) {
               _cardList.add(CardModel.fromJson(card));
             }
-            if(_cardList.isNotEmpty)
-{
+            if (_cardList.isNotEmpty) {
               _selectedCard = _cardList[_currentCardIndex];
               _currentAccountId = _selectedCard!.accountId;
             }
           });
         }
-      }
-      else if(response.statusCode == 401)
-{
+      } else if (response.statusCode == 401) {
         final refreshed = await _refreshClientToken();
-        if(refreshed) await _fetchCardsAndAccounts();
+        if (refreshed) await _fetchCardsAndAccounts();
       }
-    }
-    catch(e)
-{
+    } catch (e) {
       debugPrint('Error fetching cards: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-    finally
-    {
-      if(mounted) setState(() => _loading = false);
-    }
-    if(_selectedCard != null)
-{
+    if (_selectedCard != null) {
       await _fetchBalance();
       await _fetchRecentTransactions();
     }
   }
 
-  Future<void> _fetchBalance() async
-  {
+  Future<void> _fetchBalance() async {
     setState(() => _loadingBalance = true);
-    if(clientToken == null)
-{
+    if (clientToken == null) {
       setState(() => _loadingBalance = false);
       return;
     }
 
     int? accountId = _currentAccountId;
 
-    if(accountId == null)
-{
-      try
-      {
+    if (accountId == null) {
+      try {
         final resp = await _client.get(
           '/users/${widget.userId}/cards',
           options: _authOptions(),
         );
 
-        if(resp.statusCode == 200)
-{
+        if (resp.statusCode == 200) {
           final data = resp.data as Map<String, dynamic>;
           final cards = data['cards'] as List?;
-          if(cards != null && cards.isNotEmpty)
-{
-            accountId = (cards.first as Map<String, dynamic>)['accountId'] as int?;
+          if (cards != null && cards.isNotEmpty) {
+            accountId =
+                (cards.first as Map<String, dynamic>)['accountId'] as int?;
           }
         }
-      }
-      catch(_)
-{}
-      if(accountId == null)
-{
+      } catch (_) {}
+      if (accountId == null) {
         setState(() => _loadingBalance = false);
         return;
       }
     }
 
-    try
-    {
+    try {
       final response = await _client.get(
         '/users/${widget.userId}/accounts/$accountId',
         options: _authOptions(),
       );
 
-      if(response.statusCode == 200)
-{
+      if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        if(data['account'] != null && data['account']['sold'] != null)
-{
+        if (data['account'] != null && data['account']['sold'] != null) {
           final sold = data['account']['sold'];
-          setState(() => _balance =
-              (sold is String ? double.parse(sold) : (sold as num).toDouble()));
+          setState(() => _balance = (sold is String
+              ? double.parse(sold)
+              : (sold as num).toDouble()));
         }
-      }
-      else if(response.statusCode == 401)
-{
+      } else if (response.statusCode == 401) {
         final refreshed = await _refreshClientToken();
-        if(refreshed) await _fetchBalance();
+        if (refreshed) await _fetchBalance();
       }
-    }
-    catch(e)
-{
+    } catch (e) {
       debugPrint('Error fetching balance: $e');
-    }
-    finally
-    {
-      if(mounted) setState(() => _loadingBalance = false);
+    } finally {
+      if (mounted) setState(() => _loadingBalance = false);
     }
   }
 
-  Future<void> _fetchRecentTransactions() async
-  {
-    if(_currentAccountId == null || clientToken == null) return;
+  Future<void> _fetchRecentTransactions() async {
+    if (_currentAccountId == null || clientToken == null) return;
     setState(() => _loadingTransactions = true);
-    try
-    {
+    try {
       final response = await _client.get(
         '/users/${widget.userId}/accounts/$_currentAccountId/transactions',
         options: _authOptions(),
       );
 
-      if(response.statusCode == 200 && response.data != null)
-{
+      if (response.statusCode == 200 && response.data != null) {
         final data = response.data as Map<String, dynamic>;
-        if(data['transactions'] != null)
-{
-          final all = List<Map<String, dynamic>>.from(data['transactions']);
-          if(mounted) setState(() => _recentTransactions = all.take(3).toList());
+        if (data['transactions'] != null) {
+          final all =
+              List<Map<String, dynamic>>.from(data['transactions']);
+          if (mounted) {
+            setState(() => _recentTransactions = all.take(3).toList());
+          }
         }
       }
-    }
-    catch(e)
-{
+    } catch (e) {
       debugPrint('Error fetching recent transactions: $e');
-    }
-    finally
-    {
-      if(mounted) setState(() => _loadingTransactions = false);
+    } finally {
+      if (mounted) setState(() => _loadingTransactions = false);
     }
   }
 
-  void _startPeriodicRefresh()
-  {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_)
-    {
-      if(mounted)
-{
+  void _startPeriodicRefresh() {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (mounted) {
         _fetchBalance();
         _fetchCardsAndAccounts();
       }
@@ -335,8 +279,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   @override
-  void dispose()
-  {
+  void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _flipController.dispose();
     _pageController.dispose();
@@ -345,10 +288,8 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  void _nextCard()
-  {
-    if(_currentCardIndex < _cardList.length - 1)
-{
+  void _nextCard() {
+    if (_currentCardIndex < _cardList.length - 1) {
       _cancelCardReveal();
       setState(() {
         _currentCardIndex++;
@@ -360,10 +301,8 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  void _prevCard()
-  {
-    if(_currentCardIndex > 0)
-{
+  void _prevCard() {
+    if (_currentCardIndex > 0) {
       _cancelCardReveal();
       setState(() {
         _currentCardIndex--;
@@ -375,8 +314,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  void _cancelCardReveal()
-  {
+  void _cancelCardReveal() {
     _cardRevealTimer?.cancel();
     setState(() {
       _revealCountdown = 60;
@@ -385,44 +323,38 @@ class _HomeScreenState extends State<HomeScreen>
     _flipController.value = 0;
   }
 
-  Future<void> _onToggleCardReveal() async
-  {
-    if(_flipController.isAnimating) return;
-    if(_cardShowingBack)
-{
+  Future<void> _onToggleCardReveal() async {
+    if (_flipController.isAnimating) return;
+    if (_cardShowingBack) {
       _cardRevealTimer?.cancel();
       setState(() {
         _revealCountdown = 60;
         _cardShowingBack = false;
       });
       await _flipController.animateTo(0,
-          duration: const Duration(milliseconds: 600), curve: Curves.easeInOut);
-    }
-    else
-{
-      if(_selectedCard == null) return;
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut);
+    } else {
+      if (_selectedCard == null) return;
       setState(() => _cardShowingBack = true);
       await _flipController.animateTo(1,
-          duration: const Duration(milliseconds: 600), curve: Curves.easeInOut);
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut);
       _startRevealTimer();
     }
   }
 
-  void _startRevealTimer()
-  {
+  void _startRevealTimer() {
     _cardRevealTimer?.cancel();
     setState(() => _revealCountdown = 60);
-    _cardRevealTimer = Timer.periodic(const Duration(seconds: 1), (timer)
-    {
-      if(!mounted)
-{
+    _cardRevealTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
         timer.cancel();
         return;
       }
       setState(() {
         _revealCountdown--;
-        if(_revealCountdown <= 0)
-{
+        if (_revealCountdown <= 0) {
           timer.cancel();
           _revealCountdown = 60;
           _cardShowingBack = false;
@@ -434,14 +366,12 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  void _toggleBalance()
-  {
+  void _toggleBalance() {
     setState(() => _balanceVisible = !_balanceVisible);
   }
 
-  void _goToTransfer()
-  {
-    if(_selectedCard == null) return;
+  void _goToTransfer() {
+    if (_selectedCard == null) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -450,9 +380,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _goToHistory()
-  {
-    if(_currentAccountId == null) return;
+  void _goToHistory() {
+    if (_currentAccountId == null) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -464,33 +393,32 @@ class _HomeScreenState extends State<HomeScreen>
     ).then((_) => _fetchRecentTransactions());
   }
 
-  void _goToExchange()
-  {
+  void _goToExchange() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ExchangeScreen(userId: widget.userId)),
+      MaterialPageRoute(
+          builder: (_) => ExchangeScreen(userId: widget.userId)),
     );
   }
 
-  void _goToStatement()
-  {
+  void _goToStatement() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Extras de cont – funcție disponibilă în curând',
             style: GoogleFonts.inter(fontSize: 14)),
         backgroundColor: const Color(lightForestGreenColor),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-  Future<void> _logout() async
-  {
+  Future<void> _logout() async {
     const storage = FlutterSecureStorage();
     await storage.delete(key: 'loggedUserIdKey');
-    if(!mounted) return;
+    if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const WelcomeScreen()),
@@ -498,8 +426,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  String _formatBalance(double bal)
-  {
+  String _formatBalance(double bal) {
     final parts = bal.toStringAsFixed(2).split('.');
     final intPart = parts[0].replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
@@ -508,33 +435,26 @@ class _HomeScreenState extends State<HomeScreen>
     return '$intPart,${parts[1]}';
   }
 
-  String _formatPan(String raw)
-  {
+  String _formatPan(String raw) {
     final clean = raw.replaceAll(' ', '');
     final buf = StringBuffer();
-    for(int i = 0; i < clean.length; i++)
-{
-      if(i > 0 && i % 4 == 0) buf.write(' ');
+    for (int i = 0; i < clean.length; i++) {
+      if (i > 0 && i % 4 == 0) buf.write(' ');
       buf.write(clean[i]);
     }
     return buf.toString();
   }
 
-  String _txDate(String dateStr)
-  {
-    try
-    {
+  String _txDate(String dateStr) {
+    try {
       final d = DateTime.parse(dateStr);
       return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
-    }
-    catch(_)
-{
+    } catch (_) {
       return dateStr;
     }
   }
 
-  String _txAmount(Map<String, dynamic> t)
-  {
+  String _txAmount(Map<String, dynamic> t) {
     final isIn = t['type'] == 'received';
     final double amt = (t['suma'] as num).toDouble();
     final str = amt.toStringAsFixed(2).replaceAll('.', ',');
@@ -544,9 +464,10 @@ class _HomeScreenState extends State<HomeScreen>
     return '${isIn ? '+' : '-'}$intPart,${parts[1]} RON';
   }
 
+  // ───────────────────── Build ─────────────────────
+
   @override
-  Widget build(BuildContext context)
-  {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
@@ -555,11 +476,10 @@ class _HomeScreenState extends State<HomeScreen>
             : SlideTransition(
                 position: _pageAnimation,
                 child: RefreshIndicator(
-                  onRefresh: () async
-                  {
+                  onRefresh: () async {
                     await _fetchCardsAndAccounts();
                     await CurrencyService.instance.fetchRates();
-                    if(mounted) setState(() {});
+                    if (mounted) setState(() {});
                   },
                   color: const Color(lightForestGreenColor),
                   child: SingleChildScrollView(
@@ -588,8 +508,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildHeader()
-  {
+  Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
@@ -628,10 +547,10 @@ class _HomeScreenState extends State<HomeScreen>
             child: Container(
               width: 42,
               height: 42,
-              decoration:
-                  BoxDecoration(shape: BoxShape.circle, color: Colors.grey[100]),
-              child:
-                  Icon(Icons.logout_rounded, size: 20, color: Colors.grey[600]),
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle, color: Colors.grey[100]),
+              child: Icon(Icons.logout_rounded,
+                  size: 20, color: Colors.grey[600]),
             ),
           ),
         ],
@@ -639,15 +558,15 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildCardSection()
-  {
-    if(_cardList.isEmpty)
-{
-      return Padding(
-        padding: const EdgeInsets.all(24),
+  Widget _buildCardSection() {
+    if (_cardList.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
         child: Center(
-          child: Text('Nu ai carduri disponibile',
-              style: GoogleFonts.inter(fontSize: 16, color: Colors.grey[500])),
+          child: EmptyStatePlaceholder(
+            icon: Icons.credit_card_off_outlined,
+            title: 'Nu ai carduri disponibile',
+          ),
         ),
       );
     }
@@ -658,8 +577,7 @@ class _HomeScreenState extends State<HomeScreen>
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: AnimatedBuilder(
             animation: _flipController,
-            builder: (context, _)
-            {
+            builder: (context, _) {
               final angle = _flipController.value * math.pi;
               final showBack = _flipController.value > 0.5;
 
@@ -681,7 +599,7 @@ class _HomeScreenState extends State<HomeScreen>
             },
           ),
         ),
-        if(_cardList.length > 1) ...[
+        if (_cardList.length > 1) ...[
           const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -695,8 +613,7 @@ class _HomeScreenState extends State<HomeScreen>
                         : Colors.grey[300]),
               ),
               const SizedBox(width: 6),
-              ...List.generate(_cardList.length, (i)
-              {
+              ...List.generate(_cardList.length, (i) {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -728,9 +645,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildCardFront()
-  {
-    if(_selectedCard == null) return const SizedBox();
+  Widget _buildCardFront() {
+    if (_selectedCard == null) return const SizedBox();
     return Container(
       key: const ValueKey('front'),
       width: double.infinity,
@@ -828,7 +744,8 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: Colors.white60,
                                 letterSpacing: 1.5)),
                         const SizedBox(height: 3),
-                        Text(_selectedCard!.detinator.toUpperCase(),
+                        Text(
+                            _selectedCard!.detinator.toUpperCase(),
                             style: GoogleFonts.inter(
                                 fontSize: 13,
                                 color: Colors.white,
@@ -861,9 +778,8 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildCardBack()
-  {
-    if(_selectedCard == null) return const SizedBox();
+  Widget _buildCardBack() {
+    if (_selectedCard == null) return const SizedBox();
     final pan = _selectedCard!.fullNumber;
     final cvv = _selectedCard!.cvv;
     final expiry = _selectedCard!.expiry;
@@ -943,8 +859,8 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                             ),
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 10),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10),
                               child: Text(
                                 cvv,
                                 style: GoogleFonts.spaceMono(
@@ -997,7 +913,8 @@ class _HomeScreenState extends State<HomeScreen>
                         child: Row(
                           children: [
                             Icon(Icons.lock_outline,
-                                size: 12, color: Colors.white.withOpacity(0.8)),
+                                size: 12,
+                                color: Colors.white.withOpacity(0.8)),
                             const SizedBox(width: 4),
                             Text('Ascunde',
                                 style: GoogleFonts.inter(
@@ -1017,12 +934,12 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildBalanceRow()
-  {
+  Widget _buildBalanceRow() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -1082,22 +999,25 @@ class _HomeScreenState extends State<HomeScreen>
             GestureDetector(
               onTap: _goToStatement,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(lightForestGreenColor).withOpacity(0.08),
+                  color: const Color(lightForestGreenColor)
+                      .withOpacity(0.08),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.description_outlined,
-                        size: 16, color: Color(lightForestGreenColor)),
+                        size: 16,
+                        color: Color(lightForestGreenColor)),
                     const SizedBox(width: 6),
                     Text('Extras',
                         style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: const Color(lightForestGreenColor))),
+                            color:
+                                const Color(lightForestGreenColor))),
                   ],
                 ),
               ),
@@ -1108,24 +1028,29 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildActionButtons()
-  {
+  Widget _buildActionButtons() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          Expanded(child: _buildActionCard(Icons.send_rounded, 'Transfer', _goToTransfer)),
+          Expanded(
+              child: _buildActionCard(
+                  Icons.send_rounded, 'Transfer', _goToTransfer)),
           const SizedBox(width: 12),
-          Expanded(child: _buildActionCard(Icons.receipt_long_rounded, 'Istoric', _goToHistory)),
+          Expanded(
+              child: _buildActionCard(Icons.receipt_long_rounded,
+                  'Istoric', _goToHistory)),
           const SizedBox(width: 12),
-          Expanded(child: _buildActionCard(Icons.currency_exchange_rounded, 'Schimb', _goToExchange)),
+          Expanded(
+              child: _buildActionCard(Icons.currency_exchange_rounded,
+                  'Schimb', _goToExchange)),
         ],
       ),
     );
   }
 
-  Widget _buildActionCard(IconData icon, String label, VoidCallback onTap)
-  {
+  Widget _buildActionCard(
+      IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1147,10 +1072,13 @@ class _HomeScreenState extends State<HomeScreen>
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(lightForestGreenColor).withOpacity(0.1),
+                color: const Color(lightForestGreenColor)
+                    .withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: const Color(lightForestGreenColor), size: 22),
+              child: Icon(icon,
+                  color: const Color(lightForestGreenColor),
+                  size: 22),
             ),
             const SizedBox(height: 10),
             Text(label,
@@ -1164,8 +1092,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildExchangePreview()
-  {
+  Widget _buildExchangePreview() {
     final rates = CurrencyService.instance;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1182,7 +1109,8 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-              color: const Color(lightForestGreenColor).withOpacity(0.15)),
+              color:
+                  const Color(lightForestGreenColor).withOpacity(0.15)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1200,7 +1128,7 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
             const SizedBox(height: 12),
-            if(!rates.hasRates)
+            if (!rates.hasRates)
               Center(
                 child: Text('Se încarcă...',
                     style: GoogleFonts.inter(
@@ -1221,8 +1149,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildRateTile(String currency, double? rate)
-  {
+  Widget _buildRateTile(String currency, double? rate) {
     return Column(
       children: [
         Text(currency,
@@ -1242,8 +1169,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildRecentTransactions()
-  {
+  Widget _buildRecentTransactions() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -1257,116 +1183,50 @@ class _HomeScreenState extends State<HomeScreen>
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: const Color(darkGreyColor))),
-              if(_currentAccountId != null)
+              if (_currentAccountId != null)
                 GestureDetector(
                   onTap: _goToHistory,
                   child: Text('Vezi toate',
                       style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: const Color(lightForestGreenColor),
+                          color:
+                              const Color(lightForestGreenColor),
                           fontWeight: FontWeight.w600)),
                 ),
             ],
           ),
           const SizedBox(height: 12),
-          if(_loadingTransactions)
-            const Center(child: Padding(
+          if (_loadingTransactions)
+            const Center(
+                child: Padding(
               padding: EdgeInsets.all(24),
               child: CircularProgressIndicator(strokeWidth: 2),
             ))
-          else if(_recentTransactions.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text('Nu există tranzacții recente',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                      fontSize: 14, color: Colors.grey[500])),
+          else if (_recentTransactions.isEmpty)
+            const EmptyStatePlaceholder(
+              icon: Icons.receipt_long_outlined,
+              title: 'Nu există tranzacții recente',
             )
           else
-            ...(_recentTransactions.asMap().entries.map((entry)
-            {
+            ...(_recentTransactions.asMap().entries.map((entry) {
+              final tx = entry.value;
+              final isPositive = tx['type'] == 'received';
+              final amtStr = _txAmount(tx);
               return Padding(
-                padding: EdgeInsets.only(bottom: entry.key < _recentTransactions.length - 1 ? 10 : 0),
-                child: _buildTransactionItem(entry.value),
+                padding: EdgeInsets.only(
+                    bottom: entry.key <
+                            _recentTransactions.length - 1
+                        ? 10
+                        : 0),
+                child: TransactionListItem(
+                  beneficiary:
+                      tx['beneficiary'] ?? tx['motiv'] ?? '',
+                  date: _txDate(tx['dataTransfer'] ?? ''),
+                  amount: amtStr,
+                  isPositive: isPositive,
+                ),
               );
             })),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTransactionItem(Map<String, dynamic> tx)
-  {
-    final isPositive = tx['type'] == 'received';
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey[100]!),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: (isPositive
-                      ? const Color(lightForestGreenColor)
-                      : Colors.red)
-                  .withOpacity(0.1),
-            ),
-            child: Icon(
-              isPositive
-                  ? Icons.arrow_downward_rounded
-                  : Icons.arrow_upward_rounded,
-              size: 18,
-              color: isPositive
-                  ? const Color(lightForestGreenColor)
-                  : Colors.red,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tx['beneficiary'] ?? tx['motiv'] ?? '',
-                  style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(darkGreyColor)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _txDate(tx['dataTransfer'] ?? ''),
-                  style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: Colors.grey[500],
-                      fontWeight: FontWeight.w400),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            _txAmount(tx),
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: isPositive
-                  ? const Color(lightForestGreenColor)
-                  : Colors.red.shade600,
-            ),
-          ),
         ],
       ),
     );

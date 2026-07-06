@@ -36,7 +36,9 @@ jobs:
         working-directory: internet_banking
 
       - name: Create .env file from secrets
-        run: echo "SERVER_URL=${{ secrets.SERVER_URL }}" > .env
+        env:
+          SERVER_URL: ${{ secrets.SERVER_URL }}
+        run: echo "SERVER_URL=$SERVER_URL" > .env
         working-directory: internet_banking
 
       - name: Run tests

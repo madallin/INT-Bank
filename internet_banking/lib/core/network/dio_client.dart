@@ -15,14 +15,10 @@ class _PendingRequest
 class _RetryInterceptor extends Interceptor
 {
   final Dio _dio;
-  final int maxRetries;
-  final Duration initialDelay;
+  static const int _maxRetries = 2;
+  static const Duration _initialDelay = Duration(seconds: 1);
 
-  _RetryInterceptor(
-    this._dio, {
-    this.maxRetries = 2,
-    this.initialDelay = const Duration(seconds: 1),
-  });
+  _RetryInterceptor(this._dio);
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async
@@ -37,14 +33,14 @@ class _RetryInterceptor extends Interceptor
     final options = err.requestOptions;
     final retryCount = (options.extra['retryCount'] as int?) ?? 0;
 
-    if(retryCount >= maxRetries)
+    if(retryCount >= _maxRetries)
     {
       handler.next(err);
       return;
     }
 
     // Exponential backoff: 1s, 2s, 4s...
-    final delay = initialDelay * (1 << retryCount);
+    final delay = _initialDelay * (1 << retryCount);
 
     await Future<void>.delayed(delay);
 
@@ -91,7 +87,7 @@ class DioClient
   {
     _dio = Dio(
       BaseOptions(
-        baseUrl: 'https://${AppConfig.serverUrl}',
+        baseUrl: 'https://${AppConfig.serverUrl}:${AppConfig.serverPort}',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {
@@ -103,7 +99,7 @@ class DioClient
 
     _refreshDio = Dio(
       BaseOptions(
-        baseUrl: 'https://${AppConfig.serverUrl}',
+        baseUrl: 'https://${AppConfig.serverUrl}:${AppConfig.serverPort}',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {

@@ -7,7 +7,7 @@ class AppConfig
 
   static const int serverPort = int.fromEnvironment(
     'SERVER_PORT',
-    defaultValue: 3000,
+    defaultValue: 8443,
   );
 }
 

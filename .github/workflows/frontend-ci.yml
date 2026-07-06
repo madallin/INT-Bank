@@ -23,6 +23,14 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Create .env file from secrets
+        env:
+          SERVER_URL: ${{ secrets.SERVER_URL }}
+        run: |
+          echo "SERVER_URL=$SERVER_URL" > .env
+          echo "SERVER_PORT=443" >> .env
+        working-directory: internet_banking
+
       - name: Get dependencies
         run: flutter pub get
         working-directory: internet_banking
@@ -33,12 +41,6 @@ jobs:
 
       - name: Analyze Dart code
         run: flutter analyze
-        working-directory: internet_banking
-
-      - name: Create .env file from secrets
-        env:
-          SERVER_URL: ${{ secrets.SERVER_URL }}
-        run: echo "SERVER_URL=$SERVER_URL" > .env
         working-directory: internet_banking
 
       - name: Run tests

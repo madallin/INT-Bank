@@ -2,7 +2,7 @@ class AppConfig
 {
   static const String serverUrl = String.fromEnvironment(
     'SERVER_URL',
-    defaultValue: 'api-internet-banking.onrender.com',
+    defaultValue: 'localhost',
   );
 
   static const int serverPort = int.fromEnvironment(

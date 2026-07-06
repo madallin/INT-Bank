@@ -35,6 +35,10 @@ jobs:
         run: flutter analyze
         working-directory: internet_banking
 
+      - name: Create .env file from secrets
+        run: echo "SERVER_URL=${{ secrets.SERVER_URL }}" > .env
+        working-directory: internet_banking
+
       - name: Run tests
-        run: flutter test --dart-define=SERVER_URL=api-internet-banking.onrender.com
+        run: flutter test --dart-define-from-file=.env
         working-directory: internet_banking

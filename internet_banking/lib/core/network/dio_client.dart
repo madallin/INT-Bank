@@ -12,6 +12,66 @@ class _PendingRequest
   final ErrorInterceptorHandler handler;
 }
 
+class _RetryInterceptor extends Interceptor
+{
+  final Dio _dio;
+  final int maxRetries;
+  final Duration initialDelay;
+
+  _RetryInterceptor(
+    this._dio, {
+    this.maxRetries = 2,
+    this.initialDelay = const Duration(seconds: 1),
+  });
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async
+  {
+    // Only retry on connection errors (server hibernation / wake-up)
+    if(!_isConnectionError(err))
+    {
+      handler.next(err);
+      return;
+    }
+
+    final options = err.requestOptions;
+    final retryCount = (options.extra['retryCount'] as int?) ?? 0;
+
+    if(retryCount >= maxRetries)
+    {
+      handler.next(err);
+      return;
+    }
+
+    // Exponential backoff: 1s, 2s, 4s...
+    final delay = initialDelay * (1 << retryCount);
+
+    await Future<void>.delayed(delay);
+
+    final newOptions = options.copyWith(
+      extra: {...options.extra, 'retryCount': retryCount + 1},
+    );
+
+    try
+    {
+      // Use the same _dio instance so authentication interceptor runs too
+      final response = await _dio.fetch<dynamic>(newOptions);
+      handler.resolve(response);
+    }
+    catch(e)
+    {
+      handler.next(err);
+    }
+  }
+
+  bool _isConnectionError(DioException err)
+  {
+    return err.type == DioExceptionType.connectionError ||
+           err.type == DioExceptionType.connectionTimeout ||
+           err.type == DioExceptionType.sendTimeout;
+  }
+}
+
 class DioClient
 {
   static final DioClient _instance = DioClient._internal();
@@ -52,6 +112,10 @@ class DioClient
         },
       ),
     );
+
+    // Add retry interceptor FIRST so it wraps around all other interceptors.
+    // It uses the _dio instance so retried requests also go through the auth interceptor.
+    _dio.interceptors.add(_RetryInterceptor(_dio));
 
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -199,5 +263,3 @@ class DioClient
   }) =>
       _dio.delete<T>(path, queryParameters: queryParameters, options: options);
 }
-
-

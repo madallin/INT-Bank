@@ -59,7 +59,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
     {
       final client = HttpClient();
 
-      final uri = '${AppConfig.wsUrl}';
+      final uri = AppConfig.wsUrl;
       debugPrint('Incerc conexiune WS la: $uri');
 
       _ws = await WebSocket.connect(uri, customClient: client);

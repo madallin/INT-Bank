@@ -1,5 +1,6 @@
 package com.intbank.core.domain.event;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 public record TransferInitiatedEvent(
@@ -8,7 +9,7 @@ public record TransferInitiatedEvent(
     String toAccountId,
     String fromIban,
     String toIban,
-    double amount,
+    BigDecimal amount,
     String currency,
     String description,
     Instant timestamp

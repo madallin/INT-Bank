@@ -2,6 +2,7 @@ package com.intbank.core.domain.entity;
 
 import com.intbank.core.domain.vo.TransferStatus;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -11,7 +12,7 @@ public class Transfer
     private final String id;
     private final String fromAccountId;
     private final String toAccountId;
-    private final double amount;
+    private final BigDecimal amount;
     private final String currency;
     private final String reason;
     private TransferStatus status;
@@ -23,7 +24,7 @@ public class Transfer
         String id,
         String fromAccountId,
         String toAccountId,
-        double amount,
+        BigDecimal amount,
         String currency,
         String reason,
         Instant initiatedAt
@@ -63,7 +64,7 @@ public class Transfer
     public String id() { return id; }
     public String fromAccountId() { return fromAccountId; }
     public String toAccountId() { return toAccountId; }
-    public double amount() { return amount; }
+    public BigDecimal amount() { return amount; }
     public String currency() { return currency; }
     public String reason() { return reason; }
     public TransferStatus status() { return status; }

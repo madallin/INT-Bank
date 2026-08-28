@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Date;
@@ -47,13 +48,23 @@ public class AuthController
     public Map<String, Object> getClientToken(@RequestBody Map<String, String> body)
     {
         String deviceId = body.getOrDefault("deviceId", "dev-device");
+        String userIdRaw = body.get("userId");
+        String rolesRaw = body.get("roles");
         try {
-            String clientToken = Jwts.builder()
+            var builder = Jwts.builder()
                     .subject(deviceId)
                     .issuedAt(new Date())
                     .expiration(new Date(System.currentTimeMillis() + 300_000))
-                    .signWith(jwtSecret)
-                    .compact();
+                    .signWith(jwtSecret);
+            if (userIdRaw != null && !userIdRaw.isBlank()) {
+                builder.claim("uid", Long.parseLong(userIdRaw));
+            }
+            if (rolesRaw != null && !rolesRaw.isBlank()) {
+                builder.claim("roles", List.of(rolesRaw.split(",")));
+            } else {
+                builder.claim("roles", List.of("ROLE_USER"));
+            }
+            String clientToken = builder.compact();
 
             byte[] refreshBytes = new byte[32];
             secureRandom.nextBytes(refreshBytes);
@@ -81,12 +92,13 @@ public class AuthController
             if (stored == null || !stored.equals(refreshToken)) {
                 return Map.of("statusCode", 401, "error", "Invalid or expired refresh token");
             }
-            String newToken = Jwts.builder()
+            var builder = Jwts.builder()
                     .subject(deviceId)
                     .issuedAt(new Date())
                     .expiration(new Date(System.currentTimeMillis() + 300_000))
                     .signWith(jwtSecret)
-                    .compact();
+                    .claim("roles", List.of("ROLE_USER"));
+            String newToken = builder.compact();
             return Map.of("client_token", newToken, "ttl", 300);
         } catch (Exception err) {
             log.error("Error refreshing client token", err);

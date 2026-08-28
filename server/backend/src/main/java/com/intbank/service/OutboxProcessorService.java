@@ -1,9 +1,13 @@
 package com.intbank.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.intbank.application.usecase.ProcessTransferUseCase;
+import com.intbank.core.domain.event.TransferInitiatedEvent;
 import com.intbank.infrastructure.persistence.entity.OutboxJpaEntity;
 import com.intbank.infrastructure.persistence.repository.OutboxJpaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -17,13 +21,25 @@ public class OutboxProcessorService
 {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxProcessorService.class);
+    private static final String INITIATED_TOPIC = TransferInitiatedEvent.EVENT_NAME;
+
     private final OutboxJpaRepository outboxRepo;
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ProcessTransferUseCase processTransferUseCase;
+    private final ObjectMapper objectMapper;
+    private final boolean kafkaEnabled;
 
-    public OutboxProcessorService(OutboxJpaRepository outboxRepo, KafkaTemplate<String, String> kafkaTemplate)
+    public OutboxProcessorService(OutboxJpaRepository outboxRepo,
+                                  KafkaTemplate<String, String> kafkaTemplate,
+                                  ProcessTransferUseCase processTransferUseCase,
+                                  ObjectMapper objectMapper,
+                                  @Value("${app.kafka.enabled:true}") boolean kafkaEnabled)
     {
         this.outboxRepo = outboxRepo;
         this.kafkaTemplate = kafkaTemplate;
+        this.processTransferUseCase = processTransferUseCase;
+        this.objectMapper = objectMapper;
+        this.kafkaEnabled = kafkaEnabled;
     }
 
     @Scheduled(fixedDelay = 5000)
@@ -32,10 +48,14 @@ public class OutboxProcessorService
         List<OutboxJpaEntity> pending = outboxRepo.findTop100ByStatusAndRetryCountLessThanOrderByCreatedAtAsc("PENDING", 5);
         for (OutboxJpaEntity msg : pending) {
             try {
-                kafkaTemplate.send(msg.getTopic(), msg.getPartitionKey(), msg.getPayload()).get();
-                msg.setStatus("SENT");
-                outboxRepo.save(msg);
-                log.debug("Outbox message {} sent to topic {}", msg.getId(), msg.getTopic());
+                if (kafkaEnabled) {
+                    kafkaTemplate.send(msg.getTopic(), msg.getPartitionKey(), msg.getPayload()).get();
+                    msg.setStatus("SENT");
+                    outboxRepo.save(msg);
+                    log.debug("Outbox message {} sent to topic {}", msg.getId(), msg.getTopic());
+                } else {
+                    deliverLocally(msg);
+                }
             } catch (Exception e) {
                 msg.setRetryCount(msg.getRetryCount() + 1);
                 msg.setLastError(e.getMessage());
@@ -46,6 +66,20 @@ public class OutboxProcessorService
                 log.error("Outbox message {} failed: {}", msg.getId(), e.getMessage());
             }
         }
+    }
+
+    // Kafka-optional mode: when no broker is available (e.g. Render PaaS), drive the
+    // saga directly from the outbox instead of publishing to Kafka.
+    private void deliverLocally(OutboxJpaEntity msg) throws Exception
+    {
+        if (INITIATED_TOPIC.equals(msg.getTopic())) {
+            TransferInitiatedEvent event = objectMapper.readValue(msg.getPayload(), TransferInitiatedEvent.class);
+            processTransferUseCase.execute(event);
+        }
+        // transfer.completed / transfer.failed have no local consumer; mark delivered.
+        msg.setStatus("SENT");
+        outboxRepo.save(msg);
+        log.debug("Outbox message {} delivered locally (topic {})", msg.getId(), msg.getTopic());
     }
 
     @Transactional(readOnly = true)

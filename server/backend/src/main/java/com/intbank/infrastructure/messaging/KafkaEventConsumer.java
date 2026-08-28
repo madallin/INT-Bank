@@ -10,6 +10,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Component
 public class KafkaEventConsumer
 {
@@ -35,7 +37,7 @@ public class KafkaEventConsumer
         try {
             log.info("Received transfer.initiated event [key={}, offset={}]", record.key(), record.offset());
 
-            TransferInitiatedEvent event = objectMapper.convertValue(record.value(), TransferInitiatedEvent.class);
+            TransferInitiatedEvent event = objectMapper.convertValue(toMap(record.value()), TransferInitiatedEvent.class);
             processTransferUseCase.execute(event);
             ack.acknowledge();
         } catch (Exception e) {
@@ -43,5 +45,19 @@ public class KafkaEventConsumer
             // Don't acknowledge - message will be retried
             throw new RuntimeException("Failed to process transfer event", e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> toMap(Object value) throws Exception
+    {
+        if (value instanceof Map<?, ?> map)
+        {
+            return (Map<String, Object>) map;
+        }
+        if (value instanceof String str)
+        {
+            return objectMapper.readValue(str, Map.class);
+        }
+        return objectMapper.convertValue(value, Map.class);
     }
 }

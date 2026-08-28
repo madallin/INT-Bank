@@ -40,10 +40,10 @@ public class AccountRepositoryImpl implements AccountRepository
 
     @Override
     @Transactional
-    public void updateBalance(String accountId, double newBalance)
+    public void updateBalance(String accountId, BigDecimal newBalance)
     {
         Long id = Long.parseLong(accountId);
-        jpaRepository.updateBalance(id, BigDecimal.valueOf(newBalance));
+        jpaRepository.updateBalance(id, newBalance.setScale(2, java.math.RoundingMode.HALF_EVEN));
         log.debug("Updated balance for account {}: {}", accountId, newBalance);
     }
 
@@ -61,7 +61,7 @@ public class AccountRepositoryImpl implements AccountRepository
                 entity.getUserId(),
                 entity.getIBAN(),
                 entity.getMoneda(),
-                entity.getSold() != null ? entity.getSold().doubleValue() : 0.0
+                entity.getSold() != null ? entity.getSold() : BigDecimal.ZERO
         );
     }
 }

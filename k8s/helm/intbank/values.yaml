@@ -1,0 +1,126 @@
+# ----------------------------------------------------------------------------
+# INTBank backend — Helm values
+# Non-sensitive configuration lives in the ConfigMap; secrets live in the
+# Secret (dev) or are sourced from an external vault via External Secrets Operator (prod).
+# ----------------------------------------------------------------------------
+
+image:
+  repository: intbank-backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 3
+
+serviceAccount:
+  create: true
+  name: ""            # auto-derived from fullname when empty
+  annotations: {}
+
+containerPort: 8443
+
+terminationGracePeriodSeconds: 30
+
+# preStop hook gives the Ingress / kube-proxy time to deregister the endpoint
+# before the JVM receives SIGTERM (graceful shutdown).
+lifecycle:
+  preStopSleepSeconds: 10
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+
+probes:
+  port: 8443
+  livenessPath: /actuator/health/liveness
+  readinessPath: /actuator/health/readiness
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Pod scheduling: spread across nodes and zones, never co-locate two replicas.
+topologySpread:
+  enabled: true
+  maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+podAntiAffinity:
+  enabled: true
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Optional KEDA scaling on Kafka consumer lag (requires the KEDA controller).
+keda:
+  enabled: false
+  pollingInterval: 30
+  cooldownPeriod: 300
+  minReplicaCount: 3
+  maxReplicaCount: 10
+  triggers:
+    - type: kafka
+      metadata:
+        topic: transfer.initiated
+        bootstrapServers: kafka:9092
+        consumerGroup: banking-transfer-group
+        lagThreshold: "50"
+
+# ---- Non-sensitive configuration (ConfigMap) ----
+config:
+  pgHost: postgres
+  pgport: "5432"
+  pgdatabase: intbank
+  pguser: intbank_user
+  redisHost: redis
+  redisPort: "6379"
+  kafkaBrokers: "kafka:9092"
+  kafkaSecurityProtocol: PLAINTEXT
+  dbSsl: disable
+  logLevel: info
+  kafkaListenerAutoStart: "true"
+
+# ---- Secrets ----
+# For production set secrets.external.enabled=true and provide a ClusterSecretStore.
+secrets:
+  external:
+    enabled: false
+    clusterSecretStore: default
+    remoteKey: intbank/backend
+  # Inline dev values — MUST be overridden in prod (or use external secrets).
+  dbPassword: "changeme"
+  jwtSecret: "change-me-in-prod-please-rotate"
+  aesKeyHex: ""
+  hmacKeyHex: ""
+  cardEncryptionKey: ""
+  twilioAccountSid: ""
+  twilioAuthToken: ""
+  twilioServiceSid: ""
+
+ingress:
+  enabled: true
+  className: nginx
+  host: intbank.local
+  path: /
+  tls:
+    enabled: true
+    clusterIssuer: letsencrypt-prod   # cert-manager ClusterIssuer
+    secretName: intbank-tls
+
+networkPolicy:
+  enabled: true
+  # Namespace the Ingress controller runs in (egress from controller -> backend).
+  ingressNamespace: ingress-nginx
+
+# Name of the namespace the backend expects for its dependencies (postgres/redis/kafka).
+dependencyNamespace: intbank

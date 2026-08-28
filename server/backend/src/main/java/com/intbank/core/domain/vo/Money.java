@@ -1,38 +1,49 @@
 package com.intbank.core.domain.vo;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Map;
 import java.util.Objects;
 
 public final class Money
 {
 
-    private final double amount;
+    public static final int SCALE = 2;
+    public static final RoundingMode ROUNDING = RoundingMode.HALF_EVEN;
+
+    private final BigDecimal amount;
     private final String currency;
 
-    private Money(double amount, String currency)
+    private Money(BigDecimal amount, String currency)
     {
-        if (!Double.isFinite(amount) || amount < 0)
+        if (amount == null || amount.signum() < 0)
         {
-            throw new IllegalArgumentException("Money amount must be a finite non-negative number");
+            throw new IllegalArgumentException("Money amount must be a non-negative number");
         }
-        if (currency.length() != 3 || !currency.equals(currency.toUpperCase()))
+        if (currency == null || currency.length() != 3 || !currency.equals(currency.toUpperCase()))
         {
             throw new IllegalArgumentException("Currency must be a 3-letter ISO code (e.g. RON, EUR)");
         }
-        this.amount = Math.round(amount * 100.0) / 100.0;
+        this.amount = amount.setScale(SCALE, ROUNDING);
         this.currency = currency;
     }
 
     public static Money of(double amount, String currency)
+    {
+        return of(BigDecimal.valueOf(amount), currency);
+    }
+
+    public static Money of(BigDecimal amount, String currency)
     {
         return new Money(amount, currency.toUpperCase());
     }
 
     public static Money zero(String currency)
     {
-        return new Money(0, currency.toUpperCase());
+        return new Money(BigDecimal.ZERO, currency.toUpperCase());
     }
 
-    public double amount()
+    public BigDecimal amount()
     {
         return amount;
     }
@@ -48,7 +59,7 @@ public final class Money
         {
             throw new IllegalArgumentException("Currency mismatch: " + this.currency + " vs " + other.currency);
         }
-        return Money.of(this.amount + other.amount, this.currency);
+        return new Money(this.amount.add(other.amount), this.currency);
     }
 
     public Money subtract(Money other)
@@ -57,12 +68,21 @@ public final class Money
         {
             throw new IllegalArgumentException("Currency mismatch: " + this.currency + " vs " + other.currency);
         }
-        double result = this.amount - other.amount;
-        if (result < 0)
+        BigDecimal result = this.amount.subtract(other.amount);
+        if (result.signum() < 0)
         {
             throw new IllegalArgumentException("Insufficient funds");
         }
-        return Money.of(result, this.currency);
+        return new Money(result, this.currency);
+    }
+
+    public int compareTo(Money other)
+    {
+        if (!this.currency.equals(other.currency))
+        {
+            throw new IllegalArgumentException("Currency mismatch: " + this.currency + " vs " + other.currency);
+        }
+        return this.amount.compareTo(other.amount);
     }
 
     @Override
@@ -76,7 +96,7 @@ public final class Money
         {
             return false;
         }
-        return Double.compare(other.amount, amount) == 0 && currency.equals(other.currency);
+        return currency.equals(other.currency) && amount.compareTo(other.amount) == 0;
     }
 
     @Override
@@ -88,11 +108,11 @@ public final class Money
     @Override
     public String toString()
     {
-        return String.format("%.2f %s", amount, currency);
+        return String.format("%." + SCALE + "f %s", amount, currency);
     }
 
-    public java.util.Map<String, Object> toJSON()
+    public Map<String, Object> toJSON()
     {
-        return java.util.Map.of("amount", amount, "currency", currency);
+        return Map.of("amount", amount, "currency", currency);
     }
 }

@@ -50,9 +50,9 @@ public class Account
         this.balance = this.balance.subtract(amount);
     }
 
-    public boolean hasSufficientFunds(double amount, String currency)
+    public boolean hasSufficientFunds(Money amount)
     {
-        return balance.amount() >= amount && balance.currency().equals(currency);
+        return balance.currency().equals(amount.currency()) && balance.compareTo(amount) >= 0;
     }
 
     @Override

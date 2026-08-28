@@ -7,14 +7,24 @@ import com.intbank.core.domain.vo.TransferStatus;
 import com.intbank.core.port.out.AccountRepository;
 import com.intbank.core.port.out.EventPublisher;
 import com.intbank.core.port.out.TransferRepository;
+import com.intbank.infrastructure.persistence.entity.SagaInstanceJpaEntity;
+import com.intbank.infrastructure.persistence.entity.SagaStepJpaEntity;
+import com.intbank.infrastructure.persistence.repository.SagaInstanceJpaRepository;
+import com.intbank.infrastructure.persistence.repository.SagaStepJpaRepository;
 import com.intbank.service.RetryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class SagaOrchestrator
@@ -26,21 +36,25 @@ public class SagaOrchestrator
     private final TransferRepository transferRepository;
     private final EventPublisher eventPublisher;
     private final RetryService retryService;
-    private final Map<String, SagaState> sagaStates = new ConcurrentHashMap<>();
+    private final SagaInstanceJpaRepository sagaInstanceRepo;
+    private final SagaStepJpaRepository sagaStepRepo;
 
     public SagaOrchestrator(AccountRepository accountRepository, TransferRepository transferRepository,
-                             EventPublisher eventPublisher, RetryService retryService)
+                            EventPublisher eventPublisher, RetryService retryService,
+                            SagaInstanceJpaRepository sagaInstanceRepo, SagaStepJpaRepository sagaStepRepo)
     {
         this.accountRepository = accountRepository;
         this.transferRepository = transferRepository;
         this.eventPublisher = eventPublisher;
         this.retryService = retryService;
+        this.sagaInstanceRepo = sagaInstanceRepo;
+        this.sagaStepRepo = sagaStepRepo;
     }
 
     public void execute(TransferInitiatedEvent event, List<SagaStep> steps)
     {
         String transferId = event.trackingId();
-        sagaStates.put(transferId, SagaState.IN_PROGRESS);
+        persistState(transferId, SagaState.IN_PROGRESS.name(), null, 0);
 
         SagaContext context = new SagaContext(
                 transferId, event.fromAccountId(), event.toAccountId(),
@@ -61,6 +75,7 @@ public class SagaOrchestrator
                     {
                         log.info("Saga [{}] step {}/{}: {}", transferId, i + 1, steps.size(), step.name());
                         step.execute().execute(context);
+                        markStep(transferId, step.name(), "COMPLETED");
                         executedSteps.add(i);
                     }
                     catch (Exception error)
@@ -71,6 +86,7 @@ public class SagaOrchestrator
                         if (step.isCritical())
                         {
                             log.warn("Saga [{}] critical step {} failed — pushing forward", transferId, step.name());
+                            markStep(transferId, step.name(), "FAILED_SKIPPED");
                             executedSteps.add(i);
                             continue;
                         }
@@ -88,14 +104,14 @@ public class SagaOrchestrator
 
         if (sagaFailed)
         {
-            sagaStates.put(transferId, SagaState.COMPENSATING);
+            persistState(transferId, SagaState.COMPENSATING.name(), failureReason, executedSteps.size());
             log.warn("Saga [{}] compensating {} steps in reverse", transferId, executedSteps.size());
             compensate(context, steps, executedSteps, failureReason);
             return;
         }
 
         publishSuccessEvents(context);
-        sagaStates.put(transferId, SagaState.COMPLETED);
+        persistState(transferId, SagaState.COMPLETED.name(), null, executedSteps.size());
         log.info("Saga [{}] completed successfully", transferId);
     }
 
@@ -127,7 +143,7 @@ public class SagaOrchestrator
         transferRepository.updateStatus(context.transferId(), TransferStatus.FAILED, null);
 
         SagaState finalState = compensationErrors == 0 ? SagaState.COMPENSATED : SagaState.FAILED;
-        sagaStates.put(context.transferId(), finalState);
+        persistState(context.transferId(), finalState.name(), failureReason, executedSteps.size());
 
         String finalReason = compensationErrors > 0
                 ? failureReason + " (compensation had " + compensationErrors + " errors)"
@@ -161,17 +177,17 @@ public class SagaOrchestrator
                             {
                                 throw new RuntimeException("Currency mismatch: " + sender.moneda() + " vs " + ctx.currency());
                             }
-                            if (sender.sold() < ctx.amount())
+                            if (sender.sold().compareTo(ctx.amount()) < 0)
                             {
                                 throw new RuntimeException("Insufficient funds: " + sender.sold() + " < " + ctx.amount());
                             }
-                            double newBalance = Math.round((sender.sold() - ctx.amount()) * 100.0) / 100.0;
+                            BigDecimal newBalance = sender.sold().subtract(ctx.amount()).setScale(2, java.math.RoundingMode.HALF_EVEN);
                             accountRepository.updateBalance(ctx.fromAccountId(), newBalance);
                             ctx.metadata().put("previousSenderBalance", sender.sold());
                         },
                         ctx ->
                         {
-                            double previousBalance = (Double) ctx.metadata().get("previousSenderBalance");
+                            BigDecimal previousBalance = (BigDecimal) ctx.metadata().get("previousSenderBalance");
                             accountRepository.updateBalance(ctx.fromAccountId(), previousBalance);
                         },
                         false
@@ -181,13 +197,13 @@ public class SagaOrchestrator
                         {
                             var receiver = accountRepository.findByIdWithLock(ctx.toAccountId())
                                     .orElseThrow(() -> new RuntimeException("Receiver account " + ctx.toAccountId() + " not found"));
-                            double newBalance = Math.round((receiver.sold() + ctx.amount()) * 100.0) / 100.0;
+                            BigDecimal newBalance = receiver.sold().add(ctx.amount()).setScale(2, java.math.RoundingMode.HALF_EVEN);
                             accountRepository.updateBalance(ctx.toAccountId(), newBalance);
                             ctx.metadata().put("previousReceiverBalance", receiver.sold());
                         },
                         ctx ->
                         {
-                            double previousBalance = (Double) ctx.metadata().get("previousReceiverBalance");
+                            BigDecimal previousBalance = (BigDecimal) ctx.metadata().get("previousReceiverBalance");
                             accountRepository.updateBalance(ctx.toAccountId(), previousBalance);
                         },
                         false
@@ -224,7 +240,30 @@ public class SagaOrchestrator
 
     public SagaState getSagaState(String transferId)
     {
-        return sagaStates.getOrDefault(transferId, SagaState.NOT_STARTED);
+        return sagaInstanceRepo.findById(transferId)
+                .map(e -> SagaState.valueOf(e.getState()))
+                .orElse(SagaState.NOT_STARTED);
+    }
+
+    private void persistState(String transferId, String state, String failureReason, int currentStep)
+    {
+        SagaInstanceJpaEntity entity = sagaInstanceRepo.findById(transferId)
+                .orElseGet(() -> new SagaInstanceJpaEntity());
+        entity.setTransferId(transferId);
+        entity.setState(state);
+        entity.setFailureReason(failureReason);
+        entity.setCurrentStep(currentStep);
+        sagaInstanceRepo.save(entity);
+    }
+
+    private void markStep(String transferId, String stepName, String status)
+    {
+        SagaStepJpaEntity step = new SagaStepJpaEntity();
+        step.setSagaId(transferId);
+        step.setStepName(stepName);
+        step.setStatus(status);
+        step.setExecutedAt(Instant.now());
+        sagaStepRepo.save(step);
     }
 
     public enum SagaState
@@ -245,8 +284,8 @@ public class SagaOrchestrator
         }
     }
 
-    public record SagaContext(String transferId, String fromAccountId, String toAccountId, double amount,
-                               String currency, String reason, Map<String, Object> metadata)
+    public record SagaContext(String transferId, String fromAccountId, String toAccountId, BigDecimal amount,
+                              String currency, String reason, Map<String, Object> metadata)
     {
     }
 }

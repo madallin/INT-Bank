@@ -9,7 +9,6 @@
       POSTGRES_PASSWORD: ${DB_PASSWORD:?err}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     healthcheck:
@@ -65,7 +64,7 @@
     ports:
       - "8443:8443"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8443/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8443/actuator/health/liveness"]
       interval: 30s
       timeout: 10s
       retries: 3

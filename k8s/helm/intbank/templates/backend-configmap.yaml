@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "intbank.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "intbank.labels" . | nindent 4 }}
+data:
+  PGPORT: {{ .Values.config.pgport | quote }}
+  PGDATABASE: {{ .Values.config.pgdatabase | quote }}
+  PGUSER: {{ .Values.config.pguser | quote }}
+  REDIS_HOST: {{ .Values.config.redisHost | quote }}
+  REDIS_PORT: {{ .Values.config.redisPort | quote }}
+  KAFKA_BROKERS: {{ .Values.config.kafkaBrokers | quote }}
+  KAFKA_SECURITY_PROTOCOL: {{ .Values.config.kafkaSecurityProtocol | quote }}
+  DB_SSL: {{ .Values.config.dbSsl | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  KAFKA_LISTENER_AUTO_START: {{ .Values.config.kafkaListenerAutoStart | quote }}
+  # The app reads POSTGRES_* via PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD.
+  PGHOST: {{ .Values.config.pgHost | quote }}

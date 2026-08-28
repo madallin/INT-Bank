@@ -1,5 +1,6 @@
 package com.intbank.infrastructure.rest;
 
+import com.intbank.core.domain.vo.TransferStatus;
 import com.intbank.core.port.in.TransferUseCase;
 import com.intbank.infrastructure.rest.dto.InitiateTransferRequest;
 import jakarta.validation.Valid;
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
@@ -25,18 +27,26 @@ public class TransferController
 
     @PostMapping
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public Map<String, Object> initiate(@Valid @RequestBody InitiateTransferRequest body)
+    public Map<String, Object> initiate(
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @Valid @RequestBody InitiateTransferRequest body)
     {
+        if (idempotencyKey == null || idempotencyKey.isBlank())
+        {
+            throw new IllegalArgumentException("Missing required Idempotency-Key header");
+        }
+
         log.info("POST /transfers - {} -> {} | {} {}", body.getFromIban(), body.getToIban(), body.getAmount(), body.getCurrency());
 
         var result = transferUseCase.initiate(new TransferUseCase.InitiateTransferRequest(
             body.getFromIban(),
             body.getToIban(),
-            body.getAmount(),
+            BigDecimal.valueOf(body.getAmount()),
             body.getCurrency(),
             body.getReason(),
             body.getBeneficiaryName(),
-            body.getSenderName()
+            body.getSenderName(),
+            idempotencyKey.trim()
         ));
 
         return Map.of(

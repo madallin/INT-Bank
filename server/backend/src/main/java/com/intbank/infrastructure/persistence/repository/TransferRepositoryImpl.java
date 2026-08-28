@@ -18,10 +18,12 @@ public class TransferRepositoryImpl implements TransferRepository
 
     private static final Logger log = LoggerFactory.getLogger(TransferRepositoryImpl.class);
     private final TransferJpaRepository jpaRepository;
+    private final AccountJpaRepository accountJpaRepository;
 
-    public TransferRepositoryImpl(TransferJpaRepository jpaRepository)
+    public TransferRepositoryImpl(TransferJpaRepository jpaRepository, AccountJpaRepository accountJpaRepository)
     {
         this.jpaRepository = jpaRepository;
+        this.accountJpaRepository = accountJpaRepository;
     }
 
     @Override
@@ -34,9 +36,17 @@ public class TransferRepositoryImpl implements TransferRepository
     @Transactional
     public void save(TransferProjection transfer)
     {
-        TransferJpaEntity entity = new TransferJpaEntity();
+        TransferJpaEntity entity = jpaRepository.findById(transfer.id()).orElseGet(TransferJpaEntity::new);
         entity.setId(transfer.id());
-        entity.setAmount(BigDecimal.valueOf(transfer.amount()));
+        if (transfer.fromAccountId() != null)
+        {
+            entity.setFromAccount(accountJpaRepository.getReferenceById(Long.parseLong(transfer.fromAccountId())));
+        }
+        if (transfer.toAccountId() != null)
+        {
+            entity.setToAccount(accountJpaRepository.getReferenceById(Long.parseLong(transfer.toAccountId())));
+        }
+        entity.setAmount(transfer.amount() != null ? transfer.amount() : BigDecimal.ZERO);
         entity.setCurrency(transfer.currency());
         entity.setReason(transfer.reason());
         entity.setStatus(transfer.status().name());
@@ -79,7 +89,7 @@ public class TransferRepositoryImpl implements TransferRepository
                 entity.getId(),
                 entity.getFromAccountId(),
                 entity.getToAccountId(),
-                entity.getAmount() != null ? entity.getAmount().doubleValue() : 0.0,
+                entity.getAmount() != null ? entity.getAmount() : BigDecimal.ZERO,
                 entity.getCurrency(),
                 entity.getReason(),
                 TransferStatus.valueOf(entity.getStatus()),

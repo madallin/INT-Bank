@@ -1,0 +1,14 @@
+target
+*.class
+*.jar
+.mvn
+mvnw
+mvnw.cmd
+.git
+.gitignore
+*.md
+.idea
+*.iml
+Dockerfile
+docker-compose.yml
+.env

@@ -1,0 +1,42 @@
+# Production overlay — external secret store, stricter HA, TLS via cert-manager.
+image:
+  tag: 1.0.0
+
+replicaCount: 3
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+ingress:
+  enabled: true
+  className: nginx
+  host: bank.example.com
+  tls:
+    enabled: true
+    clusterIssuer: letsencrypt-prod
+    secretName: intbank-tls
+
+networkPolicy:
+  enabled: true
+  ingressNamespace: ingress-nginx
+
+# Production pulls secrets from AWS Secrets Manager / Vault via External Secrets Operator.
+secrets:
+  external:
+    enabled: true
+    clusterSecretStore: aws-secrets-manager
+    remoteKey: intbank/backend

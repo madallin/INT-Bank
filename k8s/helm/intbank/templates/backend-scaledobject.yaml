@@ -1,0 +1,18 @@
+{{- if .Values.keda.enabled -}}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "intbank.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "intbank.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "intbank.fullname" . }}
+  pollingInterval: {{ .Values.keda.pollingInterval }}
+  cooldownPeriod: {{ .Values.keda.cooldownPeriod }}
+  minReplicaCount: {{ .Values.keda.minReplicaCount }}
+  maxReplicaCount: {{ .Values.keda.maxReplicaCount }}
+  triggers:
+    {{- toYaml .Values.keda.triggers | nindent 4 }}
+{{- end -}}

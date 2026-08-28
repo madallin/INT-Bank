@@ -1,0 +1,32 @@
+# Dev/eval overlay — runs against the base-manifests (postgres/redis/kafka in the same namespace).
+image:
+  tag: dev
+
+replicaCount: 2
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+
+podDisruptionBudget:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  host: intbank.dev.local
+  tls:
+    enabled: false
+
+networkPolicy:
+  enabled: false
+
+config:
+  logLevel: debug
+
+secrets:
+  external:
+    enabled: false
+  dbPassword: "dev-only-not-secret"
+  jwtSecret: "dev-jwt-secret-dev-jwt-secret-dev-jwt-secret"

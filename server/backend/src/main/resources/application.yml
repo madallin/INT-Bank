@@ -29,6 +29,15 @@ spring:
     show-sql: false
     open-in-view: false
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -65,7 +74,7 @@ spring:
     client-id: ${KAFKA_CLIENT_ID:banking-producer}
     properties:
       security.protocol: ${KAFKA_SECURITY_PROTOCOL:SASL_SSL}
-      sasl.mechanism: SCRAM-SHA-256
+      sasl.mechanism: ${KAFKA_SASL_MECHANISM:SCRAM-SHA-256}
       sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="${KAFKA_USERNAME:}" password="${KAFKA_PASSWORD:}";
       ssl.endpoint.identification.algorithm: ${KAFKA_SSL_ENDPOINT_ID:""}
 
@@ -73,6 +82,11 @@ spring:
     user:
       name: admin
       password: ${ADMIN_PASSWORD:admin}
+
+# Feature flags
+app:
+  kafka:
+    enabled: ${KAFKA_ENABLED:true}
 
 # Twilio Configuration
 twilio:
@@ -111,3 +125,30 @@ logging:
     org.apache.kafka: warn
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator / Observability
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    db:
+      enabled: true
+    redis:
+      enabled: true
+    kafka:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true

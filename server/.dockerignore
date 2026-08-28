@@ -1,6 +1,13 @@
-node_modules/
-npm-debug.log
-.git/
+# Build-context root is "server" (Render default). Exclude build output and
+# VCS/secret weight so the Docker context stays small.
+backend/target
+**/target
+**/*.jar
+**/*.class
+.git
 .gitignore
-.env
 *.md
+.idea
+*.iml
+.env
+node_modules

@@ -3,6 +3,8 @@ package com.intbank.core.port.in;
 import com.intbank.core.domain.event.TransferInitiatedEvent;
 import com.intbank.core.domain.vo.TransferStatus;
 
+import java.math.BigDecimal;
+
 public interface TransferUseCase
 {
 
@@ -13,11 +15,12 @@ public interface TransferUseCase
     record InitiateTransferRequest(
         String fromIban,
         String toIban,
-        double amount,
+        BigDecimal amount,
         String currency,
         String reason,
         String beneficiaryName,
-        String senderName
+        String senderName,
+        String idempotencyKey
     )
     {
     }

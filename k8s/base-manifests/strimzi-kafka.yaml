@@ -1,0 +1,97 @@
+# ----------------------------------------------------------------------------
+# Strimzi Kafka for dev/eval. REQUIRES the Strimzi operator to be installed:
+#   kubectl create -f https://strimzi.io/install/latest?namespace=intbank
+#
+# The operator creates a bootstrap service named "intbank-kafka-kafka-bootstrap".
+# The ExternalName Service below aliases it to "kafka" so the backend's
+# KAFKA_BROKERS=kafka:9092 (from the Helm ConfigMap) keeps working unchanged.
+# ----------------------------------------------------------------------------
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: intbank-kafka
+  namespace: intbank
+spec:
+  kafka:
+    version: 3.7.0
+    replicas: 1
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+    config:
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1
+    storage:
+      type: ephemeral
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+  zookeeper:
+    replicas: 1
+    storage:
+      type: ephemeral
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 250m
+        memory: 512Mi
+  entityOperator:
+    topicOperator: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: intbank
+spec:
+  type: ExternalName
+  externalName: intbank-kafka-kafka-bootstrap.intbank.svc.cluster.local
+  ports:
+    - name: kafka
+      port: 9092
+      targetPort: 9092
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: transfer.initiated
+  namespace: intbank
+  labels:
+    strimzi.io/cluster: intbank-kafka
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: 604800000
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: transfer.completed
+  namespace: intbank
+  labels:
+    strimzi.io/cluster: intbank-kafka
+spec:
+  partitions: 3
+  replicas: 1
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: transfer.failed
+  namespace: intbank
+  labels:
+    strimzi.io/cluster: intbank-kafka
+spec:
+  partitions: 3
+  replicas: 1

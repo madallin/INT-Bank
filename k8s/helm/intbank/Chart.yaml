@@ -1,0 +1,6 @@
+apiVersion: v2
+name: intbank
+description: INTBank backend — cloud-native banking microservice (idempotency, double-entry ledger, outbox, durable saga)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

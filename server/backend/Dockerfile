@@ -27,16 +27,17 @@ WORKDIR /app
 
 # Single executable jar (the *.original repackage backup is not matched by *.jar)
 COPY --from=build /workspace/target/*.jar /app/app.jar
+COPY backend/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 RUN chown -R app:app /app
 
 USER 10001
 
-EXPOSE 8443
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8443}/actuator/health/liveness || exit 1
+    CMD curl -f http://localhost:${PORT:-8080}/actuator/health/liveness || exit 1
 
 # dumb-init becomes PID 1 and reaps zombies / proxies SIGTERM to the JVM.
-# exec ensures the JVM replaces the shell so it receives the signal directly.
-ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]
+# The entrypoint script imports Aiven's CA (if provided) before launching the app.
+ENTRYPOINT ["/usr/bin/dumb-init", "--", "/app/docker-entrypoint.sh"]

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/haptic_feedback_helper.dart';
 
 class NumpadButton extends StatelessWidget {
   final String label;
@@ -13,7 +14,10 @@ class NumpadButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedbackHelper.buttonTap();
+        onTap();
+      },
       child: Container(
         width: 64,
         height: 64,
@@ -44,7 +48,10 @@ class NumpadDeleteButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedbackHelper.selection();
+        onTap();
+      },
       child: Container(
         width: 64,
         height: 64,

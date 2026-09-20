@@ -18,6 +18,18 @@ import '../../transfer/screens/transfer_screen.dart';
 import '../../transactions/screens/transaction_history_screen.dart';
 import '../../exchange/screens/exchange_screen.dart';
 import '../../welcome/welcome_screen.dart';
+import '../../statement/screens/statement_screen.dart';
+import '../../cards/screens/card_settings_screen.dart';
+import '../../transactions/widgets/transaction_details_bottom_sheet.dart';
+import '../widgets/account_details_bottom_sheet.dart';
+import '../../notifications/widgets/notification_center_bottom_sheet.dart';
+import '../../../core/services/push_notification_service.dart';
+import '../../../core/services/push_notification_listener.dart';
+import '../widgets/open_currency_account_dialog.dart';
+import '../../analytics/screens/spending_analytics_screen.dart';
+import '../../../widgets/shimmer_loading.dart';
+import '../../../core/utils/haptic_feedback_helper.dart';
+import '../../../core/services/privacy_mode_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final int userId;
@@ -56,6 +68,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   List<Map<String, dynamic>> _recentTransactions = [];
   bool _loadingTransactions = false;
+  int _unreadNotifications = 0;
+  String? _currentIban;
 
   @override
   void initState() {
@@ -78,16 +92,49 @@ class _HomeScreenState extends State<HomeScreen>
         CurvedAnimation(parent: _pageController, curve: Curves.easeOut));
     _pageController.forward();
 
+    PrivacyModeService().init();
+    PrivacyModeService().isPrivacyModeEnabled.addListener(_onPrivacyChanged);
     _initialize();
     _startPeriodicRefresh();
   }
 
+  void _onPrivacyChanged() {
+    if (mounted) setState(() {});
+  }
+
   Future<void> _initialize() async {
     await _initDeviceId();
+    await _initPushNotifications();
     await _getClientToken();
     await _fetchCardsAndAccounts();
+    await _fetchUnreadNotifications();
     await CurrencyService.instance.fetchRates();
     if (mounted) setState(() {});
+  }
+
+  Future<void> _initPushNotifications() async {
+    try {
+      await PushNotificationService().init(
+        onNotificationClick: (payload) {
+          NotificationCenterBottomSheet.show(context, userId: widget.userId);
+          _fetchUnreadNotifications();
+        },
+      );
+      await PushNotificationService().requestPermissions();
+
+      PushNotificationListener().start(
+        widget.userId,
+        onNotificationReceived: () {
+          if (mounted) {
+            _fetchUnreadNotifications();
+            _fetchBalance();
+            _fetchRecentTransactions();
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('Error initializing push notifications: $e');
+    }
   }
 
   Future<void> _initDeviceId() async {
@@ -226,11 +273,16 @@ class _HomeScreenState extends State<HomeScreen>
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        if (data['account'] != null && data['account']['sold'] != null) {
-          final sold = data['account']['sold'];
-          setState(() => _balance = (sold is String
-              ? double.parse(sold)
-              : (sold as num).toDouble()));
+        if (data['account'] != null) {
+          if (data['account']['iban'] != null) {
+            _currentIban = data['account']['iban'].toString();
+          }
+          if (data['account']['sold'] != null) {
+            final sold = data['account']['sold'];
+            setState(() => _balance = (sold is String
+                ? double.parse(sold)
+                : (sold as num).toDouble()));
+          }
         }
       } else if (response.statusCode == 401) {
         final refreshed = await _refreshClientToken();
@@ -270,10 +322,11 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _startPeriodicRefresh() {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) {
         _fetchBalance();
         _fetchCardsAndAccounts();
+        _fetchUnreadNotifications();
       }
     });
   }
@@ -281,6 +334,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    PushNotificationListener().stop();
     _flipController.dispose();
     _pageController.dispose();
     _refreshTimer?.cancel();
@@ -367,6 +421,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _toggleBalance() {
+    HapticFeedbackHelper.selection();
     setState(() => _balanceVisible = !_balanceVisible);
   }
 
@@ -376,8 +431,13 @@ class _HomeScreenState extends State<HomeScreen>
       context,
       MaterialPageRoute(
           builder: (_) =>
-              TransferScreen(userId: widget.userId, userIban: '')),
-    );
+              TransferScreen(userId: widget.userId, userIban: _currentIban ?? '')),
+    ).then((_) {
+      _fetchCardsAndAccounts();
+      _fetchBalance();
+      _fetchRecentTransactions();
+      _fetchUnreadNotifications();
+    });
   }
 
   void _goToHistory() {
@@ -402,20 +462,93 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _goToStatement() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Extras de cont – funcție disponibilă în curând',
-            style: GoogleFonts.inter(fontSize: 14)),
-        backgroundColor: const Color(lightForestGreenColor),
-        behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
+    if (_currentAccountId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Se încarcă datele contului...', style: GoogleFonts.inter()),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(lightForestGreenColor),
+        ),
+      );
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StatementScreen(
+          userId: widget.userId,
+          accountId: _currentAccountId!,
+          iban: 'RO49INTB${widget.userId.toString().padLeft(4, '0')}0000${_currentAccountId.toString().padLeft(4, '0')}',
+          currency: 'RON',
+        ),
       ),
     );
   }
 
+  void _goToCardSettings() {
+    if (_selectedCard == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CardSettingsScreen(
+          userId: widget.userId,
+          card: _selectedCard!,
+        ),
+      ),
+    ).then((_) => _fetchCardsAndAccounts());
+  }
+
+  void _showAccountDetails() {
+    AccountDetailsBottomSheet.show(
+      context,
+      iban: 'RO49INTB${widget.userId.toString().padLeft(4, '0')}0000${(_currentAccountId ?? 1).toString().padLeft(4, '0')}',
+      currency: 'RON',
+      balance: _balance,
+      holderName: _selectedCard?.cardHolder ?? 'Client INTBank',
+    );
+  }
+
+  void _goToAnalytics() {
+    if (_currentAccountId == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SpendingAnalyticsScreen(
+          userId: widget.userId,
+          accountId: _currentAccountId!,
+          currency: 'RON',
+        ),
+      ),
+    );
+  }
+
+  void _openCurrencyDialog() {
+    OpenCurrencyAccountDialog.show(
+      context,
+      userId: widget.userId,
+      onAccountCreated: () {
+        _fetchCardsAndAccounts();
+        _fetchUnreadNotifications();
+      },
+    );
+  }
+
+  Future<void> _fetchUnreadNotifications() async {
+    try {
+      final resp = await _client.get('/users/${widget.userId}/notifications');
+      if (resp.statusCode == 200 && resp.data != null) {
+        final data = resp.data as Map<String, dynamic>;
+        if (mounted) {
+          setState(() {
+            _unreadNotifications = data['unreadCount'] as int? ?? 0;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
   Future<void> _logout() async {
+    PushNotificationListener().stop();
     const storage = FlutterSecureStorage();
     await storage.delete(key: 'loggedUserIdKey');
     if (!mounted) return;
@@ -455,6 +588,9 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   String _txAmount(Map<String, dynamic> t) {
+    if (PrivacyModeService().isPrivacyModeEnabled.value) {
+      return '•••• RON';
+    }
     final isIn = t['type'] == 'received';
     final double amt = (t['suma'] as num).toDouble();
     final str = amt.toStringAsFixed(2).replaceAll('.', ',');
@@ -472,7 +608,7 @@ class _HomeScreenState extends State<HomeScreen>
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const HomeScreenSkeleton()
             : SlideTransition(
                 position: _pageAnimation,
                 child: RefreshIndicator(
@@ -542,6 +678,74 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
           ),
+          GestureDetector(
+            onTap: () {
+              HapticFeedbackHelper.selection();
+              PrivacyModeService().togglePrivacyMode();
+            },
+            child: ValueListenableBuilder<bool>(
+              valueListenable: PrivacyModeService().isPrivacyModeEnabled,
+              builder: (context, isPrivacy, _) {
+                return Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isPrivacy ? const Color(lightForestGreenColor).withOpacity(0.15) : Colors.grey[100],
+                  ),
+                  child: Icon(
+                    isPrivacy ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                    size: 20,
+                    color: isPrivacy ? const Color(lightForestGreenColor) : Colors.grey[700],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () async {
+              HapticFeedbackHelper.buttonTap();
+              await NotificationCenterBottomSheet.show(context, userId: widget.userId);
+              _fetchUnreadNotifications();
+            },
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle, color: Colors.grey[100]),
+                  child: Icon(Icons.notifications_outlined,
+                      size: 20, color: Colors.grey[700]),
+                ),
+                if (_unreadNotifications > 0)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE53935),
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Center(
+                        child: Text(
+                          '$_unreadNotifications',
+                          style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: _logout,
             child: Container(
@@ -706,7 +910,23 @@ class _HomeScreenState extends State<HomeScreen>
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                             letterSpacing: 0.3)),
-                    Image.asset('assets/images/visa.png', height: 22),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: _goToCardSettings,
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.18),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.tune_rounded, color: Colors.white, size: 16),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Image.asset('assets/images/visa.png', height: 22),
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -996,31 +1216,62 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
               ],
             ),
-            GestureDetector(
-              onTap: _goToStatement,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(lightForestGreenColor)
-                      .withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(14),
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: _openCurrencyDialog,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(lightForestGreenColor)
+                          .withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.add_rounded,
+                            size: 16,
+                            color: Color(lightForestGreenColor)),
+                        const SizedBox(width: 4),
+                        Text('+ Valută',
+                            style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    const Color(lightForestGreenColor))),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.description_outlined,
-                        size: 16,
-                        color: Color(lightForestGreenColor)),
-                    const SizedBox(width: 6),
-                    Text('Extras',
-                        style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color:
-                                const Color(lightForestGreenColor))),
-                  ],
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _goToStatement,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(lightForestGreenColor)
+                          .withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.description_outlined,
+                            size: 16,
+                            color: Color(lightForestGreenColor)),
+                        const SizedBox(width: 6),
+                        Text('Extras',
+                            style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    const Color(lightForestGreenColor))),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -1036,14 +1287,18 @@ class _HomeScreenState extends State<HomeScreen>
           Expanded(
               child: _buildActionCard(
                   Icons.send_rounded, 'Transfer', _goToTransfer)),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
               child: _buildActionCard(Icons.receipt_long_rounded,
                   'Istoric', _goToHistory)),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
               child: _buildActionCard(Icons.currency_exchange_rounded,
                   'Schimb', _goToExchange)),
+          const SizedBox(width: 8),
+          Expanded(
+              child: _buildActionCard(Icons.pie_chart_outline_rounded,
+                  'Statistici', _goToAnalytics)),
         ],
       ),
     );
@@ -1052,7 +1307,10 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildActionCard(
       IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedbackHelper.buttonTap();
+        onTap();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 22),
         decoration: BoxDecoration(
@@ -1218,12 +1476,15 @@ class _HomeScreenState extends State<HomeScreen>
                             _recentTransactions.length - 1
                         ? 10
                         : 0),
-                child: TransactionListItem(
-                  beneficiary:
-                      tx['beneficiary'] ?? tx['motiv'] ?? '',
-                  date: _txDate(tx['dataTransfer'] ?? ''),
-                  amount: amtStr,
-                  isPositive: isPositive,
+                child: GestureDetector(
+                  onTap: () => TransactionDetailsBottomSheet.show(context, tx),
+                  child: TransactionListItem(
+                    beneficiary:
+                        tx['beneficiary'] ?? tx['motiv'] ?? '',
+                    date: _txDate(tx['dataTransfer'] ?? ''),
+                    amount: amtStr,
+                    isPositive: isPositive,
+                  ),
                 ),
               );
             })),

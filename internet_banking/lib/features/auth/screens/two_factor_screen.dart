@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show HttpClient, Platform;
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
+import 'package:dio/dio.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 import '../../../config/app_config.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../core/storage/secure_session_manager.dart';
 import '../../../widgets/error_banner.dart';
@@ -35,7 +35,6 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
   String textEroare = '';
   bool isVerifying = false;
   late String clientToken;
-  late String refreshToken;
   String _deviceId = 'dev-device';
   late int _userId;
 
@@ -103,16 +102,15 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
 
   Future<void> _getClientTokenAndSendCode() async {
     try {
-      final client = _createHttpClient();
-      final response = await client.post(
-        Uri.parse('${AppConfig.baseUrl}/auth/get-client-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'deviceId': _deviceId}),
+      final response = await DioClient().post(
+        '/auth/get-client-token',
+        data: {'deviceId': _deviceId},
       );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : jsonDecode(response.data.toString()) as Map<String, dynamic>;
         clientToken = data['client_token'];
-        refreshToken = data['refresh_token'];
         await _sendCode();
       } else {
         _showError('Eroare la obținerea tokenului client');
@@ -120,10 +118,6 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
     } catch (e) {
       _showError('Eroare de rețea: $e');
     }
-  }
-
-  http.Client _createHttpClient() {
-    return IOClient(HttpClient());
   }
 
   void _onNumberPress(String number) {
@@ -160,25 +154,17 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
     _showError('');
     setState(() => isVerifying = true);
 
-    final client = _createHttpClient();
     try {
-      final response = await client.post(
-        Uri.parse('${AppConfig.baseUrl}/2fa/request'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $clientToken',
-        },
-        body: jsonEncode({'phone': widget.phoneNumber}),
+      final response = await DioClient().post(
+        '/2fa/request',
+        options: Options(headers: {'Authorization': 'Bearer $clientToken'}),
+        data: {'phone': widget.phoneNumber},
       );
 
-      if (response.statusCode == 401) {
-        _showError(
-            'Timpul pentru verificare a expirat. Te rugăm să reîncepi procesul.');
-        setState(() => pin = '');
-        return;
-      }
+      final data = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : jsonDecode(response.data.toString()) as Map<String, dynamic>;
 
-      final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
         await _startCooldown();
       } else {
@@ -186,10 +172,22 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
           _showError(data['error'] ?? 'Eroare la trimiterea codului');
         }
       }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        _showError(
+            'Timpul pentru verificare a expirat. Te rugăm să reîncepi procesul.');
+        setState(() => pin = '');
+      } else {
+        final data = e.response?.data;
+        if (data is Map && data['error'] != null) {
+          _showError(data['error'].toString());
+        } else {
+          _showError('Eroare de rețea: $e');
+        }
+      }
     } catch (e) {
       if (mounted) _showError('Eroare de rețea: $e');
     } finally {
-      client.close();
       if (mounted) setState(() => isVerifying = false);
     }
   }
@@ -199,47 +197,36 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
     _showError('');
     setState(() => isVerifying = true);
 
-    final client = _createHttpClient();
     try {
-      final response = await client.post(
-        Uri.parse('${AppConfig.baseUrl}/2fa/verify'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $clientToken',
-        },
-        body: jsonEncode({'phone': widget.phoneNumber, 'code': pin}),
+      final response = await DioClient().post(
+        '/2fa/verify',
+        options: Options(headers: {'Authorization': 'Bearer $clientToken'}),
+        data: {'phone': widget.phoneNumber, 'code': pin},
       );
 
-      if (response.statusCode == 401) {
-        final refreshed = await _refreshToken();
-        if (refreshed) {
-          await _verifyPin();
-        } else if (mounted) {
-          _showError('Sesiune expirată. Te rugăm să te reconectezi');
-          setState(() => pin = '');
-        }
-        return;
-      }
+      final data = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : jsonDecode(response.data.toString()) as Map<String, dynamic>;
 
-      final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
         if (!mounted) return;
         setState(() => isVerifying = true);
         _showSuccess('Verificare reușită! Vei fi redirecționat...');
 
         bool setPin = true;
-        final hasPinResponse = await client.get(
-          Uri.parse('${AppConfig.baseUrl}/users/$_userId/has-pin'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $clientToken',
-          },
-        );
+        try {
+          final hasPinResponse = await DioClient().get(
+            '/users/$_userId/has-pin',
+            options: Options(headers: {'Authorization': 'Bearer $clientToken'}),
+          );
 
-        if (hasPinResponse.statusCode == 200) {
-          final hasPinData = jsonDecode(hasPinResponse.body);
-          setPin = !(hasPinData['hasPin'] ?? false);
-        }
+          if (hasPinResponse.statusCode == 200) {
+            final hasPinData = hasPinResponse.data is Map<String, dynamic>
+                ? hasPinResponse.data as Map<String, dynamic>
+                : jsonDecode(hasPinResponse.data.toString()) as Map<String, dynamic>;
+            setPin = !(hasPinData['hasPin'] ?? false);
+          }
+        } catch (_) {}
 
         await SecureSessionManager.savePhone(widget.phoneNumber);
 
@@ -264,33 +251,25 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
         _showError(serverError);
         setState(() => pin = '');
       }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        if (mounted) {
+          _showError('Sesiune expirată. Te rugăm să te reconectezi');
+          setState(() => pin = '');
+        }
+      } else {
+        final data = e.response?.data;
+        if (data is Map && data['error'] != null) {
+          _showError(data['error'].toString());
+        } else {
+          _showError('Eroare de rețea: $e');
+        }
+        setState(() => pin = '');
+      }
     } catch (e) {
       if (mounted) _showError('Eroare de rețea: $e');
     } finally {
-      client.close();
       if (mounted) setState(() => isVerifying = false);
-    }
-  }
-
-  Future<bool> _refreshToken() async {
-    final client = _createHttpClient();
-    try {
-      final response = await client.post(
-        Uri.parse('${AppConfig.baseUrl}/auth/refresh-client-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(
-            {'deviceId': _deviceId, 'refreshToken': refreshToken}),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) setState(() => clientToken = data['client_token']);
-        return true;
-      }
-      return false;
-    } catch (_) {
-      return false;
-    } finally {
-      client.close();
     }
   }
 

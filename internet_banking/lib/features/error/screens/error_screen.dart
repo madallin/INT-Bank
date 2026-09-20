@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
+import 'package:dio/dio.dart';
 
-import '../../../config/app_config.dart';
+import '../../../core/network/dio_client.dart';
 
 class ErrorScreen extends StatefulWidget
 {
@@ -115,30 +113,19 @@ class _ErrorScreenState extends State<ErrorScreen>
     });
   }
 
-  http.Client _createHttpClient()
-  {
-    return IOClient(HttpClient());
-  }
-
   Future<bool> _checkServerConnection() async
   {
-    final client = _createHttpClient();
     try
     {
-      final uri = Uri.parse('${AppConfig.baseUrl}/health');
-      final response = await client.get(uri).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => throw Exception('Timeout'),
+      final response = await DioClient().get(
+        '/health',
+        options: Options(receiveTimeout: const Duration(seconds: 5)),
       );
       return response.statusCode == 200;
     }
     catch (e)
-{
-      return false;
-    }
-    finally
     {
-      client.close();
+      return false;
     }
   }
 

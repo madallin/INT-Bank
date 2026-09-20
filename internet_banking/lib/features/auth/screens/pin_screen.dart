@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show HttpClient, Platform;
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 import '../../../config/app_config.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../services/jwt_api_service.dart';
 import '../../../core/storage/secure_session_manager.dart';
 import '../../../widgets/error_banner.dart';
@@ -45,7 +45,6 @@ class _PinScreenState extends State<PinScreen>
   String textEroare = '';
   bool isVerifying = false;
   late String clientToken;
-  late String refreshToken;
   String _deviceId = 'dev-device';
 
   AnimationController? _shakeController;
@@ -91,47 +90,20 @@ class _PinScreenState extends State<PinScreen>
     }
   }
 
-  http.Client _createHttpClient() {
-    return IOClient(HttpClient());
-  }
-
   Future<void> _getClientToken() async {
     try {
-      final client = _createHttpClient();
-      final response = await client.post(
-        Uri.parse('${AppConfig.baseUrl}/auth/get-client-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'deviceId': _deviceId}),
+      final response = await DioClient().post(
+        '/auth/get-client-token',
+        data: {'deviceId': _deviceId},
       );
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : jsonDecode(response.data.toString()) as Map<String, dynamic>;
         clientToken = data['client_token'];
-        refreshToken = data['refresh_token'];
       }
     } catch (e) {
       _showError('Eroare de rețea: $e');
-    }
-  }
-
-  Future<bool> _refreshToken() async {
-    final client = _createHttpClient();
-    try {
-      final response = await client.post(
-        Uri.parse('${AppConfig.baseUrl}/auth/refresh-client-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(
-            {'deviceId': _deviceId, 'refreshToken': refreshToken}),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (mounted) setState(() => clientToken = data['client_token']);
-        return true;
-      }
-      return false;
-    } catch (_) {
-      return false;
-    } finally {
-      client.close();
     }
   }
 
@@ -179,26 +151,17 @@ class _PinScreenState extends State<PinScreen>
     if (isVerifying) return;
     setState(() => isVerifying = true);
 
-    final client = _createHttpClient();
     try {
-      final response = await client.post(
-        Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/verify-pin'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $clientToken',
-        },
-        body: jsonEncode({'pin': pin}),
+      final response = await DioClient().post(
+        '/users/${widget.userId}/verify-pin',
+        options: Options(headers: {'Authorization': 'Bearer $clientToken'}),
+        data: {'pin': pin},
       );
 
-      if (response.statusCode == 401) {
-        final refreshed = await _refreshToken();
-        if (refreshed) {
-          await _verifyExistingPin();
-          return;
-        }
-      }
+      final data = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : jsonDecode(response.data.toString()) as Map<String, dynamic>;
 
-      final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
         if (widget.useJwtLogin) {
           final success = await _performJwtLogin();
@@ -224,11 +187,18 @@ class _PinScreenState extends State<PinScreen>
         _showError(data['error'] ?? 'PIN incorect');
         setState(() => pin = '');
       }
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map && data['error'] != null) {
+        _showError(data['error'].toString());
+      } else {
+        _showError('Eroare: Nu te poți conecta la server');
+      }
+      setState(() => pin = '');
     } catch (e) {
       _showError('Eroare: Nu te poți conecta la server');
       setState(() => pin = '');
     } finally {
-      client.close();
       if (mounted) setState(() => isVerifying = false);
     }
   }
@@ -262,26 +232,17 @@ class _PinScreenState extends State<PinScreen>
     }
 
     setState(() => isVerifying = true);
-    final client = _createHttpClient();
     try {
-      final response = await client.put(
-        Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/set-pin'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $clientToken',
-        },
-        body: jsonEncode({'codPin': pin}),
+      final response = await DioClient().put(
+        '/users/${widget.userId}/set-pin',
+        options: Options(headers: {'Authorization': 'Bearer $clientToken'}),
+        data: {'codPin': pin},
       );
 
-      if (response.statusCode == 401) {
-        final refreshed = await _refreshToken();
-        if (refreshed) {
-          await _setNewPin();
-          return;
-        }
-      }
+      final data = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : jsonDecode(response.data.toString()) as Map<String, dynamic>;
 
-      final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
         if (widget.useJwtLogin) {
           await _performJwtLogin();
@@ -306,6 +267,18 @@ class _PinScreenState extends State<PinScreen>
           isConfirming = false;
         });
       }
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map && data['error'] != null) {
+        _showError(data['error'].toString());
+      } else {
+        _showError('Eroare: Nu te poți conecta la server');
+      }
+      setState(() {
+        pin = '';
+        confirmPin = '';
+        isConfirming = false;
+      });
     } catch (e) {
       _showError('Eroare: Nu te poți conecta la server');
       setState(() {
@@ -314,7 +287,6 @@ class _PinScreenState extends State<PinScreen>
         isConfirming = false;
       });
     } finally {
-      client.close();
       if (mounted) setState(() => isVerifying = false);
     }
   }

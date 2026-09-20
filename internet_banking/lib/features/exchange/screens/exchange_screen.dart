@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../config/app_config.dart';
+import '../../../core/network/dio_client.dart';
+import '../../home/widgets/open_currency_account_dialog.dart';
 import '../../../services/currency_service.dart';
 import '../../../widgets/action_button.dart';
 import '../../../widgets/circular_icon_badge.dart';
@@ -24,6 +26,11 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     with TickerProviderStateMixin {
   final TextEditingController _fromAmountController = TextEditingController();
   final TextEditingController _toAmountController = TextEditingController();
+  final DioClient _dioClient = DioClient();
+
+  List<Map<String, dynamic>> _userAccounts = [];
+  bool _loadingAccounts = true;
+  bool _isExecuting = false;
 
   String _fromCurrency = 'RON';
   String _toCurrency = 'EUR';
@@ -65,6 +72,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     _swapAnimation =
         CurvedAnimation(parent: _swapController!, curve: Curves.easeInOut);
 
+    _fetchAccounts();
     if (!CurrencyService.instance.hasRates) {
       CurrencyService.instance.fetchRates().then((_) {
         if (mounted) _recalculate();
@@ -84,6 +92,211 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     _fromAmountController.dispose();
     _toAmountController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchAccounts() async {
+    setState(() => _loadingAccounts = true);
+    try {
+      final response = await _dioClient.get('/users/${widget.userId}/accounts');
+      if (response.statusCode == 200 && response.data != null) {
+        final list = List<Map<String, dynamic>>.from(response.data as List);
+        if (mounted) {
+          setState(() {
+            _userAccounts = list;
+            _loadingAccounts = false;
+          });
+        }
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingAccounts = false);
+    }
+  }
+
+  Map<String, dynamic>? _getAccountForCurrency(String cur) {
+    for (final a in _userAccounts) {
+      final m = (a['moneda'] ?? a['currency'] ?? '').toString().toUpperCase();
+      if (m == cur.toUpperCase()) return a;
+    }
+    return null;
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.inter(color: Colors.white)),
+        backgroundColor: Colors.red[700],
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.inter(color: Colors.white)),
+        backgroundColor: const Color(lightForestGreenColor),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _confirmAndExecuteExchange() {
+    final fromAcc = _getAccountForCurrency(_fromCurrency);
+    final toAcc = _getAccountForCurrency(_toCurrency);
+
+    if (fromAcc == null) {
+      _showError('Nu ai un cont activ în $_fromCurrency.');
+      return;
+    }
+    if (toAcc == null) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('Cont în $_toCurrency inexistent', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+          content: Text('Pentru a cumpăra $_toCurrency, trebuie să deschizi mai întâi un sub-cont în această valută.', style: GoogleFonts.inter()),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Închide', style: GoogleFonts.inter(color: Colors.grey))),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                OpenCurrencyAccountDialog.show(
+                  context,
+                  userId: widget.userId,
+                  onAccountCreated: _fetchAccounts,
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(lightForestGreenColor)),
+              child: Text('Deschide cont', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final amount = double.tryParse(_fromAmountController.text.replaceAll(',', '')) ?? 0.0;
+    if (amount <= 0) {
+      _showError('Introdu o sumă validă pentru schimb');
+      return;
+    }
+
+    final available = (fromAcc['sold'] as num?)?.toDouble() ?? 0.0;
+    if (amount > available) {
+      _showError('Fonduri insuficiente! Disponibil: ${available.toStringAsFixed(2)} $_fromCurrency');
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 20),
+            Text('Confirmă schimbul valutar', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(darkGreyColor))),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: const Color(0xFFF7FAF8), borderRadius: BorderRadius.circular(16)),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Plătești:', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 13)),
+                      Text('${amount.toStringAsFixed(2)} $_fromCurrency', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, color: Colors.red[700])),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Primești:', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 13)),
+                      Text('${_toAmountController.text} $_toCurrency', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, color: const Color(lightForestGreenColor))),
+                    ],
+                  ),
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Curs schimb:', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 13)),
+                      Text('1 $_fromCurrency = ${_originalRate.toStringAsFixed(4)} $_toCurrency', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Comision tranzacție:', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 13)),
+                      Text('0.00 $_fromCurrency (Gratuit)', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(lightForestGreenColor), fontSize: 13)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                    child: Text('Anulează', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.grey[600])),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      await _executeExchange(fromAcc['id'], toAcc['id'], amount);
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(lightForestGreenColor), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                    child: Text('Confirmă', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _executeExchange(dynamic fromId, dynamic toId, double amount) async {
+    setState(() => _isExecuting = true);
+    try {
+      final response = await _dioClient.post(
+        '/currency/api/v1/users/${widget.userId}/exchange/internal',
+        data: {
+          'fromAccountId': fromId,
+          'toAccountId': toId,
+          'amount': amount,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        _showSuccess('Schimb valutar realizat cu succes!');
+        _fromAmountController.clear();
+        _toAmountController.clear();
+        await _fetchAccounts();
+      } else {
+        _showError('Eroare la realizarea schimbului valutar');
+      }
+    } catch (e) {
+      _showError('Eroare: $e');
+    } finally {
+      if (mounted) setState(() => _isExecuting = false);
+    }
   }
 
   void _onFromAmountChanged() {
@@ -494,10 +707,10 @@ class _ExchangeScreenState extends State<ExchangeScreen>
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               child: ActionButton(
-                label: 'Schimbă valuta',
-                onTap: (!service.hasRates || !_hasRate)
+                label: _isExecuting ? 'Se procesează...' : 'Schimbă valuta',
+                onTap: (!service.hasRates || !_hasRate || _isExecuting)
                     ? null
-                    : () {},
+                    : _confirmAndExecuteExchange,
                 isExpanded: false,
               ),
             ),

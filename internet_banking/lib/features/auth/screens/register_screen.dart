@@ -1,12 +1,11 @@
 import 'dart:convert';
-import 'dart:io' show HttpClient;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_libphonenumber/flutter_libphonenumber.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
+import 'package:dio/dio.dart';
 
 import '../../../config/app_config.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../widgets/action_button.dart';
 import '../../../widgets/circular_icon_badge.dart';
 import '../../../widgets/date_picker_field.dart';
@@ -85,10 +84,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     if (mounted) setState(() {});
   }
 
-  http.Client _createHttpClient() {
-    return IOClient(HttpClient());
-  }
-
   void _showError(String message) {
     if (!mounted) return;
     setState(() => textEroare = message);
@@ -124,16 +119,15 @@ class _RegisterScreenState extends State<RegisterScreen>
     if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
     final fullPhone = '+${_selectedCountry!.phoneCode}$cleanPhone';
 
-    final client = _createHttpClient();
     try {
       final dob = _selectedDate != null
           ? '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}'
           : '';
 
-      final response = await client.post(
-        Uri.parse('${AppConfig.baseUrl}/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      final response = await DioClient().post(
+        '/register',
+        options: Options(validateStatus: (status) => status != null && (status < 300 || status == 409)),
+        data: {
           'phone': fullPhone,
           'firstName': _firstNameController.text.trim(),
           'lastName': _lastNameController.text.trim(),
@@ -142,10 +136,12 @@ class _RegisterScreenState extends State<RegisterScreen>
           'gender': _selectedGender,
           'maritalStatus': _selectedMaritalStatus,
           'dateOfBirth': dob,
-        }),
+        },
       );
 
-      final data = jsonDecode(response.body);
+      final data = response.data is Map<String, dynamic>
+          ? response.data as Map<String, dynamic>
+          : jsonDecode(response.data.toString()) as Map<String, dynamic>;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final userId = data['userId'];
@@ -179,7 +175,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     } catch (e) {
       _showError('Nu te poți conecta la server. Verifică conexiunea');
     } finally {
-      client.close();
       if (mounted) setState(() => _loading = false);
     }
   }

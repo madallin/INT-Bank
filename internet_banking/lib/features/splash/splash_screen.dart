@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
+import 'package:dio/dio.dart';
 
-import '../../config/app_config.dart';
+import '../../core/network/dio_client.dart';
 import '../../services/jwt_api_service.dart';
 import '../welcome/welcome_screen.dart';
 import '../auth/screens/pin_screen.dart';
@@ -27,31 +24,20 @@ class _SplashScreenState extends State<SplashScreen>
     _checkSessionAndNavigate();
   }
 
-  http.Client _createHttpClient()
-  {
-    return IOClient(HttpClient());
-  }
-
   Future<bool> _checkServerConnection() async
   {
-    final client = _createHttpClient();
     try
     {
-      final uri = Uri.parse('${AppConfig.baseUrl}/health');
-      final response = await client.get(uri).timeout(
-        const Duration(seconds: 8),
-        onTimeout: () => throw Exception('Timeout'),
+      final response = await DioClient().get(
+        '/health',
+        options: Options(receiveTimeout: const Duration(seconds: 8)),
       );
       return response.statusCode == 200;
     }
     catch (e)
-{
+    {
       debugPrint('Server connection error: $e');
       return false;
-    }
-    finally
-    {
-      client.close();
     }
   }
 

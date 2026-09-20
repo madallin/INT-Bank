@@ -2,9 +2,21 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig
 {
-  static String get serverUrl => dotenv.env['SERVER_URL'] ?? 'localhost';
+  static String get serverUrl {
+    try {
+      return dotenv.isInitialized ? (dotenv.env['SERVER_URL'] ?? 'localhost') : 'localhost';
+    } catch (_) {
+      return 'localhost';
+    }
+  }
 
-  static int get serverPort => int.tryParse(dotenv.env['SERVER_PORT'] ?? '') ?? 8443;
+  static int get serverPort {
+    try {
+      return dotenv.isInitialized ? (int.tryParse(dotenv.env['SERVER_PORT'] ?? '') ?? 8443) : 8443;
+    } catch (_) {
+      return 8443;
+    }
+  }
 
   static String get baseUrl => serverPort == 443
       ? 'https://$serverUrl'

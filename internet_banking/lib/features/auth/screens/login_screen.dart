@@ -1,13 +1,10 @@
 import 'dart:convert';
-import 'dart:io' show HttpClient;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_libphonenumber/flutter_libphonenumber.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../config/app_config.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../widgets/action_button.dart';
 import '../../../widgets/error_banner.dart';
 import '../../../widgets/phone_input_field.dart';
@@ -16,8 +13,6 @@ import '../../../widgets/simple_app_bar.dart';
 import '../../onboarding/screens/tos_screen.dart';
 import '../../onboarding/screens/approval_screen.dart';
 import 'two_factor_screen.dart';
-
-final FlutterSecureStorage storage = const FlutterSecureStorage();
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -61,10 +56,6 @@ class _LoginScreenState extends State<LoginScreen>
     if (mounted) setState(() {});
   }
 
-  http.Client _createHttpClient() {
-    return IOClient(HttpClient());
-  }
-
   String? _formatPhoneForServer(String phone) {
     if (_selectedCountry == null) return null;
     String cleanPhone = phone.replaceAll(RegExp(r'\D'), '');
@@ -83,17 +74,16 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _attemptLogin(String fullPhoneNumber) async {
-    final client = _createHttpClient();
     try {
-      final uri = Uri.parse('${AppConfig.baseUrl}/login');
-      final response = await client.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phone': fullPhoneNumber}),
+      final response = await DioClient().post(
+        '/login',
+        data: {'phone': fullPhoneNumber},
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : jsonDecode(response.data.toString()) as Map<String, dynamic>;
 
         if (data['exists'] == true) {
           final userId = data['userId'];
@@ -155,8 +145,6 @@ class _LoginScreenState extends State<LoginScreen>
         );
       }
       debugPrint('Eroare _attemptLogin: $e');
-    } finally {
-      client.close();
     }
   }
 

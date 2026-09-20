@@ -1,13 +1,13 @@
-import 'dart:convert' show jsonDecode, jsonEncode;
-import 'dart:io' show HttpClient, Platform;
+import 'dart:convert' show jsonDecode;
+import 'dart:io' show Platform;
 
 import 'package:device_info_plus/device_info_plus.dart' show DeviceInfoPlugin;
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart' show IOClient;
 
 import '../../../config/app_config.dart';
+import '../../../core/network/dio_client.dart';
 import 'approval_screen.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../welcome/welcome_screen.dart';
@@ -27,21 +27,16 @@ class _TosScreenState extends State<TosScreen>
   bool _canAccept = false;
   bool _loading = false;
 
-  http.Client _createHttpClient()
-  {
-    return IOClient(HttpClient());
-  }
-
   Future<String> getDeviceId() async
   {
     final deviceInfo = DeviceInfoPlugin();
     if(Platform.isAndroid)
-{
+    {
       final androidInfo = await deviceInfo.androidInfo;
       return androidInfo.id;
     }
     else if(Platform.isIOS)
-{
+    {
       final iosInfo = await deviceInfo.iosInfo;
       return iosInfo.identifierForVendor!;
     }
@@ -53,52 +48,49 @@ class _TosScreenState extends State<TosScreen>
     if(!mounted) return;
     setState(() => _loading = true);
 
-    final client = _createHttpClient();
     try
     {
       final deviceId = await getDeviceId();
-      final tokenResponse = await client.post(
-        Uri.parse('${AppConfig.baseUrl}/auth/get-client-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'deviceId': deviceId}),
+      final tokenResponse = await DioClient().post(
+        '/auth/get-client-token',
+        data: {'deviceId': deviceId},
       );
 
       if(!mounted) return;
-      final tokenData = jsonDecode(tokenResponse.body);
+      final tokenData = tokenResponse.data is Map<String, dynamic>
+          ? tokenResponse.data as Map<String, dynamic>
+          : jsonDecode(tokenResponse.data.toString()) as Map<String, dynamic>;
       final clientToken = tokenData['client_token'];
+      final authOptions = Options(headers: {'Authorization': 'Bearer $clientToken'});
 
-      final tosResponse = await client.get(
-        Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/has-tos'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $clientToken',
-        },
+      final tosResponse = await DioClient().get(
+        '/users/${widget.userId}/has-tos',
+        options: authOptions,
       );
 
       if(!mounted) return;
       if(tosResponse.statusCode != 200)
-{
+      {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eroare la verificarea TOS')),
         );
         return;
       }
 
-      final tosData = jsonDecode(tosResponse.body);
+      final tosData = tosResponse.data is Map<String, dynamic>
+          ? tosResponse.data as Map<String, dynamic>
+          : jsonDecode(tosResponse.data.toString()) as Map<String, dynamic>;
       final acceptedTerms = tosData['termeniAcceptati'] ?? false;
 
       if(!acceptedTerms)
-{
-        final putResponse = await client.put(
-          Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/accept-tos'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $clientToken',
-          },
+      {
+        final putResponse = await DioClient().put(
+          '/users/${widget.userId}/accept-tos',
+          options: authOptions,
         );
         if(!mounted) return;
         if(putResponse.statusCode != 200)
-{
+        {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Eroare la actualizarea TOS')),
           );
@@ -106,30 +98,29 @@ class _TosScreenState extends State<TosScreen>
         }
       }
 
-      final approvedResponse = await client.get(
-        Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/has-approved/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $clientToken',
-        },
+      final approvedResponse = await DioClient().get(
+        '/users/${widget.userId}/has-approved/',
+        options: authOptions,
       );
 
       if(!mounted) return;
       if(approvedResponse.statusCode != 200)
-{
+      {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Eroare la verificarea contului')),
         );
         return;
       }
 
-      final approvedData = jsonDecode(approvedResponse.body);
+      final approvedData = approvedResponse.data is Map<String, dynamic>
+          ? approvedResponse.data as Map<String, dynamic>
+          : jsonDecode(approvedResponse.data.toString()) as Map<String, dynamic>;
       final isApproved = approvedData['contaprobat'] ?? false;
 
       if(!isApproved)
-{
+      {
         if(mounted)
-{
+        {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
@@ -140,9 +131,9 @@ class _TosScreenState extends State<TosScreen>
         }
       }
       else
-{
+      {
         if(mounted)
-{
+        {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const WelcomeScreen()),
@@ -156,9 +147,9 @@ class _TosScreenState extends State<TosScreen>
       }
     }
     catch (e)
-{
+    {
       if(mounted)
-{
+      {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Nu se poate conecta la server')),
         );
@@ -167,7 +158,6 @@ class _TosScreenState extends State<TosScreen>
     finally
     {
       if(mounted) setState(() => _loading = false);
-      client.close();
     }
   }
 

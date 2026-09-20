@@ -117,9 +117,10 @@ class DioClient
       InterceptorsWrapper(
         onRequest: (options, handler) async
         {
+          options.headers['X-Correlation-ID'] = 'mbl-${DateTime.now().millisecondsSinceEpoch}-${options.path.hashCode.abs()}';
           final token = await _storage.read(key: _accessTokenKey);
           if(token != null && token.isNotEmpty)
-{
+          {
             options.headers['Authorization'] = 'Bearer $token';
           }
           handler.next(options);

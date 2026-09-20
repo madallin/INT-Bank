@@ -29,7 +29,6 @@ class _ExchangeScreenState extends State<ExchangeScreen>
   final DioClient _dioClient = DioClient();
 
   List<Map<String, dynamic>> _userAccounts = [];
-  bool _loadingAccounts = true;
   bool _isExecuting = false;
 
   String _fromCurrency = 'RON';
@@ -95,7 +94,6 @@ class _ExchangeScreenState extends State<ExchangeScreen>
   }
 
   Future<void> _fetchAccounts() async {
-    setState(() => _loadingAccounts = true);
     try {
       final response = await _dioClient.get('/users/${widget.userId}/accounts');
       if (response.statusCode == 200 && response.data != null) {
@@ -103,13 +101,10 @@ class _ExchangeScreenState extends State<ExchangeScreen>
         if (mounted) {
           setState(() {
             _userAccounts = list;
-            _loadingAccounts = false;
           });
         }
       }
-    } catch (_) {
-      if (mounted) setState(() => _loadingAccounts = false);
-    }
+    } catch (_) {}
   }
 
   Map<String, dynamic>? _getAccountForCurrency(String cur) {

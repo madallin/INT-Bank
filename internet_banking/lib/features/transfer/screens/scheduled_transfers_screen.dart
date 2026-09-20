@@ -196,7 +196,6 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
             final amount = (t['amount'] as num?)?.toDouble() ?? 0.0;
             final freq = t['frequency'] ?? 'ONCE';
             final nextRun = t['nextRunDate'] ?? '-';
-            final status = t['status'] ?? 'ACTIVE';
             final reason = t['reason'] ?? '';
             final bank = IbanBankDetector.detectBank(iban);
 

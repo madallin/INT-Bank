@@ -8,7 +8,6 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/utils/haptic_feedback_helper.dart';
 import '../../../core/services/privacy_mode_service.dart';
 import '../../../widgets/empty_state_placeholder.dart';
-import '../../../widgets/section_header.dart';
 import '../../../widgets/simple_app_bar.dart';
 import '../../../widgets/shimmer_loading.dart';
 import '../widgets/transaction_details_bottom_sheet.dart';
@@ -299,7 +298,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                                 Text(
                                   PrivacyModeService().isPrivacyModeEnabled.value
                                       ? 'Total: •••• RON'
-                                      : 'Total: ' + (totalSum >= 0 ? '+' : '') + totalSum.toStringAsFixed(2) + ' RON',
+                                      : 'Total: ${totalSum >= 0 ? '+' : ''}${totalSum.toStringAsFixed(2)} RON',
                                   style: GoogleFonts.inter(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,

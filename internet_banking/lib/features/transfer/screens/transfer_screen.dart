@@ -1,11 +1,9 @@
 import 'scheduled_transfers_screen.dart';
 import 'dart:convert';
-import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 
 import '../../../config/app_config.dart';
 import '../../../core/network/dio_client.dart';
@@ -47,8 +45,6 @@ class _TransferScreenState extends State<TransferScreen>
   String _frequency = 'MONTHLY'; // ONCE, WEEKLY, MONTHLY
   DateTime _scheduledDate = DateTime.now().add(const Duration(days: 1));
 
-  String _deviceId = 'dev-device';
-
   RomanianBankInfo? _detectedBank;
 
   @override
@@ -63,7 +59,6 @@ class _TransferScreenState extends State<TransferScreen>
       curve: Curves.easeInOut,
     );
     _fadeController.forward();
-    _initDeviceId();
 
     _ibanController.addListener(() {
       final bank = IbanBankDetector.detectBank(_ibanController.text);
@@ -138,17 +133,6 @@ class _TransferScreenState extends State<TransferScreen>
       ),
     );
   }
-
-  Future<void> _initDeviceId() async {
-    final info = DeviceInfoPlugin();
-    if (Platform.isAndroid) {
-      _deviceId = (await info.androidInfo).id;
-    } else if (Platform.isIOS) {
-      _deviceId = (await info.iosInfo).identifierForVendor ?? 'ios-device';
-    }
-  }
-
-
 
   Future<void> _submitTransfer() async {
     final iban = _ibanController.text.replaceAll(' ', '');

@@ -29,9 +29,9 @@ class InactivityLockService {
   static const int defaultWarningWindowSeconds = 30;
 
   final DateTime Function() _clock;
-  Duration _timeout;
-  Duration _warningWindow;
-  Duration _lockGracePeriod;
+  final Duration _timeout;
+  final Duration _warningWindow;
+  final Duration _lockGracePeriod;
 
   InactivityLockState _state = InactivityLockState.active;
   DateTime _lastActivityAt;

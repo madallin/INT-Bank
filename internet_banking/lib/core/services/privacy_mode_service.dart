@@ -38,7 +38,7 @@ class PrivacyModeService {
     // Default masked format replacing numeric digits while keeping currency
     final parts = value.trim().split(' ');
     if (parts.length > 1) {
-      return '\u2022\u2022\u2022\u2022 ' + parts.sublist(1).join(' ');
+      return '\u2022\u2022\u2022\u2022 ${parts.sublist(1).join(' ')}';
     }
     return '\u2022\u2022\u2022\u2022';
   }

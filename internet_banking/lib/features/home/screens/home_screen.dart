@@ -1271,6 +1271,22 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _showAccountDetails,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(lightForestGreenColor).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: Color(lightForestGreenColor),
+                    ),
+                  ),
+                ),
               ],
             ),
           ],

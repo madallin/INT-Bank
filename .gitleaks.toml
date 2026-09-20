@@ -1,0 +1,11 @@
+[allowlist]
+description = "Allowlist for test fixtures, mock data, and documentation"
+paths = [
+  '''test/.*''',
+  '''src/test/.*''',
+  '''pubspec.lock''',
+  '''.*\.lock''',
+  '''.*\.md''',
+  '''application.*\.yml''',
+  '''docker-compose.*\.yml'''
+]

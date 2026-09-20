@@ -260,7 +260,11 @@ class _$TokenRefreshResponseCopyWithImpl<
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? accessToken = null, Object? refreshToken = null, Object? userId = freezed}) {
+  $Res call({
+    Object? accessToken = null,
+    Object? refreshToken = null,
+    Object? userId = freezed,
+  }) {
     return _then(
       _value.copyWith(
             accessToken: null == accessToken
@@ -306,7 +310,11 @@ class __$$TokenRefreshResponseImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? accessToken = null, Object? refreshToken = null, Object? userId = freezed}) {
+  $Res call({
+    Object? accessToken = null,
+    Object? refreshToken = null,
+    Object? userId = freezed,
+  }) {
     return _then(
       _$TokenRefreshResponseImpl(
         accessToken: null == accessToken
@@ -329,7 +337,11 @@ class __$$TokenRefreshResponseImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$TokenRefreshResponseImpl implements _TokenRefreshResponse {
-  const _$TokenRefreshResponseImpl({required this.accessToken, required this.refreshToken, this.userId});
+  const _$TokenRefreshResponseImpl({
+    required this.accessToken,
+    required this.refreshToken,
+    this.userId,
+  });
 
   factory _$TokenRefreshResponseImpl.fromJson(Map<String, dynamic> json) =>
       _$$TokenRefreshResponseImplFromJson(json);
@@ -360,7 +372,8 @@ class _$TokenRefreshResponseImpl implements _TokenRefreshResponse {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, accessToken, refreshToken, userId);
+  int get hashCode =>
+      Object.hash(runtimeType, accessToken, refreshToken, userId);
 
   /// Create a copy of TokenRefreshResponse
   /// with the given fields replaced by the non-null parameter values.

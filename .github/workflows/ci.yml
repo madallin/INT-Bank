@@ -71,6 +71,10 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Setup environment config
+        working-directory: internet_banking
+        run: cp .env.example .env
+
       - name: Install Dependencies
         working-directory: internet_banking
         run: flutter pub get

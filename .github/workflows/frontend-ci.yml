@@ -27,7 +27,7 @@ jobs:
         env:
           SERVER_URL: ${{ secrets.SERVER_URL }}
         run: |
-          echo "SERVER_URL=$SERVER_URL" > .env
+          echo "SERVER_URL=${SERVER_URL:-localhost}" > .env
           echo "SERVER_PORT=443" >> .env
         working-directory: internet_banking
 

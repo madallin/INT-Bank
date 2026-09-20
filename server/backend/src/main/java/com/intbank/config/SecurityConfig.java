@@ -21,23 +21,43 @@ import java.util.Map;
 public class SecurityConfig
 {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    private final String jwtSecret;
+    private final com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider;
+
+    public SecurityConfig(@Value("${jwt.secret}") String jwtSecret,
+                          com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider)
+    {
+        this.jwtSecret = jwtSecret;
+        this.rsaKeyProvider = rsaKeyProvider;
+    }
+
+    @Bean
+    public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder()
+    {
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
-        ClientTokenFilter clientTokenFilter = new ClientTokenFilter(jwtSecret);
+        ClientTokenFilter clientTokenFilter = new ClientTokenFilter(jwtSecret, rsaKeyProvider);
 
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .headers(headers -> headers
+                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
+                .frameOptions(frame -> frame.deny())
+                .contentTypeOptions(content -> {})
+                .cacheControl(cache -> {})
+                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; script-src 'self'; frame-ancestors 'none';"))
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/health", "/actuator/health/**", "/error").permitAll()
                 .requestMatchers("/actuator/prometheus", "/actuator/metrics", "/actuator/info").permitAll()
-                .requestMatchers("/auth/**", "/login", "/register", "/2fa/**").permitAll()
+                .requestMatchers("/auth/**", "/auth-session/**", "/login", "/register", "/2fa/**", "/currency/**", "/ws/**", "/.well-known/**").permitAll()
                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
-                .requestMatchers("/transfers/**").authenticated()
+                .requestMatchers("/transfers/**", "/users/**").authenticated()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) ->

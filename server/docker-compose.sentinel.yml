@@ -1,0 +1,140 @@
+services:
+  redis-master:
+    image: redis:7-alpine
+    container_name: intbank-redis-master
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-master-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sentinel-network
+
+  redis-replica:
+    image: redis:7-alpine
+    container_name: intbank-redis-replica
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--replicaof", "redis-master", "6379"]
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-replica-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sentinel-network
+
+  redis-sentinel-1:
+    image: redis:7-alpine
+    container_name: intbank-redis-sentinel-1
+    restart: unless-stopped
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-replica:
+        condition: service_started
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cat > /data/sentinel.conf <<'EOF'
+        sentinel monitor mymaster redis-master 6379 2
+        sentinel down-after-milliseconds mymaster 2000
+        sentinel failover-timeout mymaster 5000
+        sentinel parallel-syncs mymaster 1
+        sentinel resolve-hostnames yes
+        EOF
+        exec redis-sentinel /data/sentinel.conf --port 26379
+    ports:
+      - "26379:26379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sentinel-network
+
+  redis-sentinel-2:
+    image: redis:7-alpine
+    container_name: intbank-redis-sentinel-2
+    restart: unless-stopped
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-replica:
+        condition: service_started
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cat > /data/sentinel.conf <<'EOF'
+        sentinel monitor mymaster redis-master 6379 2
+        sentinel down-after-milliseconds mymaster 2000
+        sentinel failover-timeout mymaster 5000
+        sentinel parallel-syncs mymaster 1
+        sentinel resolve-hostnames yes
+        EOF
+        exec redis-sentinel /data/sentinel.conf --port 26380
+    ports:
+      - "26380:26380"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26380", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sentinel-network
+
+  redis-sentinel-3:
+    image: redis:7-alpine
+    container_name: intbank-redis-sentinel-3
+    restart: unless-stopped
+    depends_on:
+      redis-master:
+        condition: service_healthy
+      redis-replica:
+        condition: service_started
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cat > /data/sentinel.conf <<'EOF'
+        sentinel monitor mymaster redis-master 6379 2
+        sentinel down-after-milliseconds mymaster 2000
+        sentinel failover-timeout mymaster 5000
+        sentinel parallel-syncs mymaster 1
+        sentinel resolve-hostnames yes
+        EOF
+        exec redis-sentinel /data/sentinel.conf --port 26381
+    ports:
+      - "26381:26381"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26381", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sentinel-network
+
+networks:
+  sentinel-network:
+    driver: bridge
+
+volumes:
+  redis-master-data:
+    driver: local
+  redis-replica-data:
+    driver: local

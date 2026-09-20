@@ -1,0 +1,38 @@
+groups:
+  - name: intbank-core-banking
+    rules:
+      - alert: HighHttpErrorRate
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+            /
+            sum(rate(http_server_requests_seconds_count[5m]))
+          ) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP 5xx error rate on INTBank API"
+          description: "More than 1% of HTTP responses over the last 5 minutes are 5xx errors on the INTBank backend."
+
+      - alert: P99LatencySpike
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum(rate(http_server_requests_seconds_bucket[5m])) by (le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "INTBank API p99 latency above 500ms"
+          description: "The 99th percentile of INTBank API request latency has exceeded 500ms for 5 minutes."
+
+      - alert: PotentialDoubleSpendDetected
+        expr: increase(intbank_redis_lock_acquisition_failures_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Potential double-spend detected"
+          description: "Redis account lock acquisition failures increased over the last 5 minutes, indicating lock contention or a possible double-spend attempt."

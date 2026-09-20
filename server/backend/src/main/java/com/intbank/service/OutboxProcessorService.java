@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class OutboxProcessorService
@@ -49,10 +50,17 @@ public class OutboxProcessorService
         for (OutboxJpaEntity msg : pending) {
             try {
                 if (kafkaEnabled) {
-                    kafkaTemplate.send(msg.getTopic(), msg.getPartitionKey(), msg.getPayload()).get();
-                    msg.setStatus("SENT");
-                    outboxRepo.save(msg);
-                    log.debug("Outbox message {} sent to topic {}", msg.getId(), msg.getTopic());
+                    try {
+                        kafkaTemplate.send(msg.getTopic(), msg.getPartitionKey(), msg.getPayload())
+                                .get(2, java.util.concurrent.TimeUnit.SECONDS);
+                        msg.setStatus("SENT");
+                        outboxRepo.save(msg);
+                        log.debug("Outbox message {} sent to topic {}", msg.getId(), msg.getTopic());
+                    } catch (Exception kafkaEx) {
+                        log.warn("Kafka publish unavailable ({}); falling back to local delivery for outbox message {}",
+                                kafkaEx.getMessage(), msg.getId());
+                        deliverLocally(msg);
+                    }
                 } else {
                     deliverLocally(msg);
                 }

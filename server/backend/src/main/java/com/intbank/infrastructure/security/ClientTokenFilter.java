@@ -22,10 +22,17 @@ public class ClientTokenFilter extends OncePerRequestFilter
 {
 
     private final SecretKey jwtSecret;
+    private final com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider;
+
+    public ClientTokenFilter(String jwtSecretRaw, com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider)
+    {
+        this.jwtSecret = Keys.hmacShaKeyFor(jwtSecretRaw.getBytes(StandardCharsets.UTF_8));
+        this.rsaKeyProvider = rsaKeyProvider;
+    }
 
     public ClientTokenFilter(String jwtSecretRaw)
     {
-        this.jwtSecret = Keys.hmacShaKeyFor(jwtSecretRaw.getBytes(StandardCharsets.UTF_8));
+        this(jwtSecretRaw, null);
     }
 
     @Override
@@ -34,7 +41,12 @@ public class ClientTokenFilter extends OncePerRequestFilter
         String path = request.getRequestURI();
         return path.equals("/health")
                 || path.startsWith("/actuator/health")
+                || path.startsWith("/actuator/")
                 || path.startsWith("/auth/")
+                || path.startsWith("/auth-session/")
+                || path.startsWith("/currency/")
+                || path.startsWith("/.well-known/")
+                || path.startsWith("/ws")
                 || path.equals("/login")
                 || path.equals("/register")
                 || path.startsWith("/2fa/")
@@ -55,8 +67,26 @@ public class ClientTokenFilter extends OncePerRequestFilter
         try
         {
             String token = authHeader.substring(7);
-            Claims claims = Jwts.parser().verifyWith(jwtSecret).build()
-                    .parseSignedClaims(token).getPayload();
+            Claims claims;
+            if (rsaKeyProvider != null)
+            {
+                try
+                {
+                    claims = Jwts.parser().verifyWith(rsaKeyProvider.getPublicKey()).build()
+                            .parseSignedClaims(token).getPayload();
+                }
+                catch (Exception rsaErr)
+                {
+                    // Fallback to HMAC
+                    claims = Jwts.parser().verifyWith(jwtSecret).build()
+                            .parseSignedClaims(token).getPayload();
+                }
+            }
+            else
+            {
+                claims = Jwts.parser().verifyWith(jwtSecret).build()
+                        .parseSignedClaims(token).getPayload();
+            }
 
             String deviceId = claims.getSubject();
             Long userId = claims.get("uid", Long.class);

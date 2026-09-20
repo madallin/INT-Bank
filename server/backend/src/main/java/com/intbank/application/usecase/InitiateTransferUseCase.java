@@ -35,11 +35,28 @@ public class InitiateTransferUseCase implements TransferUseCase
     private final OutboxJpaRepository outboxRepo;
     private final IdempotencyService idempotencyService;
     private final ObjectMapper objectMapper;
+    private final com.intbank.service.AmlVelocityService amlVelocityService;
+    private final com.intbank.service.AuditLogService auditLogService;
+    private final com.intbank.service.RedlockDistributedLockService distributedLockService;
     private TransferInitiatedEvent lastPublishedEvent;
 
     public InitiateTransferUseCase(EventPublisher eventPublisher, AccountRepository accountRepository,
                                    TransferRepository transferRepository, OutboxJpaRepository outboxRepo,
-                                   IdempotencyService idempotencyService, ObjectMapper objectMapper)
+                                   IdempotencyService idempotencyService, ObjectMapper objectMapper,
+                                   com.intbank.service.AmlVelocityService amlVelocityService,
+                                   com.intbank.service.AuditLogService auditLogService)
+    {
+        this(eventPublisher, accountRepository, transferRepository, outboxRepo,
+                idempotencyService, objectMapper, amlVelocityService, auditLogService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public InitiateTransferUseCase(EventPublisher eventPublisher, AccountRepository accountRepository,
+                                   TransferRepository transferRepository, OutboxJpaRepository outboxRepo,
+                                   IdempotencyService idempotencyService, ObjectMapper objectMapper,
+                                   com.intbank.service.AmlVelocityService amlVelocityService,
+                                   com.intbank.service.AuditLogService auditLogService,
+                                   @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.service.RedlockDistributedLockService distributedLockService)
     {
         this.eventPublisher = eventPublisher;
         this.accountRepository = accountRepository;
@@ -47,6 +64,9 @@ public class InitiateTransferUseCase implements TransferUseCase
         this.outboxRepo = outboxRepo;
         this.idempotencyService = idempotencyService;
         this.objectMapper = objectMapper;
+        this.amlVelocityService = amlVelocityService;
+        this.auditLogService = auditLogService;
+        this.distributedLockService = distributedLockService;
     }
 
     @Override
@@ -62,6 +82,14 @@ public class InitiateTransferUseCase implements TransferUseCase
 
         verifyOwnership(sourceAccount.userId(), request.fromIban());
 
+        // AML Velocity & Fraud Evaluation
+        var amlResult = amlVelocityService.evaluateTransfer(sourceAccount.userId(), request.amount(), request.currency());
+        if (amlResult.assessment() == com.intbank.service.AmlVelocityService.RiskAssessment.VELOCITY_LIMIT_EXCEEDED
+                || amlResult.assessment() == com.intbank.service.AmlVelocityService.RiskAssessment.DAILY_LIMIT_EXCEEDED)
+        {
+            throw new IllegalArgumentException("AML Alert: " + amlResult.message());
+        }
+
         String requestHash = IdempotencyService.hashRequest(
                 request.amount(), request.currency(), request.fromIban(), request.toIban(), request.reason());
 
@@ -72,7 +100,31 @@ public class InitiateTransferUseCase implements TransferUseCase
             case DUPLICATE_COMPLETED -> rebuildFromCached(decision.cachedResponsePayload(), idempotencyKey);
             case DUPLICATE_IN_PROGRESS -> throw new IllegalStateException(
                     "A transfer with the same Idempotency-Key is already being processed");
-            case PROCEED -> doInitiate(request, sourceAccount.id(), destAccount.id(), idempotencyKey);
+            case PROCEED ->
+            {
+                String lockKey = "account:lock:" + sourceAccount.id();
+                boolean locked = false;
+                if (distributedLockService != null)
+                {
+                    locked = distributedLockService.acquireLock(lockKey, 10);
+                    if (!locked)
+                    {
+                        throw new IllegalStateException(
+                                "Account " + request.fromIban() + " is currently locked by a concurrent transfer. Please retry.");
+                    }
+                }
+                try
+                {
+                    yield doInitiate(request, sourceAccount.id(), destAccount.id(), idempotencyKey);
+                }
+                finally
+                {
+                    if (distributedLockService != null && locked)
+                    {
+                        distributedLockService.releaseLock(lockKey);
+                    }
+                }
+            }
         };
     }
 
@@ -121,6 +173,13 @@ public class InitiateTransferUseCase implements TransferUseCase
 
             log.info("Initiated transfer [{}] {} -> {} | {} {} (idempotency {})",
                     trackingId, request.fromIban(), request.toIban(), request.amount(), currency, idempotencyKey);
+
+            auditLogService.log(
+                    null,
+                    "TRANSFER_INITIATED",
+                    "Transfer " + trackingId + ": " + request.fromIban() + " -> " + request.toIban() + " | " + request.amount() + " " + currency,
+                    "127.0.0.1"
+            );
 
             InitiateTransferResponse response = new InitiateTransferResponse(
                     trackingId,

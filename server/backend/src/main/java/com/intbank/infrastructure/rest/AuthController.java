@@ -58,12 +58,9 @@ public class AuthController
                     .signWith(jwtSecret);
             if (userIdRaw != null && !userIdRaw.isBlank()) {
                 builder.claim("uid", Long.parseLong(userIdRaw));
+                redisTemplate.opsForValue().set("refresh:uid:" + deviceId, userIdRaw, 15, TimeUnit.MINUTES);
             }
-            if (rolesRaw != null && !rolesRaw.isBlank()) {
-                builder.claim("roles", List.of(rolesRaw.split(",")));
-            } else {
-                builder.claim("roles", List.of("ROLE_USER"));
-            }
+            builder.claim("roles", List.of("ROLE_USER"));
             String clientToken = builder.compact();
 
             byte[] refreshBytes = new byte[32];
@@ -75,7 +72,7 @@ public class AuthController
             return Map.of("client_token", clientToken, "refresh_token", refreshToken);
         } catch (Exception err) {
             log.error("Error generating client token", err);
-            return Map.of("statusCode", 500, "error", "Server error generating token");
+            return Map.of("statusCode", 500, "error", "Eroare de server la generarea token-ului");
         }
     }
 
@@ -85,12 +82,12 @@ public class AuthController
         String deviceId = body.get("deviceId");
         String refreshToken = body.get("refreshToken");
         if (deviceId == null || refreshToken == null) {
-            return Map.of("statusCode", 400, "error", "Missing parameters");
+            return Map.of("statusCode", 400, "error", "Parametri lipsă");
         }
         try {
             String stored = redisTemplate.opsForValue().get("refresh:" + deviceId);
             if (stored == null || !stored.equals(refreshToken)) {
-                return Map.of("statusCode", 401, "error", "Invalid or expired refresh token");
+                return Map.of("statusCode", 401, "error", "Token de reîmprospătare invalid sau expirat");
             }
             var builder = Jwts.builder()
                     .subject(deviceId)
@@ -98,11 +95,17 @@ public class AuthController
                     .expiration(new Date(System.currentTimeMillis() + 300_000))
                     .signWith(jwtSecret)
                     .claim("roles", List.of("ROLE_USER"));
+
+            String storedUid = redisTemplate.opsForValue().get("refresh:uid:" + deviceId);
+            if (storedUid != null && !storedUid.isBlank()) {
+                builder.claim("uid", Long.parseLong(storedUid));
+            }
+
             String newToken = builder.compact();
             return Map.of("client_token", newToken, "ttl", 300);
         } catch (Exception err) {
             log.error("Error refreshing client token", err);
-            return Map.of("statusCode", 500, "error", "Server error");
+            return Map.of("statusCode", 500, "error", "Eroare internă de server");
         }
     }
 
@@ -111,13 +114,13 @@ public class AuthController
     {
         String phone = body.get("phone");
         if (phone == null) {
-            return Map.of("statusCode", 400, "error", "Numar de telefon lipsa");
+            return Map.of("statusCode", 400, "error", "Număr de telefon lipsă");
         }
 
         String lastSentKey = "otp:sms:last:" + phone;
         String lastSent = redisTemplate.opsForValue().get(lastSentKey);
         if (lastSent != null && System.currentTimeMillis() - Long.parseLong(lastSent) < 60_000) {
-            return Map.of("statusCode", 429, "error", "Asteapta 1 minut inainte de a solicita un nou cod");
+            return Map.of("statusCode", 429, "error", "Așteaptă 1 minut înainte de a solicita un nou cod");
         }
 
         try {

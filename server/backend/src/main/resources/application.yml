@@ -70,7 +70,7 @@ spring:
         spring.json.trusted.packages: "com.intbank.core.domain.event"
     listener:
       ack-mode: manual
-      auto-startup: ${KAFKA_LISTENER_AUTO_START:false}
+      auto-startup: ${KAFKA_LISTENER_AUTO_START:true}
     client-id: ${KAFKA_CLIENT_ID:banking-producer}
     properties:
       security.protocol: ${KAFKA_SECURITY_PROTOCOL:SASL_SSL}
@@ -86,7 +86,7 @@ spring:
 # Feature flags
 app:
   kafka:
-    enabled: ${KAFKA_ENABLED:true}
+    enabled: ${KAFKA_ENABLED:false}
 
 # Twilio Configuration
 twilio:
@@ -112,6 +112,30 @@ hmac:
 # Geoapify
 geoapify:
   key: ${GEOAPIFY_KEY:}
+
+# Resilience4j Circuit Breakers
+resilience4j:
+  circuitbreaker:
+    instances:
+      currencyService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+      smsService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+      geocodingService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
 
 # Cors
 cors:
@@ -152,3 +176,8 @@ management:
     metrics:
       export:
         enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+    propagation:
+      type: W3C

@@ -32,18 +32,36 @@ public class ProcessTransferUseCase
     private final LedgerRepository ledgerRepository;
     private final OutboxJpaRepository outboxRepo;
     private final ObjectMapper objectMapper;
+    private final com.intbank.service.NotificationService notificationService;
+    private final com.intbank.service.RedlockDistributedLockService distributedLockService;
 
     public ProcessTransferUseCase(AccountRepository accountRepository,
                                   TransferRepository transferRepository,
                                   LedgerRepository ledgerRepository,
                                   OutboxJpaRepository outboxRepo,
-                                  ObjectMapper objectMapper)
+                                  ObjectMapper objectMapper,
+                                  com.intbank.service.NotificationService notificationService)
+    {
+        this(accountRepository, transferRepository, ledgerRepository, outboxRepo,
+                objectMapper, notificationService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ProcessTransferUseCase(AccountRepository accountRepository,
+                                  TransferRepository transferRepository,
+                                  LedgerRepository ledgerRepository,
+                                  OutboxJpaRepository outboxRepo,
+                                  ObjectMapper objectMapper,
+                                  com.intbank.service.NotificationService notificationService,
+                                  @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.service.RedlockDistributedLockService distributedLockService)
     {
         this.accountRepository = accountRepository;
         this.transferRepository = transferRepository;
         this.ledgerRepository = ledgerRepository;
         this.outboxRepo = outboxRepo;
         this.objectMapper = objectMapper;
+        this.notificationService = notificationService;
+        this.distributedLockService = distributedLockService;
     }
 
     public void execute(TransferInitiatedEvent event)
@@ -69,71 +87,97 @@ public class ProcessTransferUseCase
             log.warn("Transfer [{}] exists with status {}. Will retry processing.", transferId, t.status());
         }
 
-        transferRepository.save(new TransferRepository.TransferProjection(
-                transferId, fromAccountId, toAccountId, amount, currency,
-                reason, TransferStatus.PENDING, event.timestamp(), null, null));
-
-        try
+        String lockKey = "account:lock:" + fromAccountId;
+        boolean lockAcquired = false;
+        if (distributedLockService != null)
         {
-            Thread.sleep(2000); // Simulated 2s payment processing delay
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-        }
-
-        try
-        {
-            accountRepository.runInTransaction(() ->
+            lockAcquired = distributedLockService.acquireLock(lockKey, 15);
+            if (!lockAcquired)
             {
-                var sender = accountRepository.findByIdWithLock(fromAccountId)
-                        .orElseThrow(() -> new IllegalStateException(
-                                "Sender account " + fromAccountId + " not found (transfer " + transferId + ")"));
-
-                var receiver = accountRepository.findByIdWithLock(toAccountId)
-                        .orElseThrow(() -> new IllegalStateException(
-                                "Receiver account " + toAccountId + " not found (transfer " + transferId + ")"));
-
-                if (!sender.moneda().equals(currency))
-                {
-                    throw new IllegalStateException(
-                            "Sender currency mismatch: account is " + sender.moneda() + ", transfer is " + currency);
-                }
-
-                if (sender.sold().compareTo(amount) < 0)
-                {
-                    throw new IllegalStateException(
-                            "Insufficient funds: balance " + sender.sold() + " " + currency
-                                    + ", required " + amount + " " + currency);
-                }
-
-                BigDecimal newSenderBalance = sender.sold().subtract(amount).setScale(2, RoundingMode.HALF_EVEN);
-                BigDecimal newReceiverBalance = receiver.sold().add(amount).setScale(2, RoundingMode.HALF_EVEN);
-
-                accountRepository.updateBalance(fromAccountId, newSenderBalance);
-                accountRepository.updateBalance(toAccountId, newReceiverBalance);
-
-                // Double-entry ledger: immutable debit + credit postings.
-                ledgerRepository.postEntry(transferId, Long.parseLong(fromAccountId), "DEBIT", amount, currency);
-                ledgerRepository.postEntry(transferId, Long.parseLong(toAccountId), "CREDIT", amount, currency);
-
-                transferRepository.updateStatusWithEntity(transferId, TransferStatus.COMPLETED, Instant.now(), null);
-
-                // Completion event persisted to outbox in the same transaction.
-                outboxRepo.save(toOutbox(new TransferCompletedEvent(
-                        transferId, fromAccountId, toAccountId,
-                        event.fromIban(), event.toIban(), amount, currency, Instant.now())));
-
-                log.info("Transfer [{}] funds moved: {} (-{}) {} (+{})",
-                        transferId, fromAccountId, amount, toAccountId, amount);
-                return null;
-            });
+                log.warn("Failed to acquire distributed lock on {} for transfer [{}]. Retrying via broker.", lockKey, transferId);
+                throw new IllegalStateException("Could not acquire distributed lock for " + lockKey + ", transfer: " + transferId);
+            }
         }
-        catch (Exception error)
+
+        try
         {
-            String errMsg = error.getMessage() != null ? error.getMessage() : "Unknown processing error";
-            log.error("Transfer [{}] failed: {}", transferId, errMsg, error);
-            markFailed(transferId, fromAccountId, toAccountId, event, errMsg);
+            transferRepository.save(new TransferRepository.TransferProjection(
+                    transferId, fromAccountId, toAccountId, amount, currency,
+                    reason, TransferStatus.PENDING, event.timestamp(), null, null));
+
+            // Direct execution without artificial delay
+
+            try
+            {
+                accountRepository.runInTransaction(() ->
+                {
+                    var sender = accountRepository.findByIdWithLock(fromAccountId)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Sender account " + fromAccountId + " not found (transfer " + transferId + ")"));
+
+                    var receiver = accountRepository.findByIdWithLock(toAccountId)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Receiver account " + toAccountId + " not found (transfer " + transferId + ")"));
+
+                    if (!sender.moneda().equals(currency))
+                    {
+                        throw new IllegalStateException(
+                                "Sender currency mismatch: account is " + sender.moneda() + ", transfer is " + currency);
+                    }
+
+                    if (sender.sold().compareTo(amount) < 0)
+                    {
+                        throw new IllegalStateException(
+                                "Insufficient funds: balance " + sender.sold() + " " + currency
+                                        + ", required " + amount + " " + currency);
+                    }
+
+                    BigDecimal newSenderBalance = sender.sold().subtract(amount).setScale(2, RoundingMode.HALF_EVEN);
+                    BigDecimal newReceiverBalance = receiver.sold().add(amount).setScale(2, RoundingMode.HALF_EVEN);
+
+                    accountRepository.updateBalance(fromAccountId, newSenderBalance);
+                    accountRepository.updateBalance(toAccountId, newReceiverBalance);
+
+                    // Double-entry ledger: immutable debit + credit postings.
+                    ledgerRepository.postEntry(transferId, Long.parseLong(fromAccountId), "DEBIT", amount, currency);
+                    ledgerRepository.postEntry(transferId, Long.parseLong(toAccountId), "CREDIT", amount, currency);
+
+                    transferRepository.updateStatusWithEntity(transferId, TransferStatus.COMPLETED, Instant.now(), null);
+
+                    // Notifications for sender and receiver
+                    if (receiver.userId() != null)
+                    {
+                        notificationService.notify(receiver.userId(),
+                                "Bani primiți: +" + amount + " " + currency,
+                                "Ai primit un transfer de la " + event.fromIban() + " cu motivul: " + reason,
+                                "TRANSFER_RECEIVED");
+                    }
+                    if (sender.userId() != null)
+                    {
+                        notificationService.notify(sender.userId(),
+                                "Transfer trimis: -" + amount + " " + currency,
+                                "Transferul către " + event.toIban() + " a fost finalizat cu succes.",
+                                "TRANSFER_SENT");
+                    }
+
+                    log.info("Transfer [{}] funds moved: {} (-{}) {} (+{})",
+                            transferId, fromAccountId, amount, toAccountId, amount);
+                    return null;
+                });
+            }
+            catch (Exception error)
+            {
+                String errMsg = error.getMessage() != null ? error.getMessage() : "Unknown processing error";
+                log.error("Transfer [{}] failed: {}", transferId, errMsg, error);
+                markFailed(transferId, fromAccountId, toAccountId, event, errMsg);
+            }
+        }
+        finally
+        {
+            if (distributedLockService != null && lockAcquired)
+            {
+                distributedLockService.releaseLock(lockKey);
+            }
         }
     }
 

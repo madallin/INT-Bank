@@ -58,6 +58,15 @@ public class UserJpaEntity
     @Column(name = "termeni_acceptati")
     private Boolean termeniAcceptati = false;
 
+    @Column(name = "cod_pin")
+    private String codPin;
+
+    @Column(name = "pin_failed_attempts")
+    private Integer pinFailedAttempts = 0;
+
+    @Column(name = "pin_locked_until")
+    private java.time.Instant pinLockedUntil;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<AccountJpaEntity> accounts = new ArrayList<>();
 
@@ -282,5 +291,35 @@ public class UserJpaEntity
     public void setCards(List<CardJpaEntity> cards)
     {
         this.cards = cards;
+    }
+
+    public String getCodPin()
+    {
+        return codPin;
+    }
+
+    public void setCodPin(String codPin)
+    {
+        this.codPin = codPin;
+    }
+
+    public Integer getPinFailedAttempts()
+    {
+        return pinFailedAttempts != null ? pinFailedAttempts : 0;
+    }
+
+    public void setPinFailedAttempts(Integer pinFailedAttempts)
+    {
+        this.pinFailedAttempts = pinFailedAttempts;
+    }
+
+    public java.time.Instant getPinLockedUntil()
+    {
+        return pinLockedUntil;
+    }
+
+    public void setPinLockedUntil(java.time.Instant pinLockedUntil)
+    {
+        this.pinLockedUntil = pinLockedUntil;
     }
 }

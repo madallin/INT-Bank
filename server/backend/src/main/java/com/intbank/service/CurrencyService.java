@@ -13,6 +13,7 @@ public class CurrencyService
     private static final String FRANKFURTER_API = "https://api.frankfurter.dev/v2/latest";
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "currencyService", fallbackMethod = "convertCurrencyFallback")
     public double convertCurrency(double amount, String fromCurrency, String toCurrency)
     {
         if (fromCurrency.equals(toCurrency)) return amount;
@@ -32,5 +33,23 @@ public class CurrencyService
             log.error("Error converting currency", err);
             throw new RuntimeException("Currency conversion failed", err);
         }
+    }
+
+    public double convertCurrencyFallback(double amount, String fromCurrency, String toCurrency, Throwable t)
+    {
+        log.warn("Circuit Breaker OPEN or API Failed for FX. Using fallback static conversion. Reason: {}", t.getMessage());
+        if (fromCurrency.equals(toCurrency)) return amount;
+
+        double fallbackRate = switch (toCurrency) {
+            case "EUR" -> 0.201;
+            case "USD" -> 0.218;
+            case "GBP" -> 0.171;
+            default -> 1.0;
+        };
+        if ("EUR".equals(fromCurrency)) fallbackRate = 4.97;
+        if ("USD".equals(fromCurrency)) fallbackRate = 4.58;
+        if ("GBP".equals(fromCurrency)) fallbackRate = 5.85;
+
+        return Math.round(amount * fallbackRate * 100.0) / 100.0;
     }
 }

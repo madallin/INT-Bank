@@ -20,11 +20,15 @@ public class KafkaEventConsumer
 
     private final ProcessTransferUseCase processTransferUseCase;
     private final ObjectMapper objectMapper;
+    private final com.intbank.infrastructure.persistence.repository.ProcessedEventJpaRepository processedEventRepo;
 
-    public KafkaEventConsumer(ProcessTransferUseCase processTransferUseCase, ObjectMapper objectMapper)
+    public KafkaEventConsumer(ProcessTransferUseCase processTransferUseCase,
+                              ObjectMapper objectMapper,
+                              com.intbank.infrastructure.persistence.repository.ProcessedEventJpaRepository processedEventRepo)
     {
         this.processTransferUseCase = processTransferUseCase;
         this.objectMapper = objectMapper;
+        this.processedEventRepo = processedEventRepo;
     }
 
     @KafkaListener(
@@ -34,17 +38,44 @@ public class KafkaEventConsumer
     )
     public void onTransferInitiated(ConsumerRecord<String, Object> record, Acknowledgment ack)
     {
+        String eventKey = record.topic() + ":" + record.partition() + ":" + record.offset();
         try {
             log.info("Received transfer.initiated event [key={}, offset={}]", record.key(), record.offset());
 
+            if (processedEventRepo.existsById(eventKey))
+            {
+                log.info("Duplicate Kafka event detected [key={}], skipping and acknowledging", eventKey);
+                ack.acknowledge();
+                return;
+            }
+
             TransferInitiatedEvent event = objectMapper.convertValue(toMap(record.value()), TransferInitiatedEvent.class);
             processTransferUseCase.execute(event);
+
+            var processed = new com.intbank.infrastructure.persistence.entity.ProcessedEventJpaEntity();
+            processed.setEventKey(eventKey);
+            processed.setTopic(record.topic());
+            processed.setKafkaOffset(record.offset());
+            processed.setProcessedAt(java.time.Instant.now());
+            processedEventRepo.save(processed);
+
             ack.acknowledge();
         } catch (Exception e) {
             log.error("Error processing transfer.initiated event: {}", e.getMessage(), e);
-            // Don't acknowledge - message will be retried
+            // Don't acknowledge - message will be retried and routed to DLT
             throw new RuntimeException("Failed to process transfer event", e);
         }
+    }
+
+    @KafkaListener(
+        topics = "transfer.initiated.DLT",
+        groupId = "${spring.kafka.consumer.group-id}-dlt"
+    )
+    public void onTransferInitiatedDlt(ConsumerRecord<String, Object> record, Acknowledgment ack)
+    {
+        log.error("ALERT_SRE_DLT: Received dead-letter event on {}. Offset: {}, Key: {}, Payload: {}",
+                record.topic(), record.offset(), record.key(), record.value());
+        ack.acknowledge();
     }
 
     @SuppressWarnings("unchecked")

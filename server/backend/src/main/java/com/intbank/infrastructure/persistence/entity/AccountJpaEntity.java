@@ -34,6 +34,10 @@ public class AccountJpaEntity
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
+
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     private List<CardJpaEntity> cards = new ArrayList<>();
 
@@ -120,6 +124,16 @@ public class AccountJpaEntity
     public void setCards(List<CardJpaEntity> cards)
     {
         this.cards = cards;
+    }
+
+    public Long getVersion()
+    {
+        return version;
+    }
+
+    public void setVersion(Long version)
+    {
+        this.version = version;
     }
 
     @PrePersist

@@ -23,7 +23,7 @@ public class CardJpaEntity
     @Column(name = "numar_card", nullable = false)
     private String numarCard;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String cvv;
 
     @Column(name = "data_expirare", nullable = false)

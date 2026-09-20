@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -17,6 +18,8 @@ public interface AccountJpaRepository extends JpaRepository<AccountJpaEntity, Lo
 {
 
     Optional<AccountJpaEntity> findByIBAN(String iban);
+
+    List<AccountJpaEntity> findByUser_Id(Long userId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM AccountJpaEntity a WHERE a.id = :id")

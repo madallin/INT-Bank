@@ -1,0 +1,143 @@
+name: Enterprise DevSecOps CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret and Credential Leak Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks Secret Scanner
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: TruffleHog Secret Scanner
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --only-verified
+
+  backend-ci:
+    name: Backend Build, Test and Container Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run Backend Unit Tests
+        working-directory: server/backend
+        run: mvn -B clean test
+
+      - name: Run Transfer Concurrency Stress Test
+        working-directory: server/backend
+        run: mvn -B test -Dtest=TransferConcurrencyStressTest -DfailIfNoTests=false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: server/backend
+          push: false
+          load: true
+          tags: intbank-backend:devsecops-scan
+
+      - name: Trivy Container Vulnerability Scan (SARIF)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'intbank-backend:devsecops-scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy SARIF Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sarif-report
+          path: trivy-results.sarif
+          if-no-files-found: warn
+
+      - name: Trivy Container Vulnerability Gate
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'intbank-backend:devsecops-scan'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  mobile-ci:
+    name: Mobile Flutter Analyze and Security Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: internet_banking
+        run: flutter pub get
+
+      - name: Analyze Flutter Code
+        working-directory: internet_banking
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run Flutter Security Test Suite
+        working-directory: internet_banking
+        run: flutter test test/core/network/ssl_pinning_service_test.dart test/core/security/device_integrity_service_test.dart
+
+  helm-lint:
+    name: Kubernetes Helm Chart Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Lint Helm Chart
+        run: helm lint k8s/helm/intbank
+
+      - name: Helm Template Validation
+        run: helm template intbank k8s/helm/intbank > /dev/null

@@ -9,6 +9,11 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  strategy:
+    type: {{ .Values.strategy.type }}
+    rollingUpdate:
+      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
   selector:
     matchLabels:
       {{- include "intbank.selectorLabels" . | nindent 6 }}
@@ -43,6 +48,15 @@ spec:
             capabilities:
               drop:
                 - ALL
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.livenessPath }}
+              port: http
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          {{- end }}
           readinessProbe:
             httpGet:
               path: {{ .Values.probes.readinessPath }}
@@ -74,6 +88,13 @@ spec:
       {{- if .Values.podAntiAffinity.enabled }}
       affinity:
         podAntiAffinity:
+          {{- if .Values.podAntiAffinity.required }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  {{- include "intbank.selectorLabels" . | nindent 18 }}
+              topologyKey: kubernetes.io/hostname
+          {{- else }}
           preferredDuringSchedulingIgnoredDuringExecution:
             - weight: 100
               podAffinityTerm:
@@ -81,6 +102,7 @@ spec:
                   matchLabels:
                     {{- include "intbank.selectorLabels" . | nindent 20 }}
                 topologyKey: kubernetes.io/hostname
+          {{- end }}
       {{- end }}
       {{- if .Values.topologySpread.enabled }}
       topologySpreadConstraints:

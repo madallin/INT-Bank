@@ -46,11 +46,14 @@ spec:
           port: 6379
         - protocol: TCP
           port: 9092
-    # External HTTPS for Twilio / OTP / tokenisation vaults.
+    {{- if .Values.networkPolicy.allowExternalHttps }}
+    # Opt-in external HTTPS for Twilio / OTP / tokenisation vaults.
+    # Disabled by default so arbitrary egress is blocked (allowExternalHttps=false).
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
       ports:
         - protocol: TCP
           port: 443
+    {{- end }}
 {{- end -}}

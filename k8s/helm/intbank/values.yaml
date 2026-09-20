@@ -11,6 +11,12 @@ image:
 
 replicaCount: 3
 
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: "25%"
+    maxUnavailable: 0
+
 serviceAccount:
   create: true
   name: ""            # auto-derived from fullname when empty
@@ -42,6 +48,12 @@ probes:
   timeoutSeconds: 5
   failureThreshold: 3
 
+startupProbe:
+  enabled: true
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 24
+
 # Pod scheduling: spread across nodes and zones, never co-locate two replicas.
 topologySpread:
   enabled: true
@@ -49,14 +61,17 @@ topologySpread:
   topologyKey: topology.kubernetes.io/zone
 podAntiAffinity:
   enabled: true
+  # When required=true use hard anti-affinity (one replica per node); otherwise
+  # fall back to soft preferred anti-affinity.
+  required: true
 
 podDisruptionBudget:
   enabled: true
-  minAvailable: 2
+  minAvailable: 1
 
 autoscaling:
   enabled: true
-  minReplicas: 3
+  minReplicas: 2
   maxReplicas: 10
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 80
@@ -117,10 +132,22 @@ ingress:
     clusterIssuer: letsencrypt-prod   # cert-manager ClusterIssuer
     secretName: intbank-tls
 
+# ---- NGINX canary release (weighted traffic splitting) ----
+# Creates a second Ingress annotated as an NGINX canary that receives
+# `weight` percent of traffic before a full rollout.
+canary:
+  enabled: true
+  weight: 10
+  service: ""            # empty -> route to the main backend service
+  byHeader: "X-Canary"   # header that forces traffic to the canary when present
+
 networkPolicy:
   enabled: true
   # Namespace the Ingress controller runs in (egress from controller -> backend).
   ingressNamespace: ingress-nginx
+  # Optional unrestricted HTTPS egress for Twilio / OTP / tokenisation vaults.
+  # Disabled by default: only PostgreSQL, Redis, Kafka and DNS are reachable.
+  allowExternalHttps: false
 
 # Name of the namespace the backend expects for its dependencies (postgres/redis/kafka).
 dependencyNamespace: intbank

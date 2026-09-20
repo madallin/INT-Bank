@@ -40,3 +40,11 @@ build/
 # --- Build output --- 
 dist/ 
 *.tsbuildinfo
+
+# --- Local Production Plans & Drafts ---
+plans/
+docs/production_plans/
+
+# --- Java / Maven ---
+target/
+server/backend/target/

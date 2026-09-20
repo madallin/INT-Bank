@@ -1,0 +1,32 @@
+{{- if .Values.canary.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "intbank.fullname" . }}-canary
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "intbank.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: {{ .Values.canary.weight | quote }}
+    nginx.ingress.kubernetes.io/canary-by-header: {{ .Values.canary.byHeader | quote }}
+spec:
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host | quote }}
+      secretName: {{ .Values.ingress.tls.secretName | quote }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.path | quote }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ default (include "intbank.fullname" .) .Values.canary.service }}
+                port:
+                  number: {{ .Values.containerPort }}
+{{- end -}}

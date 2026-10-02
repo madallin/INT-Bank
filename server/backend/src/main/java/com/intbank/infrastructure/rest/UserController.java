@@ -26,19 +26,33 @@ public class UserController
     private final UserJpaRepository userRepo;
     private final BankingService bankingService;
     private final PasswordEncoder passwordEncoder;
+    private final com.intbank.infrastructure.security.SecurityGuard securityGuard;
 
     public UserController(UserJpaRepository userRepo,
                           BankingService bankingService,
                           PasswordEncoder passwordEncoder)
     {
+        this(userRepo, bankingService, passwordEncoder, null);
+    }
+
+    public UserController(UserJpaRepository userRepo,
+                          BankingService bankingService,
+                          PasswordEncoder passwordEncoder,
+                          @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.infrastructure.security.SecurityGuard securityGuard)
+    {
         this.userRepo = userRepo;
         this.bankingService = bankingService;
         this.passwordEncoder = passwordEncoder;
+        this.securityGuard = securityGuard;
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getUserProfile(@PathVariable("id") Long id)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(id))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         return userRepo.findById(id)
                 .map(user -> {
                     Map<String, Object> map = new LinkedHashMap<>();
@@ -65,6 +79,10 @@ public class UserController
     @GetMapping("/{id}/has-tos")
     public ResponseEntity<Map<String, Object>> hasTos(@PathVariable("id") Long id)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(id))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         return userRepo.findById(id)
                 .map(u -> ResponseEntity.ok(Map.<String, Object>of("termeniAcceptati", Boolean.TRUE.equals(u.getTermeniAcceptati()))))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Utilizator inexistent")));
@@ -74,6 +92,10 @@ public class UserController
     @Transactional
     public ResponseEntity<Map<String, Object>> acceptTos(@PathVariable("id") Long id)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(id))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         var userOpt = userRepo.findById(id);
         if (userOpt.isEmpty())
         {
@@ -88,6 +110,10 @@ public class UserController
     @GetMapping("/{id}/has-approved")
     public ResponseEntity<Map<String, Object>> hasApproved(@PathVariable("id") Long id)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(id))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         return userRepo.findById(id)
                 .map(u -> ResponseEntity.ok(Map.<String, Object>of("contaprobat", Boolean.TRUE.equals(u.getContAprobat()))))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Utilizator inexistent")));
@@ -97,6 +123,10 @@ public class UserController
     @Transactional
     public ResponseEntity<Map<String, Object>> approveUser(@PathVariable("id") Long id)
     {
+        if (securityGuard != null && !securityGuard.isAdmin())
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Doar administratorii pot aproba conturi"));
+        }
         var userOpt = userRepo.findById(id);
         if (userOpt.isEmpty())
         {
@@ -129,6 +159,10 @@ public class UserController
     @GetMapping("/{id}/has-pin")
     public ResponseEntity<Map<String, Object>> hasPin(@PathVariable("id") Long id)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(id))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         return userRepo.findById(id)
                 .map(u -> ResponseEntity.ok(Map.<String, Object>of("hasPin", u.getCodPin() != null && !u.getCodPin().isBlank())))
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Utilizator inexistent")));
@@ -138,6 +172,10 @@ public class UserController
     @Transactional
     public ResponseEntity<Map<String, Object>> setPin(@PathVariable("id") Long id, @RequestBody Map<String, String> body)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(id))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         String pin = body.get("codPin");
         if (pin == null || pin.isBlank())
         {
@@ -167,6 +205,10 @@ public class UserController
     @Transactional
     public ResponseEntity<Map<String, Object>> verifyPin(@PathVariable("id") Long id, @RequestBody Map<String, String> body)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(id))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         String pin = body.get("pin");
         if (pin == null || pin.isBlank())
         {

@@ -262,8 +262,7 @@ public class InitiateTransferUseCase implements TransferUseCase
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof AuthenticatedClient client) || client.userId() == null)
         {
-            log.warn("Ownership check skipped for {}: no authenticated user context", fromIban);
-            return;
+            throw new SecurityException("Authentication context required: cannot verify ownership for " + fromIban);
         }
         if (!client.userId().equals(accountUserId))
         {

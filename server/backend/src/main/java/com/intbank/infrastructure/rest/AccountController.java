@@ -26,21 +26,36 @@ public class AccountController
     private final UserJpaRepository userRepo;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    private final com.intbank.infrastructure.security.SecurityGuard securityGuard;
 
     public AccountController(AccountJpaRepository accountRepo,
                              UserJpaRepository userRepo,
                              AuditLogService auditLogService,
                              NotificationService notificationService)
     {
+        this(accountRepo, userRepo, auditLogService, notificationService, null);
+    }
+
+    public AccountController(AccountJpaRepository accountRepo,
+                             UserJpaRepository userRepo,
+                             AuditLogService auditLogService,
+                             NotificationService notificationService,
+                             @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.infrastructure.security.SecurityGuard securityGuard)
+    {
         this.accountRepo = accountRepo;
         this.userRepo = userRepo;
         this.auditLogService = auditLogService;
         this.notificationService = notificationService;
+        this.securityGuard = securityGuard;
     }
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAccounts(@PathVariable("userId") Long userId)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         List<AccountJpaEntity> accounts = accountRepo.findByUser_Id(userId);
         var mapped = accounts.stream().map(this::toMap).toList();
         return ResponseEntity.ok(Map.of("accounts", mapped));
@@ -51,6 +66,10 @@ public class AccountController
             @PathVariable("userId") Long userId,
             @RequestBody Map<String, String> body)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         String currency = body.getOrDefault("currency", "EUR").toUpperCase();
         if (!List.of("EUR", "USD", "GBP", "RON").contains(currency))
         {
@@ -91,6 +110,10 @@ public class AccountController
             @PathVariable("userId") Long userId,
             @PathVariable("accountId") Long accountId)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         return accountRepo.findById(accountId)
                 .filter(a -> a.getUserId() != null && a.getUserId().equals(userId))
                 .map(a -> ResponseEntity.ok(Map.<String, Object>of("account", toMap(a))))

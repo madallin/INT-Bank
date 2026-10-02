@@ -21,18 +21,30 @@ public class CardController
     private final CryptoService cryptoService;
     private final AuditLogService auditLogService;
     private final com.intbank.service.NotificationService notificationService;
+    private final com.intbank.infrastructure.security.SecurityGuard securityGuard;
 
     public CardController(CardJpaRepository cardRepo, CryptoService cryptoService, AuditLogService auditLogService, com.intbank.service.NotificationService notificationService)
+    {
+        this(cardRepo, cryptoService, auditLogService, notificationService, null);
+    }
+
+    public CardController(CardJpaRepository cardRepo, CryptoService cryptoService, AuditLogService auditLogService, com.intbank.service.NotificationService notificationService,
+                          @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.infrastructure.security.SecurityGuard securityGuard)
     {
         this.cardRepo = cardRepo;
         this.cryptoService = cryptoService;
         this.auditLogService = auditLogService;
         this.notificationService = notificationService;
+        this.securityGuard = securityGuard;
     }
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCards(@PathVariable("userId") Long userId)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         List<CardJpaEntity> cards = cardRepo.findByUser_Id(userId);
         var mapped = cards.stream().map(this::toMap).toList();
         return ResponseEntity.ok(Map.of("cards", mapped));
@@ -43,6 +55,10 @@ public class CardController
             @PathVariable("userId") Long userId,
             @PathVariable("cardId") Long cardId)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         return cardRepo.findById(cardId)
                 .filter(c -> c.getUserId() != null && c.getUserId().equals(userId))
                 .map(c -> ResponseEntity.ok(Map.<String, Object>of("card", toMap(c))))
@@ -54,6 +70,10 @@ public class CardController
             @PathVariable("userId") Long userId,
             @PathVariable("cardId") Long cardId)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         var cardOpt = cardRepo.findById(cardId).filter(c -> c.getUserId() != null && c.getUserId().equals(userId));
         if (cardOpt.isEmpty())
         {
@@ -69,6 +89,10 @@ public class CardController
             @PathVariable("userId") Long userId,
             @PathVariable("cardId") Long cardId)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         var cardOpt = cardRepo.findById(cardId).filter(c -> c.getUserId() != null && c.getUserId().equals(userId));
         if (cardOpt.isEmpty())
         {
@@ -85,15 +109,27 @@ public class CardController
             @PathVariable("cardId") Long cardId,
             @RequestBody Map<String, Object> body)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         var cardOpt = cardRepo.findById(cardId).filter(c -> c.getUserId() != null && c.getUserId().equals(userId));
         if (cardOpt.isEmpty())
         {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Card inexistent"));
         }
         Number newLimit = (Number) body.getOrDefault("spendingLimit", 5000.0);
-        auditLogService.log(userId, "CARD_LIMIT_CHANGED", "Card ID " + cardId + " new limit: " + newLimit, "127.0.0.1");
-        notificationService.notify(userId, "Limită card actualizată", "Noua limită zilnică de tranzacții este de " + newLimit + " RON.", "SECURITY_ALERT");
-        return ResponseEntity.ok(Map.of("success", true, "cardId", cardId, "spendingLimit", newLimit.doubleValue()));
+        Boolean onlinePayments = body.containsKey("onlinePayments") ? (Boolean) body.get("onlinePayments") : true;
+        Boolean contactless = body.containsKey("contactless") ? (Boolean) body.get("contactless") : true;
+        auditLogService.log(userId, "CARD_LIMIT_CHANGED", "Card ID " + cardId + " new limit: " + newLimit + ", online: " + onlinePayments + ", contactless: " + contactless, "127.0.0.1");
+        notificationService.notify(userId, "Setări card actualizate", "Setările și limitele cardului au fost actualizate.", "SECURITY_ALERT");
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "cardId", cardId,
+                "spendingLimit", newLimit.doubleValue(),
+                "onlinePayments", onlinePayments,
+                "contactless", contactless
+        ));
     }
 
     private Map<String, Object> toMap(CardJpaEntity c)
@@ -124,10 +160,15 @@ public class CardController
             }
         }
 
+        String rawCard = decryptedCard != null ? decryptedCard : "4999999999999999";
+        String maskedCard = rawCard.length() >= 4
+                ? "•••• •••• •••• " + rawCard.substring(rawCard.length() - 4)
+                : "•••• •••• •••• ••••";
+
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", c.getId());
         map.put("accountId", c.getAccountId());
-        map.put("cardNumber", decryptedCard != null ? decryptedCard : "4999999999999999");
+        map.put("cardNumber", maskedCard);
         map.put("cardHolder", c.getDetinator());
         map.put("expiryDate", decryptedExpiry != null ? decryptedExpiry : "12/28");
         map.put("cvv", "***"); // Masked for PCI-DSS compliance

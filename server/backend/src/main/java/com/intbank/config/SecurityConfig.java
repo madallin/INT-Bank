@@ -16,19 +16,25 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig
 {
 
     private final String jwtSecret;
     private final com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider;
+    private final com.intbank.service.TokenBlacklistService tokenBlacklistService;
 
     public SecurityConfig(@Value("${jwt.secret}") String jwtSecret,
-                          com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider)
+                          com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider,
+                          com.intbank.service.TokenBlacklistService tokenBlacklistService)
     {
         this.jwtSecret = jwtSecret;
         this.rsaKeyProvider = rsaKeyProvider;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Bean
@@ -40,7 +46,7 @@ public class SecurityConfig
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
-        ClientTokenFilter clientTokenFilter = new ClientTokenFilter(jwtSecret, rsaKeyProvider);
+        ClientTokenFilter clientTokenFilter = new ClientTokenFilter(jwtSecret, rsaKeyProvider, tokenBlacklistService);
 
         http
             .csrf(csrf -> csrf.disable())

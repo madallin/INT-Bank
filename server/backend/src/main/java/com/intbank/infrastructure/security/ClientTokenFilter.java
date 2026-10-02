@@ -23,16 +23,23 @@ public class ClientTokenFilter extends OncePerRequestFilter
 
     private final SecretKey jwtSecret;
     private final com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider;
+    private final com.intbank.service.TokenBlacklistService tokenBlacklistService;
 
-    public ClientTokenFilter(String jwtSecretRaw, com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider)
+    public ClientTokenFilter(String jwtSecretRaw, com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider, com.intbank.service.TokenBlacklistService tokenBlacklistService)
     {
         this.jwtSecret = Keys.hmacShaKeyFor(jwtSecretRaw.getBytes(StandardCharsets.UTF_8));
         this.rsaKeyProvider = rsaKeyProvider;
+        this.tokenBlacklistService = tokenBlacklistService;
+    }
+
+    public ClientTokenFilter(String jwtSecretRaw, com.intbank.infrastructure.security.RsaKeyProvider rsaKeyProvider)
+    {
+        this(jwtSecretRaw, rsaKeyProvider, null);
     }
 
     public ClientTokenFilter(String jwtSecretRaw)
     {
-        this(jwtSecretRaw, null);
+        this(jwtSecretRaw, null, null);
     }
 
     @Override
@@ -67,6 +74,14 @@ public class ClientTokenFilter extends OncePerRequestFilter
         try
         {
             String token = authHeader.substring(7);
+            if (tokenBlacklistService != null && tokenBlacklistService.isBlacklisted(token))
+            {
+                SecurityContextHolder.clearContext();
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"Token has been revoked\"}");
+                return;
+            }
             Claims claims;
             if (rsaKeyProvider != null)
             {

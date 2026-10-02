@@ -151,8 +151,9 @@ class DioClient
           {
             final refreshToken = await _storage.read(key: _refreshTokenKey);
             if(refreshToken == null || refreshToken.isEmpty)
-{
+            {
               await _clearSession();
+              _rejectPendingRequests(error);
               handler.next(error);
               return;
             }
@@ -163,7 +164,7 @@ class DioClient
             );
 
             if(refreshResponse.statusCode == 200)
-{
+            {
               final data = refreshResponse.data as Map<String, dynamic>;
               final refreshResult = TokenRefreshResponse.fromJson(data);
 
@@ -171,14 +172,17 @@ class DioClient
               await _storage.write(key: _refreshTokenKey, value: refreshResult.refreshToken);
 
               if(refreshResult.userId != null)
-{
+              {
                 await _storage.write(key: 'userId', value: refreshResult.userId.toString());
               }
 
               error.requestOptions.headers['Authorization'] = 'Bearer ${refreshResult.accessToken}';
 
-              for(final pending in _pendingRequests)
-{
+              final pendingCopy = List<_PendingRequest>.from(_pendingRequests);
+              _pendingRequests.clear();
+
+              for(final pending in pendingCopy)
+              {
                 pending.options.headers['Authorization'] = 'Bearer ${refreshResult.accessToken}';
                 try
                 {
@@ -186,33 +190,43 @@ class DioClient
                   pending.handler.resolve(retry);
                 }
                 catch(e)
-{
+                {
                   pending.handler.reject(error);
                 }
               }
-              _pendingRequests.clear();
 
               final retryResponse = await _dio.fetch(error.requestOptions);
               return handler.resolve(retryResponse);
             }
+            else
+            {
+              await _clearSession();
+              _rejectPendingRequests(error);
+              handler.next(error);
+            }
           }
           catch(e)
-{
-            // Refresh failed (e.g., expired/invalid refresh token, network error).
-            // Proceed with cleanup: clear session, reject pending requests, pass error to handler.
+          {
+            await _clearSession();
+            _rejectPendingRequests(error);
+            handler.next(error);
           }
-          await _clearSession();
-
-          for(final pending in _pendingRequests)
-{
-            pending.handler.reject(error);
+          finally
+          {
+            _isRefreshing = false;
           }
-          _pendingRequests.clear();
-
-          handler.next(error);
         },
       ),
     );
+  }
+
+  void _rejectPendingRequests(DioException error)
+  {
+    for(final pending in _pendingRequests)
+    {
+      pending.handler.reject(error);
+    }
+    _pendingRequests.clear();
   }
 
   Future<void> _clearSession() async

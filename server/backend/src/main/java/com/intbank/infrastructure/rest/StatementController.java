@@ -16,10 +16,18 @@ public class StatementController
 {
 
     private final StatementService statementService;
+    private final com.intbank.infrastructure.security.SecurityGuard securityGuard;
 
     public StatementController(StatementService statementService)
     {
+        this(statementService, null);
+    }
+
+    public StatementController(StatementService statementService,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.infrastructure.security.SecurityGuard securityGuard)
+    {
         this.statementService = statementService;
+        this.securityGuard = securityGuard;
     }
 
     @GetMapping
@@ -29,6 +37,10 @@ public class StatementController
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         LocalDate to = toDate != null ? toDate : LocalDate.now();
         LocalDate from = fromDate != null ? fromDate : to.minusDays(30);
 
@@ -50,6 +62,10 @@ public class StatementController
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         LocalDate to = toDate != null ? toDate : LocalDate.now();
         LocalDate from = fromDate != null ? fromDate : to.minusDays(30);
 

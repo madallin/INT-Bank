@@ -77,7 +77,8 @@ public class CryptoService
     public String safeExtractLast4(String encryptedCard)
     {
         try {
-            return decryptAESGCM(encryptedCard).replaceAll("\\d+$", "");
+            String plain = decryptAESGCM(encryptedCard);
+            return plain.length() >= 4 ? plain.substring(plain.length() - 4) : plain;
         } catch (Exception e) {
             return null;
         }

@@ -29,7 +29,7 @@ public class TransactionController
                                  AccountJpaRepository accountRepo,
                                  TransferJpaRepository transferRepo)
     {
-        this(transferUseCase, accountRepo, transferRepo, null);
+        this(transferUseCase, accountRepo, transferRepo, null, null);
     }
 
     public TransactionController(TransferUseCase transferUseCase,
@@ -37,17 +37,33 @@ public class TransactionController
                                  TransferJpaRepository transferRepo,
                                  @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.service.OutboxProcessorService outboxProcessorService)
     {
+        this(transferUseCase, accountRepo, transferRepo, outboxProcessorService, null);
+    }
+
+    public TransactionController(TransferUseCase transferUseCase,
+                                 AccountJpaRepository accountRepo,
+                                 TransferJpaRepository transferRepo,
+                                 @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.service.OutboxProcessorService outboxProcessorService,
+                                 @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.infrastructure.security.SecurityGuard securityGuard)
+    {
         this.transferUseCase = transferUseCase;
         this.accountRepo = accountRepo;
         this.transferRepo = transferRepo;
         this.outboxProcessorService = outboxProcessorService;
+        this.securityGuard = securityGuard;
     }
+
+    private final com.intbank.infrastructure.security.SecurityGuard securityGuard;
 
     @GetMapping("/users/{userId}/accounts/{accountId}/transactions")
     public ResponseEntity<Map<String, Object>> getTransactions(
             @PathVariable("userId") Long userId,
             @PathVariable("accountId") Long accountId)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         var accountOpt = accountRepo.findById(accountId);
         if (accountOpt.isEmpty() || !accountOpt.get().getUserId().equals(userId))
         {
@@ -88,6 +104,10 @@ public class TransactionController
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKeyHeader,
             @RequestBody Map<String, Object> body)
     {
+        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
+        }
         String toIban = (String) body.get("iban");
         String beneficiaryName = (String) body.get("beneficiaryName");
         String reason = (String) body.get("reason");

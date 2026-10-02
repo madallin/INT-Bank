@@ -77,7 +77,11 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
     try {
       final response = await _client.put(
         '/users/${widget.userId}/cards/${widget.card.id}/limits',
-        data: {'spendingLimit': _spendingLimit},
+        data: {
+          'spendingLimit': _spendingLimit,
+          'onlinePayments': _onlinePayments,
+          'contactless': _contactless,
+        },
       );
       if (response.statusCode == 200) {
         HapticFeedbackHelper.success();
@@ -101,6 +105,45 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
       );
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _updatePaymentOption({bool? online, bool? contactless}) async {
+    HapticFeedbackHelper.selection();
+    final newOnline = online ?? _onlinePayments;
+    final newContactless = contactless ?? _contactless;
+    setState(() {
+      _onlinePayments = newOnline;
+      _contactless = newContactless;
+    });
+    try {
+      await _client.put(
+        '/users/${widget.userId}/cards/${widget.card.id}/limits',
+        data: {
+          'spendingLimit': _spendingLimit,
+          'onlinePayments': newOnline,
+          'contactless': newContactless,
+        },
+      );
+      HapticFeedbackHelper.buttonTap();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Opțiunile de plată au fost actualizate.', style: GoogleFonts.inter()),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 1),
+          backgroundColor: const Color(lightForestGreenColor),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Eroare la salvarea opțiunilor: $e', style: GoogleFonts.inter()),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red[700],
+        ),
+      );
     }
   }
 
@@ -277,10 +320,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                 children: [
                   SwitchListTile(
                     value: _onlinePayments,
-                    onChanged: (val) {
-                      HapticFeedbackHelper.selection();
-                      setState(() => _onlinePayments = val);
-                    },
+                    onChanged: (val) => _updatePaymentOption(online: val),
                     activeColor: const Color(lightForestGreenColor),
                     title: Text('Plăți online (e-Commerce)', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
                     subtitle: Text('Permite tranzacții securizate pe internet.', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500])),
@@ -293,10 +333,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                   const Divider(height: 1),
                   SwitchListTile(
                     value: _contactless,
-                    onChanged: (val) {
-                      HapticFeedbackHelper.selection();
-                      setState(() => _contactless = val);
-                    },
+                    onChanged: (val) => _updatePaymentOption(contactless: val),
                     activeColor: const Color(lightForestGreenColor),
                     title: Text('Plăți contactless POS', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
                     subtitle: Text('Plăți rapide fără contact la magazine.', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500])),

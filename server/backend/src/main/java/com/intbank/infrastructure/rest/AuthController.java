@@ -57,6 +57,10 @@ public class AuthController
                     .expiration(new Date(System.currentTimeMillis() + 300_000))
                     .signWith(jwtSecret);
             if (userIdRaw != null && !userIdRaw.isBlank()) {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (auth == null || !(auth.getPrincipal() instanceof com.intbank.infrastructure.security.AuthenticatedClient client) || !client.hasRole("ROLE_ADMIN")) {
+                    return Map.of("statusCode", 403, "error", "Neautorizat: token-ul de utilizator nu poate fi generat fara autentificare prealabila");
+                }
                 builder.claim("uid", Long.parseLong(userIdRaw));
                 redisTemplate.opsForValue().set("refresh:uid:" + deviceId, userIdRaw, 15, TimeUnit.MINUTES);
             }

@@ -13,6 +13,7 @@ import '../../../widgets/form_text_field.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/simple_app_bar.dart';
 import '../widgets/saved_beneficiaries_bottom_sheet.dart';
+import '../widgets/transfer_confirmation_bottom_sheet.dart';
 
 class TransferScreen extends StatefulWidget {
   final int userId;
@@ -155,6 +156,37 @@ class _TransferScreenState extends State<TransferScreen>
       return _showError('Nu poți trimite bani în propriul cont');
     }
 
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => TransferConfirmationBottomSheet(
+        beneficiaryName: name.toUpperCase(),
+        toIban: iban,
+        fromIban: widget.userIban,
+        amount: amount.toDouble(),
+        reason: reason[0].toUpperCase() + reason.substring(1),
+        bankInfo: _detectedBank,
+        isScheduled: _isScheduled,
+        scheduleDetails: _isScheduled
+            ? '$_frequency din ${_scheduledDate.day}.${_scheduledDate.month}.${_scheduledDate.year}'
+            : null,
+        onConfirm: () => _executeTransfer(
+          iban: iban,
+          name: name,
+          amount: amount,
+          reason: reason,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _executeTransfer({
+    required String iban,
+    required String name,
+    required int amount,
+    required String reason,
+  }) async {
     setState(() => _loading = true);
 
     try {

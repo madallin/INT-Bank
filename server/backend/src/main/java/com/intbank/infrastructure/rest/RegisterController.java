@@ -5,6 +5,7 @@ import com.intbank.infrastructure.persistence.repository.UserJpaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,23 +27,33 @@ public class RegisterController
         this.userRepo = userRepo;
     }
 
+    private static final int[] CNP_WEIGHTS = {2, 7, 9, 1, 4, 6, 3, 5, 8, 2, 7, 9};
+
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @Transactional
-    public Map<String, Object> register(@RequestBody Map<String, Object> body)
+    public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, Object> body)
     {
-        String nume = (String) body.get("nume");
-        String prenume = (String) body.get("prenume");
+        String nume = (String) body.getOrDefault("nume", body.get("lastName"));
+        String prenume = (String) body.getOrDefault("prenume", body.get("firstName"));
         String email = (String) body.get("email");
-        String nrtelefon = (String) body.get("nrtelefon");
-        String sex = (String) body.get("sex");
-        String datanasterii = (String) body.get("datanasterii");
+        String nrtelefon = (String) body.getOrDefault("nrtelefon", body.get("phone"));
+        String sex = (String) body.getOrDefault("sex", body.get("gender"));
+        String datanasterii = (String) body.getOrDefault("datanasterii", body.get("dateOfBirth"));
         String cnp = (String) body.get("cnp");
 
         if (nume == null || prenume == null || email == null || nrtelefon == null
-                || sex == null || datanasterii == null || cnp == null)
+                || sex == null || datanasterii == null || cnp == null
+                || nume.isBlank() || prenume.isBlank() || email.isBlank()
+                || nrtelefon.isBlank() || cnp.isBlank())
         {
-            return Map.of("statusCode", 400, "error", "Toate campurile sunt obligatorii");
+            return ResponseEntity.badRequest().body(Map.of("statusCode", 400, "error", "Toate campurile sunt obligatorii"));
+        }
+
+        // Clean CNP
+        cnp = cnp.replaceAll("\\s+", "");
+        if (!isValidCnp(cnp))
+        {
+            return ResponseEntity.badRequest().body(Map.of("statusCode", 400, "error", "CNP invalid. Trebuie sa aiba 13 cifre si un format valid."));
         }
 
         String strada = (String) body.get("strada");
@@ -57,17 +68,17 @@ public class RegisterController
                 bloc != null ? "Bl. " + bloc : "",
                 scara != null ? "Sc. " + scara : "",
                 apartament != null ? "Ap. " + apartament : ""
-        ).filter(s -> !s.isEmpty()).collect(Collectors.joining(", "));
+        ).filter(s -> s != null && !s.isEmpty()).collect(Collectors.joining(", "));
 
         try
         {
             UserJpaEntity user = new UserJpaEntity();
-            user.setNume(nume);
-            user.setPrenume(prenume);
-            user.setEmail(email);
-            user.setNrTelefon(nrtelefon);
-            user.setSex(sex);
-            user.setDataNasterii(LocalDate.parse(datanasterii));
+            user.setNume(nume.trim());
+            user.setPrenume(prenume.trim());
+            user.setEmail(email.trim().toLowerCase());
+            user.setNrTelefon(nrtelefon.trim());
+            user.setSex(sex.trim());
+            user.setDataNasterii(LocalDate.parse(datanasterii.trim()));
             user.setCnp(cnp);
             user.setJudet((String) body.get("judet"));
             user.setLocalitate((String) body.get("localitate"));
@@ -82,16 +93,38 @@ public class RegisterController
 
             userRepo.save(user);
             log.info("User registered: id={}", user.getId());
-            return Map.of("success", true, "user", Map.of("id", user.getId()));
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+                    "success", true,
+                    "userId", user.getId(),
+                    "user", Map.of("id", user.getId())
+            ));
         }
         catch (Exception err)
         {
             log.error("Eroare la baza de date (register)", err);
             if (err.getMessage() != null && err.getMessage().contains("duplicate"))
             {
-                return Map.of("statusCode", 400, "error", "Email sau CNP deja existent");
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("statusCode", 409, "error", "Email, telefon sau CNP deja existent"));
             }
-            return Map.of("statusCode", 500, "error", "Eroare la comunicarea cu serverul");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("statusCode", 500, "error", "Eroare la comunicarea cu serverul"));
         }
+    }
+
+    private boolean isValidCnp(String cnp)
+    {
+        if (cnp == null || !cnp.matches("^\\d{13}$"))
+        {
+            return false;
+        }
+        int sum = 0;
+        for (int i = 0; i < 12; i++)
+        {
+            sum += Character.getNumericValue(cnp.charAt(i)) * CNP_WEIGHTS[i];
+        }
+        int remainder = sum % 11;
+        int checkDigit = remainder == 10 ? 1 : remainder;
+        return checkDigit == Character.getNumericValue(cnp.charAt(12));
     }
 }

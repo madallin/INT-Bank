@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../config/app_config.dart';
+import '../theme/app_tokens.dart';
 
+/// Label/value pair used on review steps.
 class ReviewItemRow extends StatelessWidget {
   final String label;
   final String value;
@@ -15,33 +15,28 @@ class ReviewItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
+    final c = context.colors;
+    return MergeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 100,
+              child: Text(
+                label,
+                style: context.text.labelMedium?.copyWith(
+                  color: c.textSecondary,
+                  letterSpacing: 0,
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: const Color(darkGreyColor),
-              ),
+            Expanded(
+              child: Text(value, style: context.text.bodyLarge),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

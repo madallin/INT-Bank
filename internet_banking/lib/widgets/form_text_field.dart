@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../config/app_config.dart';
+import '../theme/app_tokens.dart';
+import 'section_header.dart';
 
+/// Labelled text input used by the app's forms. Borders, fill and hint style
+/// come from the theme's `InputDecorationTheme`.
 class FormTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -12,6 +14,15 @@ class FormTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final int? maxLength;
   final List<TextInputFormatter>? inputFormatters;
+
+  /// Inline validation message shown under the field.
+  final String? errorText;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
+  final Iterable<String>? autofillHints;
+  final TextCapitalization textCapitalization;
+  final FocusNode? focusNode;
+  final ValueChanged<String>? onChanged;
 
   const FormTextField({
     super.key,
@@ -22,81 +33,44 @@ class FormTextField extends StatelessWidget {
     this.keyboardType,
     this.maxLength,
     this.inputFormatters,
+    this.errorText,
+    this.textInputAction,
+    this.onSubmitted,
+    this.autofillHints,
+    this.textCapitalization = TextCapitalization.none,
+    this.focusNode,
+    this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 6, bottom: 8),
-          child: Row(
-            children: [
-              Icon(icon, size: 16, color: const Color(0xFF6B7280)),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF6B7280),
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: TextField(
+    // Merged so screen readers announce the visible label with the field.
+    return MergeSemantics(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionHeader(icon: icon, title: label, subtitle: ''),
+          TextField(
             controller: controller,
+            focusNode: focusNode,
+            onChanged: onChanged,
             keyboardType: keyboardType,
             inputFormatters: inputFormatters,
             maxLength: maxLength,
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: const Color(darkGreyColor),
-            ),
+            textInputAction: textInputAction,
+            onSubmitted: onSubmitted,
+            autofillHints: autofillHints,
+            textCapitalization: textCapitalization,
+            style: context.text.bodyLarge,
             decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
               counterText: '',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(
-                    color: Color(lightForestGreenColor), width: 2),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
               hintText: hint,
-              hintStyle: GoogleFonts.inter(
-                fontSize: 15,
-                color: Colors.grey[400],
-                fontWeight: FontWeight.w400,
-              ),
+              errorText: errorText,
+              errorMaxLines: 3,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -2,15 +2,18 @@ import 'dart:convert' show jsonDecode;
 import 'dart:io' show Platform;
 
 import 'package:device_info_plus/device_info_plus.dart' show DeviceInfoPlugin;
+import '../../../widgets/app_logo.dart';
+import '../../../theme/app_tokens.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../config/app_config.dart';
+import '../../../core/utils/helpers.dart';
 import '../../../core/network/dio_client.dart';
 import 'approval_screen.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../welcome/welcome_screen.dart';
+import '../../../l10n/l10n.dart';
 
 class TosScreen extends StatefulWidget
 {
@@ -71,9 +74,7 @@ class _TosScreenState extends State<TosScreen>
       if(!mounted) return;
       if(tosResponse.statusCode != 200)
       {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Eroare la verificarea TOS')),
-        );
+        showErrorSnackBar(context, context.l10n.tosEroareVerificareaTos);
         return;
       }
 
@@ -91,9 +92,7 @@ class _TosScreenState extends State<TosScreen>
         if(!mounted) return;
         if(putResponse.statusCode != 200)
         {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Eroare la actualizarea TOS')),
-          );
+          showErrorSnackBar(context, context.l10n.tosEroareActualizareaTos);
           return;
         }
       }
@@ -106,9 +105,7 @@ class _TosScreenState extends State<TosScreen>
       if(!mounted) return;
       if(approvedResponse.statusCode != 200)
       {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Eroare la verificarea contului')),
-        );
+        showErrorSnackBar(context, context.l10n.tosEroareVerificareaContului);
         return;
       }
 
@@ -150,9 +147,7 @@ class _TosScreenState extends State<TosScreen>
     {
       if(mounted)
       {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nu se poate conecta la server')),
-        );
+        showErrorSnackBar(context, context.l10n.tosSePoateConectaServer);
       }
     }
     finally
@@ -161,197 +156,197 @@ class _TosScreenState extends State<TosScreen>
     }
   }
 
-  final List<Map<String, List<String>>> chapters = [
+  List<Map<String, List<String>>> get chapters => [
     {
       "1. Despre conturi": [
-        "Toate conturile deschise la INT Bank trebuie să fie înregistrate cu date reale și corecte.",
-        "Fiecare client poate deține un singur cont personal la INT Bank.",
-        "Conturile inactive mai mult de 12 luni pot fi suspendate temporar.",
-        "Clienții minori necesită consimțământul părinților sau tutorilor.",
-        "Clientul trebuie să protejeze datele de acces și parolele.",
-        "INT Bank poate solicita documente suplimentare pentru verificare.",
-        "Tranzacțiile efectuate prin cont sunt responsabilitatea clientului.",
-        "Partajarea conturilor cu alte persoane este strict interzis?.",
-        "Clientul trebuie să accepte acești termeni pentru deschiderea contului.",
-        "Conturile neregulate pot fi închise de INT Bank fără notificare prealabilă.",
-        "Clientul trebuie să respecte limitele de tranzacționare și regulile băncii.",
-        "Modificarea datelor personale trebuie raportată imediat la INT Bank.",
-        "Datele contului trebuie păstrate confidențiale.",
-        "Utilizarea contului pentru activități ilegale este interzisă.",
-        "INT Bank nu răspunde pentru pierderi cauzate de neglijența clientului.",
-        "Suspendarea contului poate fi efectuată pentru verificări suplimentare.",
-        "Accesul la cont poate fi blocat temporar în caz de risc de securitate.",
+        context.l10n.tosToateConturileDeschiseInt,
+        context.l10n.tosFiecareClientPoateDetine,
+        context.l10n.tosConturileInactiveMaiMult,
+        context.l10n.tosClientiiMinoriNecesitaConsimtamantul,
+        context.l10n.tosClientulTrebuieSaProtejeze,
+        context.l10n.tosIntBankPoateSolicita,
+        context.l10n.tosTranzactiileEfectuatePrinCont,
+        context.l10n.tosPartajareaConturilorAltePersoane,
+        context.l10n.tosClientulTrebuieSaAccepte,
+        context.l10n.tosConturileNeregulatePotFi,
+        context.l10n.tosClientulTrebuieSaRespecte,
+        context.l10n.tosModificareaDatelorPersonaleTrebuie,
+        context.l10n.tosDateleContuluiTrebuiePastrate,
+        context.l10n.tosUtilizareaContuluiActivitatiIlegale,
+        context.l10n.tosIntBankRaspundePierderi,
+        context.l10n.tosSuspendareaContuluiPoateFi,
+        context.l10n.tosAccesulContPoateFi,
       ],
     },
     {
       "2. Securitate și confidențialitate": [
-        "Clienții trebuie să păstreze confidențialitatea parolelor și codurilor PIN.",
-        "INT Bank nu va solicita niciodată parole prin email sau telefon.",
-        "Raportați imediat orice activitate suspectă la INT Bank.",
-        "Dispozitivele folosite pentru acces la cont trebuie să fie securizate.",
-        "Autentificarea cu doi factori (2FA) este recomandat?.",
-        "Datele personale sunt procesate conform politicii de confidențialitate INT Bank.",
-        "Este interzisă distribuirea de malware sau phishing prin aplicație.",
-        "Clienții trebuie să folosească doar canalele oficiale INT Bank.",
-        "Monitorizarea activității contului se face pentru siguranță.",
-        "INT Bank poate introduce autentificări suplimentare pentru protecție.",
-        "În caz de încălcare a securității, contul poate fi blocat temporar.",
-        "Parolele trebuie să fie complexe și unice.",
-        "Codurile de securitate nu trebuie distribuite altor persoane.",
-        "Datele sensibile nu trebuie stocate pe dispozitive publice.",
-        "Raportarea pierderii dispozitivului previne fraudele.",
-        "INT Bank poate audita securitatea conturilor pentru prevenirea fraudei.",
+        context.l10n.tosClientiiTrebuieSaPastreze,
+        context.l10n.tosIntBankVaSolicita,
+        context.l10n.tosRaportatiImediatOriceActivitate,
+        context.l10n.tosDispozitiveleFolositeAccesCont,
+        context.l10n.tosAutentificareaDoiFactori2fa,
+        context.l10n.tosDatelePersonaleSuntProcesate,
+        context.l10n.tosEsteInterzisaDistribuireaMalware,
+        context.l10n.tosClientiiTrebuieSaFoloseasca,
+        context.l10n.tosMonitorizareaActivitatiiContuluiSe,
+        context.l10n.tosIntBankPoateIntroduce,
+        context.l10n.tosCazIncalcareSecuritatiiContul,
+        context.l10n.tosParoleleTrebuieSaFie,
+        context.l10n.tosCodurileSecuritateTrebuieDistribuite,
+        context.l10n.tosDateleSensibileTrebuieStocate,
+        context.l10n.tosRaportareaPierderiiDispozitivuluiPrevine,
+        context.l10n.tosIntBankPoateAudita,
       ],
     },
     {
       "3. Tranzacții și plăți": [
-        "Plățile efectuate prin INT Bank sunt finale și ireversibile fără acordul băncii.",
-        "Clientul trebuie să verifice detaliile înainte de confirmarea plății.",
-        "Tranzacțiile internaționale sunt supuse cursului de schimb valutar.",
-        "INT Bank poate refuza tranzacții suspecte fără notificare.",
-        "Clienții trebuie să respecte limitele zilnice și lunare stabilite.",
-        "Taxele și comisioanele aplicabile sunt cele afișate în ghidul tarifar.",
-        "Clientul este responsabil pentru plata tuturor taxelor asociate contului.",
-        "Tranzacțiile cu sume mari pot fi supuse verificărilor suplimentare.",
-        "Plățile automate trebuie configurate corect conform instrucțiunilor INT Bank.",
-        "Tranzacțiile frauduloase trebuie raportate imediat.",
-        "Documentele suplimentare pot fi cerute pentru validarea plăților.",
-        "Clientul trebuie să păstreze dovezi ale plăților efectuate.",
-        "Orice eroare de tranzacție poate fi investigată conform procedurilor interne.",
-        "INT Bank poate suspenda tranzacțiile dacă sunt detectate nereguli.",
-        "Modificarea datelor bancare trebuie verificată înainte de transfer.",
+        context.l10n.tosPlatileEfectuatePrinInt,
+        context.l10n.tosClientulTrebuieSaVerifice,
+        context.l10n.tosTranzactiileInternationaleSuntSupuse,
+        context.l10n.tosIntBankPoateRefuza,
+        context.l10n.tosClientiiTrebuieSaRespecte,
+        context.l10n.tosTaxeleComisioaneleAplicabileSunt,
+        context.l10n.tosClientulEsteResponsabilPlata,
+        context.l10n.tosTranzactiileSumeMariPot,
+        context.l10n.tosPlatileAutomateTrebuieConfigurate,
+        context.l10n.tosTranzactiileFrauduloaseTrebuieRaportate,
+        context.l10n.tosDocumenteleSuplimentarePotFi,
+        context.l10n.tosClientulTrebuieSaPastreze,
+        context.l10n.tosOriceEroareTranzactiePoate,
+        context.l10n.tosIntBankPoateSuspenda,
+        context.l10n.tosModificareaDatelorBancareTrebuie,
       ],
     },
     {
       "4. Modificări ale serviciilor": [
-        "INT Bank poate modifica termenii și condițiile în orice moment.",
-        "Notificările oficiale sunt comunicate prin aplicație, email sau SMS.",
-        "Serviciile pot fi suspendate temporar pentru mentenanță.",
-        "Funcționalitățile suplimentare pot fi introduse fără notificare.",
-        "Procedurile de autentificare și securitate pot fi actualizate.",
-        "Structura conturilor, limitele și condițiile pot fi modificate.",
-        "Clienții trebuie să folosească versiuni actualizate ale aplicației.",
-        "Accesul la anumite funcționalități poate fi limitat pentru neconformitate.",
-        "INT Bank poate schimba taxele și comisioanele percepute.",
-        "Actualizările vor fi afișate și în aplicație.",
-        "Limitele de tranzacționare pot fi ajustate.",
-        "Clienții trebuie să accepte modificările pentru continuarea serviciilor.",
-        "Schimbările majore vor fi notificate prin email oficial.",
-        "Funcționalitățile pot fi suspendate temporar pentru upgrade-uri.",
-        "Actualizările de securitate sunt obligatorii pentru toți utilizatorii.",
+        context.l10n.tosIntBankPoateModifica,
+        context.l10n.tosNotificarileOficialeSuntComunicate,
+        context.l10n.tosServiciilePotFiSuspendate,
+        context.l10n.tosFunctionalitatileSuplimentarePotFi,
+        context.l10n.tosProcedurileAutentificareSecuritatePot,
+        context.l10n.tosStructuraConturilorLimiteleConditiile,
+        context.l10n.tosClientiiTrebuieSaFoloseasca2,
+        context.l10n.tosAccesulAnumiteFunctionalitatiPoate,
+        context.l10n.tosIntBankPoateSchimba,
+        context.l10n.tosActualizarileVorFiAfisate,
+        context.l10n.tosLimiteleTranzactionarePotFi,
+        context.l10n.tosClientiiTrebuieSaAccepte,
+        context.l10n.tosSchimbarileMajoreVorFi,
+        context.l10n.tosFunctionalitatilePotFiSuspendate,
+        context.l10n.tosActualizarileSecuritateSuntObligatorii,
       ],
     },
     {
       "5. Obligații clientului": [
-        "Clienții trebuie să raporteze pierderea sau furtul dispozitivelor imediat.",
-        "Clientul trebuie să actualizeze informațiile personale la schimbarea datelor.",
-        "Clienții trebuie să respecte legislația locală privind tranzacțiile financiare.",
-        "Nu se poate folosi aplicația pentru scopuri ilegale.",
-        "Respectarea regulilor de publicitate și promovare a serviciilor este obligatorie.",
-        "Litigiile privind conturile vor fi soluționate conform legislației.",
-        "Clienții sunt responsabili pentru toate datele introduse și confidențialitatea acestora.",
-        "INT Bank nu garantează disponibilitatea neîntreruptă a serviciilor.",
-        "Clientul trebuie să respecte cerințele pentru prevenirea fraudei.",
-        "Verificarea periodică a extraselor de cont este responsabilitatea clientului.",
-        "Respectarea limitelor de retragere și transfer impuse de INT Bank este obligatorie.",
-        "Verificarea corectitudinii datelor în aplicație este responsabilitatea clientului.",
-        "Protejarea dispozitivelor și a aplicației INT Bank este obligatorie.",
-        "Este interzisă folosirea conturilor pentru activități comerciale fără aprobare.",
-        "Respectarea termenelor de plată pentru serviciile asociate este responsabilitatea clientului.",
+        context.l10n.tosClientiiTrebuieSaRaporteze,
+        context.l10n.tosClientulTrebuieSaActualizeze,
+        context.l10n.tosClientiiTrebuieSaRespecte2,
+        context.l10n.tosSePoateFolosiAplicatia,
+        context.l10n.tosRespectareaRegulilorPublicitatePromovare,
+        context.l10n.tosLitigiilePrivindConturileVor,
+        context.l10n.tosClientiiSuntResponsabiliToate,
+        context.l10n.tosIntBankGaranteazaDisponibilitatea,
+        context.l10n.tosClientulTrebuieSaRespecte2,
+        context.l10n.tosVerificareaPeriodicaExtraselorCont,
+        context.l10n.tosRespectareaLimitelorRetragereTransfer,
+        context.l10n.tosVerificareaCorectitudiniiDatelorAplicatie,
+        context.l10n.tosProtejareaDispozitivelorAplicatieiInt,
+        context.l10n.tosEsteInterzisaFolosireaConturilor,
+        context.l10n.tosRespectareaTermenelorPlataServiciile,
       ],
     },
     {
       "6. Protecția datelor": [
-        "INT Bank colectează și procesează date personale conform legislației.",
-        "Clientul trebuie să accepte politica de confidențialitate INT Bank.",
-        "Datele sensibile nu trebuie distribuite către terți neautorizați.",
-        "Clienții au dreptul de a solicita ștergerea datelor personale.",
-        "Datele pot fi folosite pentru servicii personalizate și oferte.",
-        "Toate datele sunt stocate securizat și criptat.",
-        "Clienții trebuie să raporteze accesul neautorizat la date.",
-        "INT Bank poate procesa date anonimizate pentru statistici interne.",
-        "Folosirea datelor altor clienți fără consimțământ este interzisă.",
-        "Acceptarea cookie-urilor și termenilor de procesare este obligatorie.",
-        "Modificările politicii de confidențialitate vor fi notificate prin aplicație.",
-        "Clienții trebuie să accepte termenii pentru a continua să folosească aplicația.",
-        "Datele colectate sunt folosite exclusiv în scopuri legale.",
-        "INT Bank poate bloca contul în caz de încălcare a politicii de date.",
-        "Clienții trebuie să mențină informațiile personale actualizate.",
+        context.l10n.tosIntBankColecteazaProceseaza,
+        context.l10n.tosClientulTrebuieSaAccepte2,
+        context.l10n.tosDateleSensibileTrebuieDistribuite,
+        context.l10n.tosClientiiAuDreptulSolicita,
+        context.l10n.tosDatelePotFiFolosite,
+        context.l10n.tosToateDateleSuntStocate,
+        context.l10n.tosClientiiTrebuieSaRaporteze2,
+        context.l10n.tosIntBankPoateProcesa,
+        context.l10n.tosFolosireaDatelorAltorClienti,
+        context.l10n.tosAcceptareaCookieUrilorTermenilor,
+        context.l10n.tosModificarilePoliticiiConfidentialitateVor,
+        context.l10n.tosClientiiTrebuieSaAccepte2,
+        context.l10n.tosDateleColectateSuntFolosite,
+        context.l10n.tosIntBankPoateBloca,
+        context.l10n.tosClientiiTrebuieSaMentina,
       ],
     },
     {
       "7. Limitarea răspunderii": [
-        "INT Bank nu este responsabilă pentru pierderi cauzate de erori ale clienților.",
-        "Nu se garantează disponibilitatea neîntreruptă a serviciilor.",
-        "INT Bank nu răspunde pentru întârzieri cauzate de terți.",
-        "Clienții sunt responsabili pentru protecția dispozitivelor și conturilor lor.",
-        "Serviciile pot fi suspendate în caz de urgență sau defecțiuni.",
-        "Respectarea instrucțiunilor de utilizare este responsabilitatea clientului.",
-        "INT Bank nu răspunde pentru pierderi cauzate de fraude externe.",
-        "Serviciile sunt furnizate așa cum sunt, fără garanții suplimentare.",
-        "INT Bank nu garantează exactitatea informațiilor terților.",
-        "Clienții trebuie să verifice regulat extrasele de cont pentru erori.",
-        "Accesul la cont poate fi limitat în caz de risc de securitate.",
-        "Clienții sunt responsabili pentru folosirea aplicației conform legii.",
-        "INT Bank poate ajusta termenii de responsabilitate prin notificare.",
-        "Clienții trebuie să accepte termenii pentru a continua folosirea serviciilor.",
+        context.l10n.tosIntBankEsteResponsabila,
+        context.l10n.tosSeGaranteazaDisponibilitateaNeintrerupta,
+        context.l10n.tosIntBankRaspundeIntarzieri,
+        context.l10n.tosClientiiSuntResponsabiliProtectia,
+        context.l10n.tosServiciilePotFiSuspendate2,
+        context.l10n.tosRespectareaInstructiunilorUtilizareEste,
+        context.l10n.tosIntBankRaspundePierderi2,
+        context.l10n.tosServiciileSuntFurnizateAsa,
+        context.l10n.tosIntBankGaranteazaExactitatea,
+        context.l10n.tosClientiiTrebuieSaVerifice,
+        context.l10n.tosAccesulContPoateFi2,
+        context.l10n.tosClientiiSuntResponsabiliFolosirea,
+        context.l10n.tosIntBankPoateAjusta,
+        context.l10n.tosClientiiTrebuieSaAccepte3,
       ],
     },
     {
       "8. Diverse": [
-        "INT Bank poate suspenda sau restricționa conturile care încalcă termenii.",
-        "Conturile trebuie să respecte politicile fiscale locale.",
-        "INT Bank nu este responsabil pentru pierderile cauzate de terți.",
-        "Clienții trebuie să utilizeze doar canalele oficiale INT Bank.",
-        "Dispute privind tranzacțiile vor fi investigate conform procedurilor interne.",
-        "Clienții trebuie să respecte cerințele de securitate.",
-        "Conturile inactive sau nedeclarate pot fi dezactivate.",
-        "Folosirea aplicației implică acordul față de toate regulile INT Bank.",
-        "INT Bank poate introduce noi funcționalități și servicii.",
-        "Nerespectarea termenilor poate duce la suspendarea contului.",
-        "Clienții trebuie să respecte toate notificările INT Bank.",
-        "Modificările legislative pot influența regulile aplicabile.",
-        "Clientul trebuie să consulte periodic aplicația pentru actualizări.",
-        "INT Bank poate modifica termenii pentru a proteja clienții.",
-        "Clienții sunt responsabili pentru respectarea regulilor aplicației.",
+        context.l10n.tosIntBankPoateSuspenda2,
+        context.l10n.tosConturileTrebuieSaRespecte,
+        context.l10n.tosIntBankEsteResponsabil,
+        context.l10n.tosClientiiTrebuieSaUtilizeze,
+        context.l10n.tosDisputePrivindTranzactiileVor,
+        context.l10n.tosClientiiTrebuieSaRespecte3,
+        context.l10n.tosConturileInactiveNedeclaratePot,
+        context.l10n.tosFolosireaAplicatieiImplicaAcordul,
+        context.l10n.tosIntBankPoateIntroduce2,
+        context.l10n.tosNerespectareaTermenilorPoateDuce,
+        context.l10n.tosClientiiTrebuieSaRespecte4,
+        context.l10n.tosModificarileLegislativePotInfluenta,
+        context.l10n.tosClientulTrebuieSaConsulte,
+        context.l10n.tosIntBankPoateModifica2,
+        context.l10n.tosClientiiSuntResponsabiliRespectarea,
       ],
     },
     {
       "9. Taxe și comisioane": [
-        "Toate taxele aplicate contului vor fi afișate transparent în aplicație.",
-        "INT Bank poate modifica comisioanele prin notificare prealabilă.",
-        "Taxele pentru tranzacțiile internaționale pot varia conform cursului valutar.",
-        "Clientul este responsabil pentru plata tuturor taxelor aferente contului.",
-        "Taxele pot fi percepute pentru retrageri, transferuri și servicii adiționale.",
-        "INT Bank poate suspenda contul pentru neplata taxelor aplicabile.",
-        "Clienții trebuie să consulte ghidul tarifar actualizat al băncii.",
-        "Reduceri și promoții pot fi aplicate doar conform regulilor INT Bank.",
-        "Taxele percepute de terți pentru transferuri externe sunt responsabilitatea clientului.",
-        "Schimbările de taxe vor fi comunicate prin aplicație și email.",
-        "Comisioanele pentru servicii speciale sunt afișate separat.",
-        "INT Bank poate ajusta limitele taxelor în funcție de cont.",
-        "Taxele suplimentare pentru tranzacții urgente pot fi percepute.",
-        "Clientul trebuie să accepte taxele pentru continuarea serviciului.",
-        "Neplata taxelor poate duce la suspendarea funcționalităților contului.",
+        context.l10n.tosToateTaxeleAplicateContului,
+        context.l10n.tosIntBankPoateModifica3,
+        context.l10n.tosTaxeleTranzactiileInternationalePot,
+        context.l10n.tosClientulEsteResponsabilPlata2,
+        context.l10n.tosTaxelePotFiPercepute,
+        context.l10n.tosIntBankPoateSuspenda3,
+        context.l10n.tosClientiiTrebuieSaConsulte,
+        context.l10n.tosReduceriPromotiiPotFi,
+        context.l10n.tosTaxelePerceputeTertiTransferuri,
+        context.l10n.tosSchimbarileTaxeVorFi,
+        context.l10n.tosComisioaneleServiciiSpecialeSunt,
+        context.l10n.tosIntBankPoateAjusta2,
+        context.l10n.tosTaxeleSuplimentareTranzactiiUrgente,
+        context.l10n.tosClientulTrebuieSaAccepte3,
+        context.l10n.tosNeplataTaxelorPoateDuce,
       ],
     },
     {
       "10. Reziliere și suspendare": [
-        "INT Bank poate rezilia contul în caz de încălcare a termenilor.",
-        "Suspendarea contului poate fi temporară sau permanentă.",
-        "Clienții vor fi notificați prin aplicație sau email oficial.",
-        "Rezilierea contului nu eliberează clientul de obligațiile financiare.",
-        "INT Bank poate închide contul pentru activități ilegale.",
-        "Suspendarea contului se poate realiza pentru verificări suplimentare.",
-        "Conturile inactive pe termen lung pot fi dezactivate automat.",
-        "Rezilierea contului nu afectează tranzacțiile deja efectuate.",
-        "Clienții trebuie să coopereze pentru închiderea contului conform procedurilor.",
-        "INT Bank poate suspenda serviciile în caz de risc de securitate.",
-        "Reactivarea contului poate fi solicitată doar conform regulilor băncii.",
-        "Clienții trebuie să își retragă fondurile înainte de închidere.",
-        "Orice litigiu legat de contul suspendat va fi soluționat conform legislației.",
-        "Suspendarea temporară poate fi decisă de banca pentru mentenanță sau upgrade.",
-        "Rezilierea contului se realizează numai după respectarea tuturor procedurilor.",
+        context.l10n.tosIntBankPoateRezilia,
+        context.l10n.tosSuspendareaContuluiPoateFi2,
+        context.l10n.tosClientiiVorFiNotificati,
+        context.l10n.tosReziliereaContuluiElibereazaClientul,
+        context.l10n.tosIntBankPoateInchide,
+        context.l10n.tosSuspendareaContuluiSePoate,
+        context.l10n.tosConturileInactiveTermenLung,
+        context.l10n.tosReziliereaContuluiAfecteazaTranzactiile,
+        context.l10n.tosClientiiTrebuieSaCoopereze,
+        context.l10n.tosIntBankPoateSuspenda4,
+        context.l10n.tosReactivareaContuluiPoateFi,
+        context.l10n.tosClientiiTrebuieSaIsi,
+        context.l10n.tosOriceLitigiuLegatContul,
+        context.l10n.tosSuspendareaTemporaraPoateFi,
+        context.l10n.tosReziliereaContuluiSeRealizeaza,
       ],
     },
   ];
@@ -394,7 +389,7 @@ class _TosScreenState extends State<TosScreen>
           text: rule.substring(match.start, match.end),
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Color(lightForestGreenColor),
+            color: context.colors.brand,
           ),
         ),
       );
@@ -410,11 +405,11 @@ class _TosScreenState extends State<TosScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$letter. ', style: TextStyle(fontWeight: FontWeight.bold, color: Color(lightForestGreenColor), fontSize: 15)),
+          Text('$letter. ', style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.brand, fontSize: 15)),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w400, color: const Color(0xFF4B4B4B), height: 1.5),
+                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w400, color: context.colors.textSecondary, height: 1.5),
                 children: spans,
               ),
             ),
@@ -431,7 +426,7 @@ class _TosScreenState extends State<TosScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFF1F2937))),
+          Text(title, style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
           const SizedBox(height: 8),
           ...List.generate(rules.length, (index) => _buildRule(rules[index], index)),
         ],
@@ -443,14 +438,14 @@ class _TosScreenState extends State<TosScreen>
   Widget build(BuildContext context)
   {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Column(
           children: [
             const SizedBox(height: 16),
-            Image.asset('assets/images/logo.png', height: 80),
+            const AppLogo(height: 80),
             const SizedBox(height: 16),
-            Text('Termeni și Condiții', style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
+            Text(context.l10n.tosTermeniConditii, style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
             const SizedBox(height: 16),
             Expanded(
               child: Scrollbar(
@@ -474,19 +469,19 @@ class _TosScreenState extends State<TosScreen>
                 child: ElevatedButton(
                   onPressed: _canAccept && !_loading ? _acceptTerms : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(lightForestGreenColor),
+                    backgroundColor: context.colors.brand,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                   child: _loading
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)),
+                            SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: context.colors.onBrand)),
                             const SizedBox(width: 12),
-                            Text('Se procesează...', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                            Text(context.l10n.tosSeProceseaza, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: context.colors.onBrand)),
                           ],
                         )
-                      : Text('Sunt de acord', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                      : Text(context.l10n.tosSuntAcord, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: context.colors.onBrand)),
                 ),
               ),
             ),

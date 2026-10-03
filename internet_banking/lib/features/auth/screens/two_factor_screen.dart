@@ -1,20 +1,22 @@
+import '../../../theme/app_tokens.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
-import '../../../config/app_config.dart';
+import '../../../core/utils/error_messages.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../core/storage/secure_session_manager.dart';
 import '../../../widgets/error_banner.dart';
-import '../../../widgets/numpad_button.dart';
 import '../../../widgets/simple_app_bar.dart';
 import 'pin_screen.dart';
+import '../../../l10n/l10n.dart';
 
 class TwoFactorScreen extends StatefulWidget {
   final String phoneNumber;
@@ -32,9 +34,14 @@ class TwoFactorScreen extends StatefulWidget {
 
 class _TwoFactorScreenState extends State<TwoFactorScreen> {
   String pin = '';
+
+  /// Real text field behind the code boxes, so the OS can autofill the SMS
+  /// code and the user can paste it.
+  final TextEditingController _codeController = TextEditingController();
+  final FocusNode _codeFocus = FocusNode();
   String textEroare = '';
   bool isVerifying = false;
-  late String clientToken;
+  String? clientToken;
   String _deviceId = 'dev-device';
   late int _userId;
 
@@ -51,6 +58,8 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
   @override
   void dispose() {
     _cooldownTimer?.cancel();
+    _codeController.dispose();
+    _codeFocus.dispose();
     super.dispose();
   }
 
@@ -62,26 +71,8 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
   void _showSuccess(String message) {
     if (!mounted) return;
     _showError('');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_outline,
-                color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-                child: Text(message,
-                    style: const TextStyle(color: Colors.white))),
-          ],
-        ),
-        backgroundColor: const Color(lightForestGreenColor),
-        behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    showAppSnackBar(context, message,
+        tone: SnackBarTone.success, duration: const Duration(seconds: 3));
   }
 
   Future<void> _initDeviceId() async {
@@ -113,28 +104,24 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
         clientToken = data['client_token'];
         await _sendCode();
       } else {
-        _showError('Eroare la obținerea tokenului client');
+        _showError(AppL10n.current.twoFactorEroareObtinereaTokenuluiClient);
       }
     } catch (e) {
-      _showError('Eroare de rețea: $e');
+      _showError(friendlyErrorMessage(e));
     }
   }
 
-  void _onNumberPress(String number) {
+  void _onCodeChanged(String value) {
     if (isVerifying) return;
-    if (pin.length < 6) {
-      _showError('');
-      setState(() => pin += number);
-      if (pin.length == 6) _verifyPin();
-    }
+    if (textEroare.isNotEmpty) _showError('');
+    setState(() => pin = value);
+    if (value.length == 6) _verifyPin();
   }
 
-  void _onDeletePress() {
-    if (isVerifying) return;
-    if (pin.isNotEmpty) {
-      _showError('');
-      setState(() => pin = pin.substring(0, pin.length - 1));
-    }
+  void _clearCode() {
+    _codeController.clear();
+    setState(() => pin = '');
+    _codeFocus.requestFocus();
   }
 
   Future<void> _startCooldown() async {
@@ -169,24 +156,24 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
         await _startCooldown();
       } else {
         if (mounted) {
-          _showError(data['error'] ?? 'Eroare la trimiterea codului');
+          _showError(data['error'] ?? context.l10n.twoFactorEroareTrimitereaCodului);
         }
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         _showError(
-            'Timpul pentru verificare a expirat. Te rugăm să reîncepi procesul.');
-        setState(() => pin = '');
+            AppL10n.current.twoFactorTimpulVerificareExpiratRugam);
+        _clearCode();
       } else {
         final data = e.response?.data;
         if (data is Map && data['error'] != null) {
           _showError(data['error'].toString());
         } else {
-          _showError('Eroare de rețea: $e');
+          _showError(friendlyErrorMessage(e));
         }
       }
     } catch (e) {
-      if (mounted) _showError('Eroare de rețea: $e');
+      if (mounted) _showError(friendlyErrorMessage(e));
     } finally {
       if (mounted) setState(() => isVerifying = false);
     }
@@ -194,6 +181,11 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
 
   Future<void> _verifyPin() async {
     if (isVerifying) return;
+    if (clientToken == null) {
+      _showError(context.l10n.twoFactorCodulPututFiTrimis);
+      _clearCode();
+      return;
+    }
     _showError('');
     setState(() => isVerifying = true);
 
@@ -211,7 +203,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
       if (response.statusCode == 200 && data['success'] == true) {
         if (!mounted) return;
         setState(() => isVerifying = true);
-        _showSuccess('Verificare reușită! Vei fi redirecționat...');
+        _showSuccess(context.l10n.twoFactorVerificareReusitaVeiFi);
 
         bool setPin = true;
         try {
@@ -247,113 +239,120 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
         });
       } else if (mounted) {
         final serverError = (data['error'] as String?) ??
-            'Cod invalid sau ai depasit numarul de incercari';
+            context.l10n.twoFactorCodInvalidDepasitNumarul;
         _showError(serverError);
-        setState(() => pin = '');
+        _clearCode();
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         if (mounted) {
-          _showError('Sesiune expirată. Te rugăm să te reconectezi');
-          setState(() => pin = '');
+          _showError(context.l10n.twoFactorSesiuneExpirataRugamSa);
+          _clearCode();
         }
       } else {
         final data = e.response?.data;
         if (data is Map && data['error'] != null) {
           _showError(data['error'].toString());
         } else {
-          _showError('Eroare de rețea: $e');
+          _showError(friendlyErrorMessage(e));
         }
-        setState(() => pin = '');
+        _clearCode();
       }
     } catch (e) {
-      if (mounted) _showError('Eroare de rețea: $e');
+      if (mounted) _showError(friendlyErrorMessage(e));
     } finally {
       if (mounted) setState(() => isVerifying = false);
     }
   }
 
   void _resendCode() {
-    if (_cooldownSeconds == 0) _sendCode();
+    if (_cooldownSeconds > 0) return;
+    if (clientToken == null) {
+      _getClientTokenAndSendCode();
+    } else {
+      _sendCode();
+    }
   }
 
   Widget _buildPinDisplay() {
+    return Stack(
+      children: [
+        ExcludeSemantics(child: _buildPinBoxes()),
+        Positioned.fill(
+          child: TextField(
+            controller: _codeController,
+            focusNode: _codeFocus,
+            autofocus: true,
+            readOnly: isVerifying,
+            onChanged: _onCodeChanged,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.oneTimeCode],
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(6),
+            ],
+            showCursor: false,
+            enableSuggestions: false,
+            autocorrect: false,
+            style: const TextStyle(color: Colors.transparent),
+            decoration: InputDecoration(
+              filled: false,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              counterText: '',
+              hintText: context.l10n.twoFactorCodVerificareSms6,
+              hintStyle: TextStyle(color: Colors.transparent),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPinBoxes() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(6, (index) {
         bool isFilled = index < pin.length;
-        return Container(
+        return Flexible(
+            child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: 40,
+          constraints: const BoxConstraints(maxWidth: 40),
           height: 48,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isFilled
-                  ? const Color(darkForestGreenColor)
-                  : Colors.grey,
+                  ? context.colors.brandStrong
+                  : context.colors.textMuted,
               width: 1.5,
             ),
           ),
           child: Center(
             child: isFilled
                 ? Text(pin[index],
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(darkForestGreenColor)))
+                        color: context.colors.brandStrong))
                 : const SizedBox.shrink(),
           ),
-        );
+        ));
       }),
-    );
-  }
-
-  Widget _buildNumpad() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 72),
-      child: Column(
-        children: [
-          ...List.generate(3, (row) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(3, (col) {
-                  return NumpadButton(
-                    label: (row * 3 + col + 1).toString(),
-                    onTap: () =>
-                        _onNumberPress((row * 3 + col + 1).toString()),
-                  );
-                }),
-              ),
-            );
-          }),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              const SizedBox(width: 64, height: 64),
-              NumpadButton(
-                label: '0',
-                onTap: () => _onNumberPress('0'),
-              ),
-              NumpadDeleteButton(onTap: _onDeletePress),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Column(
           children: [
             SimpleAppBar(
-              title: 'Verificare',
+              title: context.l10n.twoFactorVerificare,
               onBack: () => Navigator.pop(context),
             ),
             Expanded(
@@ -363,7 +362,8 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 60),
-                    Text('Introdu codul de verificare',
+                    Text(context.l10n.twoFactorIntroduCodulVerificare,
+                        textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
                             fontSize: 22, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
@@ -372,10 +372,10 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Am trimis un cod de verificare la\n',
+                            text: context.l10n.twoFactorAmTrimisCodVerificare,
                             style: GoogleFonts.inter(
                                 fontSize: 14,
-                                color: Colors.grey[600],
+                                color: context.colors.textSecondary,
                                 height: 1.5),
                           ),
                           TextSpan(
@@ -383,7 +383,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                             style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(lightForestGreenColor),
+                                color: context.colors.brand,
                                 height: 1.5),
                           ),
                         ],
@@ -396,24 +396,24 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                       ErrorBanner(message: textEroare),
                     ],
                     const SizedBox(height: 22),
-                    GestureDetector(
-                      onTap: _resendCode,
+                    TextButton(
+                      onPressed: _cooldownSeconds == 0 ? _resendCode : null,
                       child: RichText(
                         textAlign: TextAlign.center,
                         text: TextSpan(
                           children: [
                             TextSpan(
-                                text: "Nu ai primit codul? ",
+                                text: context.l10n.twoFactorPrimitCodul,
                                 style: GoogleFonts.inter(
-                                    color: const Color(lightForestGreenColor),
+                                    color: context.colors.brand,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w400)),
                             TextSpan(
                               text: _cooldownSeconds == 0
-                                  ? "Retrimite"
-                                  : "Retrimite (${_cooldownSeconds}s)",
+                                  ? context.l10n.twoFactorRetrimite
+                                  : context.l10n.twoFactorRetrimiteS(_cooldownSeconds),
                               style: GoogleFonts.inter(
-                                  color: const Color(lightForestGreenColor),
+                                  color: context.colors.brand,
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold),
                             ),
@@ -425,7 +425,6 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
                 ),
               ),
             ),
-            _buildNumpad(),
           ],
         ),
       ),

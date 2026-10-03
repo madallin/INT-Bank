@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../config/app_config.dart';
@@ -79,6 +80,15 @@ class DioClient
 
   late final Dio _dio;
   late final Dio _refreshDio;
+
+  /// Routes every request through [adapter] (e.g. canned responses in widget
+  /// tests). Never used by the app itself.
+  @visibleForTesting
+  static void debugUseAdapter(HttpClientAdapter adapter)
+  {
+    _instance._dio.httpClientAdapter = adapter;
+    _instance._refreshDio.httpClientAdapter = adapter;
+  }
 
   bool _isRefreshing = false;
   final _pendingRequests = <_PendingRequest>[];

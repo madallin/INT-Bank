@@ -1,39 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../config/app_config.dart';
+import '../core/utils/formatters.dart';
+import '../theme/app_tokens.dart';
+import 'section_header.dart';
+import '../l10n/l10n.dart';
 
 class DatePickerField extends StatelessWidget {
   final DateTime? selectedDate;
   final ValueChanged<DateTime> onDateSelected;
-  final String label;
+  /// Defaults to "date of birth".
+  final String? label;
   final IconData icon;
 
   const DatePickerField({
     super.key,
     required this.selectedDate,
     required this.onDateSelected,
-    this.label = 'Data nașterii',
+    this.label,
     this.icon = Icons.calendar_today_outlined,
   });
 
   Future<void> _selectDate(BuildContext context) async {
+    // The picker inherits colours from the app theme.
     final date = await showDatePicker(
       context: context,
       initialDate:
           selectedDate ?? DateTime.now().subtract(const Duration(days: 6570)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(lightForestGreenColor),
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (date != null) {
       onDateSelected(date);
@@ -42,48 +36,36 @@ class DatePickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+    final hasDate = selectedDate != null;
+    final radius = BorderRadius.circular(AppRadii.lg);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 6, bottom: 8),
-          child: Row(
-            children: [
-              Icon(icon, size: 16, color: const Color(0xFF6B7280)),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF6B7280),
-                ),
-              ),
-            ],
-          ),
-        ),
-        GestureDetector(
-          onTap: () => _selectDate(context),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey[200]!, width: 1.5),
+        SectionHeader(icon: icon, title: label ?? context.l10n.commonDataNasterii, subtitle: ''),
+        Semantics(
+          button: true,
+          label: '${label ?? context.l10n.commonDataNasterii}: ${hasDate ? formatDate(selectedDate!) : context.l10n.commonNeselectata}',
+          excludeSemantics: true,
+          child: Material(
+            color: c.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: radius,
+              side: BorderSide(color: c.border, width: 1.5),
             ),
-            child: Text(
-              selectedDate != null
-                  ? '${selectedDate!.day.toString().padLeft(2, '0')}.${selectedDate!.month.toString().padLeft(2, '0')}.${selectedDate!.year}'
-                  : 'Selectează data',
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                color: selectedDate != null
-                    ? const Color(darkGreyColor)
-                    : Colors.grey[400],
-                fontWeight: selectedDate != null
-                    ? FontWeight.w500
-                    : FontWeight.w400,
+            child: InkWell(
+              borderRadius: radius,
+              onTap: () => _selectDate(context),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                child: Text(
+                  hasDate ? formatDate(selectedDate!) : context.l10n.commonSelecteazaData,
+                  style: context.text.bodyLarge?.copyWith(
+                    color: hasDate ? c.textPrimary : c.textMuted,
+                    fontWeight: hasDate ? FontWeight.w500 : FontWeight.w400,
+                  ),
+                ),
               ),
             ),
           ),

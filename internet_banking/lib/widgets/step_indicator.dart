@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../config/app_config.dart';
+import '../theme/app_tokens.dart';
+import '../l10n/l10n.dart';
 
+/// Segmented progress bar for multi-step flows (0-based [currentStep]).
 class StepIndicator extends StatelessWidget {
   final int currentStep;
   final int totalSteps;
@@ -14,24 +16,28 @@ class StepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-      child: Row(
-        children: List.generate(totalSteps, (index) {
-          final isActive = index <= currentStep;
-          return Expanded(
-            child: Container(
-              height: 4,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                color: isActive
-                    ? const Color(lightForestGreenColor)
-                    : Colors.grey[300],
+    final c = context.colors;
+    return Semantics(
+      label: context.l10n.commonPasul(currentStep + 1, totalSteps),
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.md),
+        child: Row(
+          children: List.generate(totalSteps, (index) {
+            final isActive = index <= currentStep;
+            return Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 4,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(2),
+                  color: isActive ? c.brand : c.border,
+                ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
   }

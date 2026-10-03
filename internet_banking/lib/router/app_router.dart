@@ -11,8 +11,10 @@ import '../features/error/screens/error_screen.dart';
 import '../features/exchange/screens/exchange_screen.dart';
 import '../features/transactions/screens/transaction_history_screen.dart';
 import '../features/transfer/screens/transfer_screen.dart';
+import '../features/vaults/screens/vaults_screen.dart';
 import '../features/onboarding/screens/approval_screen.dart';
 import '../features/onboarding/screens/tos_screen.dart';
+import '../l10n/l10n.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
@@ -77,6 +79,12 @@ final GoRouter appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/vaults/:userId',
+      builder: (c, s) => VaultsScreen(
+        userId: int.parse(s.pathParameters['userId'] ?? '0'),
+      ),
+    ),
+    GoRoute(
       path: '/onboarding/tos/:userId',
       builder: (c, s) => TosScreen(
         userId: int.parse(s.pathParameters['userId'] ?? '0'),
@@ -90,7 +98,8 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
   errorBuilder: (c, s) => ErrorScreen(
-    errorMessage: s.error.toString(),
-    onConnectionRestored: (ctx) {},
+    errorMessage:
+        c.l10n.routerPaginaSolicitataFostGasita,
+    onConnectionRestored: (ctx) => GoRouter.of(ctx).go('/'),
   ),
 );

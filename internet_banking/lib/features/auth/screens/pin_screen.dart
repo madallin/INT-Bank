@@ -1,3 +1,5 @@
+import '../../../widgets/app_logo.dart';
+import '../../../theme/app_tokens.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
@@ -8,14 +10,15 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
-import '../../../config/app_config.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/utils/error_messages.dart';
 import '../../../services/jwt_api_service.dart';
 import '../../../core/storage/secure_session_manager.dart';
 import '../../../widgets/error_banner.dart';
-import '../../../widgets/numpad_button.dart';
+import '../../../widgets/pin_pad.dart';
 import '../../../widgets/pin_dot_indicator.dart';
 import '../../home/screens/home_screen.dart';
+import '../../../l10n/l10n.dart';
 
 class PinScreen extends StatefulWidget {
   final int userId;
@@ -44,7 +47,7 @@ class _PinScreenState extends State<PinScreen>
   bool isConfirming = false;
   String textEroare = '';
   bool isVerifying = false;
-  late String clientToken;
+  String? clientToken;
   String _deviceId = 'dev-device';
 
   AnimationController? _shakeController;
@@ -63,6 +66,10 @@ class _PinScreenState extends State<PinScreen>
   void dispose() {
     _shakeController?.dispose();
     super.dispose();
+  }
+
+  void _clearError() {
+    if (textEroare.isNotEmpty) setState(() => textEroare = '');
   }
 
   void _showError(String message) {
@@ -103,13 +110,13 @@ class _PinScreenState extends State<PinScreen>
         clientToken = data['client_token'];
       }
     } catch (e) {
-      _showError('Eroare de rețea: $e');
+      _showError(friendlyErrorMessage(e));
     }
   }
 
   void _onNumberPress(String number) {
     if (isVerifying) return;
-    _showError('');
+    _clearError();
 
     if (!isConfirming) {
       if (pin.length < 6) {
@@ -132,7 +139,7 @@ class _PinScreenState extends State<PinScreen>
 
   void _onDeletePress() {
     if (isVerifying) return;
-    _showError('');
+    _clearError();
     if (!isConfirming) {
       if (pin.isNotEmpty) {
         setState(() => pin = pin.substring(0, pin.length - 1));
@@ -152,6 +159,10 @@ class _PinScreenState extends State<PinScreen>
     setState(() => isVerifying = true);
 
     try {
+      if (!await _ensureClientToken()) {
+        setState(() => pin = '');
+        return;
+      }
       final response = await DioClient().post(
         '/users/${widget.userId}/verify-pin',
         options: Options(headers: {'Authorization': 'Bearer $clientToken'}),
@@ -166,7 +177,7 @@ class _PinScreenState extends State<PinScreen>
         if (widget.useJwtLogin) {
           final success = await _performJwtLogin();
           if (!success) {
-            _showError('Eroare la autentificare. Încearcă din nou.');
+            _showError(AppL10n.current.pinEroareAutentificareIncearcaNou);
             setState(() => pin = '');
             return;
           }
@@ -184,7 +195,7 @@ class _PinScreenState extends State<PinScreen>
           );
         }
       } else {
-        _showError(data['error'] ?? 'PIN incorect');
+        _showError(data['error'] ?? AppL10n.current.pinPinIncorect);
         setState(() => pin = '');
       }
     } on DioException catch (e) {
@@ -192,15 +203,23 @@ class _PinScreenState extends State<PinScreen>
       if (data is Map && data['error'] != null) {
         _showError(data['error'].toString());
       } else {
-        _showError('Eroare: Nu te poți conecta la server');
+        _showError(AppL10n.current.pinEroarePotiConectaServer);
       }
       setState(() => pin = '');
     } catch (e) {
-      _showError('Eroare: Nu te poți conecta la server');
+      _showError(AppL10n.current.pinEroarePotiConectaServer);
       setState(() => pin = '');
     } finally {
       if (mounted) setState(() => isVerifying = false);
     }
+  }
+
+  Future<bool> _ensureClientToken() async {
+    if (clientToken == null) await _getClientToken();
+    if (clientToken == null && textEroare.isEmpty) {
+      _showError(AppL10n.current.pinPotiConectaServerIncearca);
+    }
+    return clientToken != null;
   }
 
   Future<bool> _performJwtLogin() async {
@@ -222,7 +241,7 @@ class _PinScreenState extends State<PinScreen>
 
   Future<void> _setNewPin() async {
     if (pin != confirmPin) {
-      _showError('PIN-urile nu coincid');
+      _showError(context.l10n.pinPinUrileCoincid);
       setState(() {
         pin = '';
         confirmPin = '';
@@ -233,6 +252,14 @@ class _PinScreenState extends State<PinScreen>
 
     setState(() => isVerifying = true);
     try {
+      if (!await _ensureClientToken()) {
+        setState(() {
+          pin = '';
+          confirmPin = '';
+          isConfirming = false;
+        });
+        return;
+      }
       final response = await DioClient().put(
         '/users/${widget.userId}/set-pin',
         options: Options(headers: {'Authorization': 'Bearer $clientToken'}),
@@ -260,7 +287,7 @@ class _PinScreenState extends State<PinScreen>
           );
         }
       } else {
-        _showError(data['error'] ?? 'Eroare la setarea PIN-ului');
+        _showError(data['error'] ?? AppL10n.current.pinEroareSetareaPinUlui);
         setState(() {
           pin = '';
           confirmPin = '';
@@ -272,7 +299,7 @@ class _PinScreenState extends State<PinScreen>
       if (data is Map && data['error'] != null) {
         _showError(data['error'].toString());
       } else {
-        _showError('Eroare: Nu te poți conecta la server');
+        _showError(AppL10n.current.pinEroarePotiConectaServer);
       }
       setState(() {
         pin = '';
@@ -280,7 +307,7 @@ class _PinScreenState extends State<PinScreen>
         isConfirming = false;
       });
     } catch (e) {
-      _showError('Eroare: Nu te poți conecta la server');
+      _showError(AppL10n.current.pinEroarePotiConectaServer);
       setState(() {
         pin = '';
         confirmPin = '';
@@ -291,67 +318,39 @@ class _PinScreenState extends State<PinScreen>
     }
   }
 
-  Widget _buildNumpad() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-      child: Column(
-        children: [
-          ...List.generate(3, (row) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(3, (col) {
-                  return NumpadButton(
-                    label: (row * 3 + col + 1).toString(),
-                    onTap: () =>
-                        _onNumberPress((row * 3 + col + 1).toString()),
-                  );
-                }),
-              ),
-            );
-          }),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              const SizedBox(width: 64, height: 64),
-              NumpadButton(
-                label: '0',
-                onTap: () => _onNumberPress('0'),
-              ),
-              NumpadDeleteButton(onTap: _onDeletePress),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final title = widget.set
-        ? (isConfirming ? 'Confirmă PIN-ul' : 'Setează PIN-ul')
-        : 'Introdu PIN-ul';
+        ? (isConfirming ? context.l10n.pinConfirmaPinUl : context.l10n.pinSeteazaPinUl)
+        : context.l10n.pinIntroduPinUl;
     final subtitle = widget.set
         ? (isConfirming
-            ? 'Reintroduceți codul PIN pentru confirmare'
-            : 'Alegeți un cod PIN din 6 cifre')
-        : 'Pentru a continua, te rugăm să introduci codul tău PIN';
+            ? context.l10n.pinReintroducetiCodulPinConfirmare
+            : context.l10n.pinAlegetiCodPin6)
+        : context.l10n.pinContinuaRugamSaIntroduci;
 
     final currentPin = isConfirming ? confirmPin : pin;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
-        child: Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/images/logo.png', height: 60),
+            const SizedBox(height: 16),
+            const AppLogo(height: 60),
             const SizedBox(height: 40),
             AnimatedBuilder(
               animation: _shakeController!,
               builder: (context, child) {
-                final offset = _shakeController!.value * 10 - 5;
+                final offset = _shakeController!.isAnimating
+                    ? _shakeController!.value * 10 - 5
+                    : 0.0;
                 return Transform.translate(
                   offset: Offset(offset, 0),
                   child: child,
@@ -364,7 +363,7 @@ class _PinScreenState extends State<PinScreen>
                     style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
-                      color: const Color(darkGreyColor),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -373,7 +372,7 @@ class _PinScreenState extends State<PinScreen>
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: context.colors.textSecondary,
                       fontWeight: FontWeight.w400,
                       height: 1.5,
                     ),
@@ -391,8 +390,16 @@ class _PinScreenState extends State<PinScreen>
               ),
             ],
             const Spacer(),
-            _buildNumpad(),
+            PinPad(
+              onDigit: _onNumberPress,
+              onDelete: _onDeletePress,
+              enabled: !isVerifying,
+            ),
           ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

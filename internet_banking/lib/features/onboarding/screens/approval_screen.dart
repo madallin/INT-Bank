@@ -1,3 +1,4 @@
+import '../../../theme/app_tokens.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show HttpClient, WebSocket;
@@ -8,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../config/app_config.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../welcome/welcome_screen.dart';
+import '../../../l10n/l10n.dart';
 
 class ApprovalScreen extends StatefulWidget
 {
@@ -220,7 +222,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
   Widget build(BuildContext context)
   {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -269,13 +271,13 @@ class _ApprovalScreenState extends State<ApprovalScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(lightForestGreenColor),
-              const Color(darkForestGreenColor),
+              context.colors.heroStart,
+              context.colors.heroEnd,
             ],
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(lightForestGreenColor).withOpacity(0.4),
+              color: context.colors.brand.withOpacity(0.4),
               blurRadius: 30,
               offset: const Offset(0, 15),
             ),
@@ -290,7 +292,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(lightForestGreenColor).withOpacity(0.3),
+                  color: context.colors.brand.withOpacity(0.3),
                   width: 4,
                 ),
               ),
@@ -316,13 +318,13 @@ class _ApprovalScreenState extends State<ApprovalScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(lightForestGreenColor),
-              const Color(darkForestGreenColor),
+              context.colors.heroStart,
+              context.colors.heroEnd,
             ],
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(lightForestGreenColor).withOpacity(0.4),
+              color: context.colors.brand.withOpacity(0.4),
               blurRadius: 30,
               offset: const Offset(0, 15),
             ),
@@ -337,7 +339,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(lightForestGreenColor).withOpacity(0.3),
+                  color: context.colors.brand.withOpacity(0.3),
                   width: 4,
                 ),
               ),
@@ -355,21 +357,21 @@ class _ApprovalScreenState extends State<ApprovalScreen>
       key: const ValueKey('waiting_text'),
       children: [
         Text(
-          'Verificare in curs',
+          context.l10n.approvalVerificareCurs,
           style: GoogleFonts.poppins(
             fontSize: 24,
             fontWeight: FontWeight.w600,
-            color: const Color(darkForestGreenColor),
+            color: context.colors.brandStrong,
             letterSpacing: -0.5,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
         Text(
-          'Un operator verifica datele tale in acest moment',
+          context.l10n.approvalOperatorVerificaDateleTale,
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: Colors.grey[600],
+            color: context.colors.textSecondary,
             fontWeight: FontWeight.w400,
             height: 1.6,
           ),
@@ -381,14 +383,14 @@ class _ApprovalScreenState extends State<ApprovalScreen>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                const Color(lightForestGreenColor),
-                const Color(darkForestGreenColor),
+                context.colors.heroStart,
+                context.colors.heroEnd,
               ],
             ),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: const Color(lightForestGreenColor).withOpacity(0.3),
+                color: context.colors.brand.withOpacity(0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -407,7 +409,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Aprobare in cateva momente...',
+                context.l10n.approvalAprobareCatevaMomente,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   color: Colors.white,
@@ -429,21 +431,21 @@ class _ApprovalScreenState extends State<ApprovalScreen>
       child: Column(
         children: [
           Text(
-            'Cont verificat cu succes!',
+            context.l10n.approvalContVerificatSucces,
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.w600,
-              color: const Color(darkForestGreenColor),
+              color: context.colors.brandStrong,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Text(
-            'Datele tale au fost aprobate.\nVei fi redirectionat in 5 secunde.',
+            context.l10n.approvalDateleTaleAuFost,
             style: GoogleFonts.poppins(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: context.colors.textSecondary,
               fontWeight: FontWeight.w400,
               height: 1.6,
             ),
@@ -455,14 +457,14 @@ class _ApprovalScreenState extends State<ApprovalScreen>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(lightForestGreenColor),
-                  const Color(darkForestGreenColor),
+                  context.colors.heroStart,
+                  context.colors.heroEnd,
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(lightForestGreenColor).withOpacity(0.3),
+                  color: context.colors.brand.withOpacity(0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -474,7 +476,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
                 const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 12),
                 Text(
-                  'Verificare completa',
+                  context.l10n.approvalVerificareCompleta,
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     color: Colors.white,

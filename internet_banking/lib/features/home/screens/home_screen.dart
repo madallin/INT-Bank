@@ -1,3 +1,5 @@
+import '../../../widgets/confirm_dialog.dart';
+import '../../../theme/app_tokens.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
@@ -8,7 +10,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 
-import '../../../config/app_config.dart';
+import '../../../core/utils/helpers.dart';
+import '../../../data/models/transaction_entry.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../data/models/card_model.dart';
 import '../../../services/currency_service.dart';
@@ -20,6 +24,7 @@ import '../../exchange/screens/exchange_screen.dart';
 import '../../welcome/welcome_screen.dart';
 import '../../statement/screens/statement_screen.dart';
 import '../../cards/screens/card_settings_screen.dart';
+import '../../vaults/screens/vaults_screen.dart';
 import '../../transactions/widgets/transaction_details_bottom_sheet.dart';
 import '../widgets/account_details_bottom_sheet.dart';
 import '../../notifications/widgets/notification_center_bottom_sheet.dart';
@@ -30,6 +35,7 @@ import '../../analytics/screens/spending_analytics_screen.dart';
 import '../../../widgets/shimmer_loading.dart';
 import '../../../core/utils/haptic_feedback_helper.dart';
 import '../../../core/services/privacy_mode_service.dart';
+import '../../../l10n/l10n.dart';
 
 class HomeScreen extends StatefulWidget {
   final int userId;
@@ -48,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen>
   int? _currentAccountId;
 
   double _balance = 0.0;
-  bool _balanceVisible = true;
+  int? _balanceAccountId;
   bool _loading = true;
   bool _loadingBalance = true;
 
@@ -67,9 +73,11 @@ class _HomeScreenState extends State<HomeScreen>
   Timer? _refreshTimer;
 
   List<Map<String, dynamic>> _recentTransactions = [];
+  int? _transactionsAccountId;
   bool _loadingTransactions = false;
   int _unreadNotifications = 0;
   String? _currentIban;
+  String _currentCurrency = 'RON';
 
   @override
   void initState() {
@@ -197,7 +205,6 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _fetchCardsAndAccounts() async {
-    setState(() => _loading = true);
     try {
       final response = await _client.get(
         '/users/${widget.userId}/cards',
@@ -235,13 +242,15 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _fetchBalance() async {
-    setState(() => _loadingBalance = true);
     if (clientToken == null) {
       setState(() => _loadingBalance = false);
       return;
     }
 
     int? accountId = _currentAccountId;
+    if (_balanceAccountId == null || _balanceAccountId != accountId) {
+      setState(() => _loadingBalance = true);
+    }
 
     if (accountId == null) {
       try {
@@ -273,16 +282,23 @@ class _HomeScreenState extends State<HomeScreen>
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        if (data['account'] != null) {
-          if (data['account']['iban'] != null) {
-            _currentIban = data['account']['iban'].toString();
-          }
-          if (data['account']['sold'] != null) {
-            final sold = data['account']['sold'];
-            setState(() => _balance = (sold is String
-                ? double.parse(sold)
-                : (sold as num).toDouble()));
-          }
+        if (data['account'] != null && mounted) {
+          final account = data['account'] as Map<String, dynamic>;
+          final sold = account['sold'];
+          setState(() {
+            if (account['iban'] != null) {
+              _currentIban = account['iban'].toString();
+            }
+            if (account['moneda'] != null) {
+              _currentCurrency = account['moneda'].toString();
+            }
+            if (sold != null) {
+              _balance = sold is String
+                  ? double.parse(sold)
+                  : (sold as num).toDouble();
+            }
+            _balanceAccountId = accountId;
+          });
         }
       } else if (response.statusCode == 401) {
         final refreshed = await _refreshClientToken();
@@ -297,7 +313,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _fetchRecentTransactions() async {
     if (_currentAccountId == null || clientToken == null) return;
-    setState(() => _loadingTransactions = true);
+    final accountId = _currentAccountId;
+    if (_transactionsAccountId != accountId) {
+      setState(() => _loadingTransactions = true);
+    }
     try {
       final response = await _client.get(
         '/users/${widget.userId}/accounts/$_currentAccountId/transactions',
@@ -309,8 +328,11 @@ class _HomeScreenState extends State<HomeScreen>
         if (data['transactions'] != null) {
           final all =
               List<Map<String, dynamic>>.from(data['transactions']);
-          if (mounted) {
-            setState(() => _recentTransactions = all.take(3).toList());
+          if (mounted && accountId == _currentAccountId) {
+            setState(() {
+              _recentTransactions = all.take(3).toList();
+              _transactionsAccountId = accountId;
+            });
           }
         }
       }
@@ -324,7 +346,6 @@ class _HomeScreenState extends State<HomeScreen>
   void _startPeriodicRefresh() {
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) {
-        _fetchBalance();
         _fetchCardsAndAccounts();
         _fetchUnreadNotifications();
       }
@@ -334,6 +355,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    PrivacyModeService().isPrivacyModeEnabled.removeListener(_onPrivacyChanged);
     PushNotificationListener().stop();
     _flipController.dispose();
     _pageController.dispose();
@@ -349,6 +371,7 @@ class _HomeScreenState extends State<HomeScreen>
         _currentCardIndex++;
         _selectedCard = _cardList[_currentCardIndex];
         _currentAccountId = _selectedCard!.accountId;
+        _currentIban = null;
       });
       _fetchBalance();
       _fetchRecentTransactions();
@@ -362,6 +385,7 @@ class _HomeScreenState extends State<HomeScreen>
         _currentCardIndex--;
         _selectedCard = _cardList[_currentCardIndex];
         _currentAccountId = _selectedCard!.accountId;
+        _currentIban = null;
       });
       _fetchBalance();
       _fetchRecentTransactions();
@@ -422,20 +446,33 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _toggleBalance() {
     HapticFeedbackHelper.selection();
-    setState(() => _balanceVisible = !_balanceVisible);
+    PrivacyModeService().togglePrivacyMode();
+  }
+
+  void _showAccountDataLoading() {
+    showInfoSnackBar(context, context.l10n.homeSeIncarcaDateleContului);
   }
 
   void _goToTransfer() {
     if (_selectedCard == null) return;
+    if (_currentIban == null) {
+      _showAccountDataLoading();
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (_) =>
-              TransferScreen(userId: widget.userId, userIban: _currentIban ?? '')),
+          builder: (_) => TransferScreen(
+                userId: widget.userId,
+                userIban: _currentIban ?? '',
+                currency: _currentCurrency,
+                availableBalance: !_loadingBalance &&
+                        _balanceAccountId == _currentAccountId
+                    ? _balance
+                    : null,
+              )),
     ).then((_) {
       _fetchCardsAndAccounts();
-      _fetchBalance();
-      _fetchRecentTransactions();
       _fetchUnreadNotifications();
     });
   }
@@ -448,6 +485,7 @@ class _HomeScreenState extends State<HomeScreen>
         builder: (_) => TransactionHistoryScreen(
           userId: widget.userId,
           accountId: _currentAccountId!,
+          currency: _currentCurrency,
         ),
       ),
     ).then((_) => _fetchRecentTransactions());
@@ -461,15 +499,18 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  void _goToVaults() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VaultsScreen(userId: widget.userId),
+      ),
+    );
+  }
+
   void _goToStatement() {
-    if (_currentAccountId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Se încarcă datele contului...', style: GoogleFonts.inter()),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: const Color(lightForestGreenColor),
-        ),
-      );
+    if (_currentAccountId == null || _currentIban == null) {
+      _showAccountDataLoading();
       return;
     }
     Navigator.push(
@@ -478,8 +519,8 @@ class _HomeScreenState extends State<HomeScreen>
         builder: (_) => StatementScreen(
           userId: widget.userId,
           accountId: _currentAccountId!,
-          iban: 'RO49INTB${widget.userId.toString().padLeft(4, '0')}0000${_currentAccountId.toString().padLeft(4, '0')}',
-          currency: 'RON',
+          iban: _currentIban!,
+          currency: _currentCurrency,
         ),
       ),
     );
@@ -499,12 +540,16 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _showAccountDetails() {
+    if (_currentIban == null) {
+      _showAccountDataLoading();
+      return;
+    }
     AccountDetailsBottomSheet.show(
       context,
-      iban: 'RO49INTB${widget.userId.toString().padLeft(4, '0')}0000${(_currentAccountId ?? 1).toString().padLeft(4, '0')}',
-      currency: 'RON',
+      iban: _currentIban!,
+      currency: _currentCurrency,
       balance: _balance,
-      holderName: _selectedCard?.cardHolder ?? 'Client INTBank',
+      holderName: _selectedCard?.cardHolder ?? context.l10n.homeClientIntbank,
     );
   }
 
@@ -516,7 +561,7 @@ class _HomeScreenState extends State<HomeScreen>
         builder: (_) => SpendingAnalyticsScreen(
           userId: widget.userId,
           accountId: _currentAccountId!,
-          currency: 'RON',
+          currency: _currentCurrency,
         ),
       ),
     );
@@ -547,6 +592,16 @@ class _HomeScreenState extends State<HomeScreen>
     } catch (_) {}
   }
 
+  Future<void> _confirmLogout() async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: context.l10n.homeDeconectezi,
+      message: context.l10n.homeVaTrebuiSaAutentifici,
+      confirmLabel: context.l10n.homeDeconecteazaMa,
+    );
+    if (confirmed) _logout();
+  }
+
   Future<void> _logout() async {
     PushNotificationListener().stop();
     const storage = FlutterSecureStorage();
@@ -559,45 +614,12 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  String _formatBalance(double bal) {
-    final parts = bal.toStringAsFixed(2).split('.');
-    final intPart = parts[0].replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
-    return '$intPart,${parts[1]}';
-  }
-
-  String _formatPan(String raw) {
-    final clean = raw.replaceAll(' ', '');
-    final buf = StringBuffer();
-    for (int i = 0; i < clean.length; i++) {
-      if (i > 0 && i % 4 == 0) buf.write(' ');
-      buf.write(clean[i]);
-    }
-    return buf.toString();
-  }
-
-  String _txDate(String dateStr) {
-    try {
-      final d = DateTime.parse(dateStr);
-      return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
-    } catch (_) {
-      return dateStr;
-    }
-  }
-
-  String _txAmount(Map<String, dynamic> t) {
+  String _txAmount(TransactionEntry entry) {
+    final currency = entry.currency ?? _currentCurrency;
     if (PrivacyModeService().isPrivacyModeEnabled.value) {
-      return '•••• RON';
+      return maskedMoney(currency);
     }
-    final isIn = t['type'] == 'received';
-    final double amt = (t['suma'] as num).toDouble();
-    final str = amt.toStringAsFixed(2).replaceAll('.', ',');
-    final parts = str.split(',');
-    final intPart = parts[0].replaceAllMapped(
-        RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
-    return '${isIn ? '+' : '-'}$intPart,${parts[1]} RON';
+    return formatMoney(entry.signedAmount, currency, showSign: true);
   }
 
   // ───────────────────── Build ─────────────────────
@@ -605,7 +627,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: context.colors.background,
       body: SafeArea(
         child: _loading
             ? const HomeScreenSkeleton()
@@ -617,7 +639,7 @@ class _HomeScreenState extends State<HomeScreen>
                     await CurrencyService.instance.fetchRates();
                     if (mounted) setState(() {});
                   },
-                  color: const Color(lightForestGreenColor),
+                  color: context.colors.brand,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Column(
@@ -630,7 +652,9 @@ class _HomeScreenState extends State<HomeScreen>
                         _buildBalanceRow(),
                         const SizedBox(height: 24),
                         _buildActionButtons(),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 20),
+                        _buildVaultsBanner(),
+                        const SizedBox(height: 20),
                         _buildExchangePreview(),
                         const SizedBox(height: 20),
                         _buildRecentTransactions(),
@@ -654,10 +678,10 @@ class _HomeScreenState extends State<HomeScreen>
             height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(lightForestGreenColor).withOpacity(0.12),
+              color: context.colors.brand.withOpacity(0.12),
             ),
-            child: const Icon(Icons.account_balance_rounded,
-                color: Color(lightForestGreenColor), size: 22),
+            child: Icon(Icons.account_balance_rounded,
+                color: context.colors.brand, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -668,94 +692,44 @@ class _HomeScreenState extends State<HomeScreen>
                     style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: const Color(darkGreyColor),
+                        color: context.colors.textPrimary,
                         letterSpacing: -0.3)),
-                Text('Bun venit!',
+                Text(context.l10n.homeBunVenit,
                     style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: Colors.grey[500],
+                        color: context.colors.textMuted,
                         fontWeight: FontWeight.w400)),
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () {
-              HapticFeedbackHelper.selection();
-              PrivacyModeService().togglePrivacyMode();
-            },
-            child: ValueListenableBuilder<bool>(
-              valueListenable: PrivacyModeService().isPrivacyModeEnabled,
-              builder: (context, isPrivacy, _) {
-                return Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isPrivacy ? const Color(lightForestGreenColor).withOpacity(0.15) : Colors.grey[100],
-                  ),
-                  child: Icon(
-                    isPrivacy ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                    size: 20,
-                    color: isPrivacy ? const Color(lightForestGreenColor) : Colors.grey[700],
-                  ),
-                );
+          ValueListenableBuilder<bool>(
+            valueListenable: PrivacyModeService().isPrivacyModeEnabled,
+            builder: (context, isPrivacy, _) => _HeaderIconButton(
+              icon: isPrivacy ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+              tooltip: isPrivacy ? context.l10n.homeArataSumele : context.l10n.homeAscundeSumele,
+              active: isPrivacy,
+              onTap: () {
+                HapticFeedbackHelper.selection();
+                PrivacyModeService().togglePrivacyMode();
               },
             ),
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.notifications_outlined,
+            tooltip: context.l10n.homeNotificari,
+            badgeCount: _unreadNotifications,
             onTap: () async {
               HapticFeedbackHelper.buttonTap();
               await NotificationCenterBottomSheet.show(context, userId: widget.userId);
               _fetchUnreadNotifications();
             },
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                      shape: BoxShape.circle, color: Colors.grey[100]),
-                  child: Icon(Icons.notifications_outlined,
-                      size: 20, color: Colors.grey[700]),
-                ),
-                if (_unreadNotifications > 0)
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE53935),
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                      child: Center(
-                        child: Text(
-                          '$_unreadNotifications',
-                          style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _logout,
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                  shape: BoxShape.circle, color: Colors.grey[100]),
-              child: Icon(Icons.logout_rounded,
-                  size: 20, color: Colors.grey[600]),
-            ),
+          const SizedBox(width: 4),
+          _HeaderIconButton(
+            icon: Icons.logout_rounded,
+            tooltip: context.l10n.homeDeconectare,
+            onTap: _confirmLogout,
           ),
         ],
       ),
@@ -764,20 +738,37 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildCardSection() {
     if (_cardList.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.all(24),
         child: Center(
           child: EmptyStatePlaceholder(
             icon: Icons.credit_card_off_outlined,
-            title: 'Nu ai carduri disponibile',
+            title: context.l10n.homeCarduriDisponibile,
           ),
         ),
       );
     }
 
+    final hasPrev = _currentCardIndex > 0;
+    final hasNext = _currentCardIndex < _cardList.length - 1;
     return Column(
       children: [
-        Padding(
+        Semantics(
+          label: context.l10n.homeCard(_currentCardIndex + 1, _cardList.length),
+          onIncrease: hasNext ? _nextCard : null,
+          onDecrease: hasPrev ? _prevCard : null,
+          child: GestureDetector(
+          onHorizontalDragEnd: (details) {
+            final velocity = details.primaryVelocity ?? 0;
+            if (velocity < -250 && hasNext) {
+              HapticFeedbackHelper.selection();
+              _nextCard();
+            } else if (velocity > 250 && hasPrev) {
+              HapticFeedbackHelper.selection();
+              _prevCard();
+            }
+          },
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: AnimatedBuilder(
             animation: _flipController,
@@ -802,45 +793,45 @@ class _HomeScreenState extends State<HomeScreen>
               );
             },
           ),
+          ),
+          ),
         ),
         if (_cardList.length > 1) ...[
           const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              GestureDetector(
-                onTap: _currentCardIndex > 0 ? _prevCard : null,
-                child: Icon(Icons.chevron_left_rounded,
+              IconButton(
+                onPressed: hasPrev ? _prevCard : null,
+                tooltip: context.l10n.homeCardulAnterior,
+                icon: Icon(Icons.chevron_left_rounded,
                     size: 26,
-                    color: _currentCardIndex > 0
-                        ? const Color(lightForestGreenColor)
-                        : Colors.grey[300]),
+                    color: hasPrev
+                        ? context.colors.brand
+                        : context.colors.border),
               ),
-              const SizedBox(width: 6),
               ...List.generate(_cardList.length, (i) {
-                return AnimatedContainer(
+                return ExcludeSemantics(child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 3),
                   width: i == _currentCardIndex ? 20 : 7,
                   height: 7,
                   decoration: BoxDecoration(
                     color: i == _currentCardIndex
-                        ? const Color(lightForestGreenColor)
-                        : Colors.grey[300],
+                        ? context.colors.brand
+                        : context.colors.border,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                );
+                ));
               }),
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: _currentCardIndex < _cardList.length - 1
-                    ? _nextCard
-                    : null,
-                child: Icon(Icons.chevron_right_rounded,
+              IconButton(
+                onPressed: hasNext ? _nextCard : null,
+                tooltip: context.l10n.homeCardulUrmator,
+                icon: Icon(Icons.chevron_right_rounded,
                     size: 26,
-                    color: _currentCardIndex < _cardList.length - 1
-                        ? const Color(lightForestGreenColor)
-                        : Colors.grey[300]),
+                    color: hasNext
+                        ? context.colors.brand
+                        : context.colors.border),
               ),
             ],
           ),
@@ -854,12 +845,13 @@ class _HomeScreenState extends State<HomeScreen>
     return Container(
       key: const ValueKey('front'),
       width: double.infinity,
-      height: 200,
+      // Grows with large text instead of clipping; 200 at normal size.
+      constraints: const BoxConstraints(minHeight: 200),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF0F9D8E), Color(0xFF005F52)],
+          colors: [context.colors.cardGradientStart, context.colors.cardGradientEnd],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -897,7 +889,8 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(22),
+            // Vertical padding leaves room for the 48dp settings target.
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -912,9 +905,18 @@ class _HomeScreenState extends State<HomeScreen>
                             letterSpacing: 0.3)),
                     Row(
                       children: [
-                        GestureDetector(
+                        Semantics(
+                          button: true,
+                          label: context.l10n.homeSetariCard,
+                          excludeSemantics: true,
+                          child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTap: _goToCardSettings,
                           child: Container(
+                            width: kMinTapTarget,
+                            height: kMinTapTarget,
+                            alignment: Alignment.center,
+                            child: Container(
                             padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.18),
@@ -922,6 +924,8 @@ class _HomeScreenState extends State<HomeScreen>
                             ),
                             child: const Icon(Icons.tune_rounded, color: Colors.white, size: 16),
                           ),
+                          ),
+                        ),
                         ),
                         const SizedBox(width: 8),
                         Image.asset('assets/images/visa.png', height: 22),
@@ -940,7 +944,7 @@ class _HomeScreenState extends State<HomeScreen>
                         color: Colors.white.withOpacity(0.35), width: 1),
                   ),
                   child: const Icon(Icons.memory_rounded,
-                      color: Colors.white60, size: 16),
+                      color: Colors.white, size: 16),
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -951,17 +955,17 @@ class _HomeScreenState extends State<HomeScreen>
                       letterSpacing: 2.5,
                       fontWeight: FontWeight.w500),
                 ),
-                const Spacer(),
+                const SizedBox(height: 18),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('TITULAR',
+                        Text(context.l10n.homeTitular,
                             style: GoogleFonts.inter(
                                 fontSize: 9,
-                                color: Colors.white60,
+                                color: Colors.white,
                                 letterSpacing: 1.5)),
                         const SizedBox(height: 3),
                         Text(
@@ -975,10 +979,10 @@ class _HomeScreenState extends State<HomeScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('EXPIRĂ',
+                        Text(context.l10n.homeExpira,
                             style: GoogleFonts.inter(
                                 fontSize: 9,
-                                color: Colors.white60,
+                                color: Colors.white,
                                 letterSpacing: 1.5)),
                         const SizedBox(height: 3),
                         Text(_selectedCard!.expiry,
@@ -1007,12 +1011,13 @@ class _HomeScreenState extends State<HomeScreen>
     return Container(
       key: const ValueKey('back'),
       width: double.infinity,
-      height: 200,
+      // Grows with large text instead of clipping; 200 at normal size.
+      constraints: const BoxConstraints(minHeight: 200),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: [Color(0xFF005F52), Color(0xFF0F9D8E)],
+          colors: [context.colors.cardGradientEnd, context.colors.cardGradientStart],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -1039,13 +1044,13 @@ class _HomeScreenState extends State<HomeScreen>
               children: [
                 Row(
                   children: [
-                    Text('PAN  ',
+                    Text(context.l10n.homePan,
                         style: GoogleFonts.inter(
                             fontSize: 10,
-                            color: Colors.white60,
+                            color: Colors.white,
                             letterSpacing: 1.5)),
                     Text(
-                      _formatPan(pan),
+                      groupInFours(pan),
                       style: GoogleFonts.spaceMono(
                           fontSize: 14,
                           color: Colors.white,
@@ -1070,7 +1075,7 @@ class _HomeScreenState extends State<HomeScreen>
                             Expanded(
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.55),
+                                  color: Colors.white,
                                   borderRadius: const BorderRadius.only(
                                     topLeft: Radius.circular(5),
                                     bottomLeft: Radius.circular(5),
@@ -1097,10 +1102,10 @@ class _HomeScreenState extends State<HomeScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('CVV',
+                        Text(context.l10n.homeCvv,
                             style: GoogleFonts.inter(
                                 fontSize: 9,
-                                color: Colors.white60,
+                                color: Colors.white,
                                 letterSpacing: 1.5)),
                         const SizedBox(height: 2),
                         Text(cvv,
@@ -1116,12 +1121,17 @@ class _HomeScreenState extends State<HomeScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('EXP: $expiry',
+                    Text(context.l10n.homeExp(expiry),
                         style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: Colors.white70,
+                            color: Colors.white,
                             fontWeight: FontWeight.w500)),
-                    GestureDetector(
+                    Semantics(
+                      button: true,
+                      label: context.l10n.homeAscundeDateleCardului,
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: _onToggleCardReveal,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -1134,15 +1144,16 @@ class _HomeScreenState extends State<HomeScreen>
                           children: [
                             Icon(Icons.lock_outline,
                                 size: 12,
-                                color: Colors.white.withOpacity(0.8)),
+                                color: Colors.white),
                             const SizedBox(width: 4),
-                            Text('Ascunde',
+                            Text(context.l10n.homeAscunde,
                                 style: GoogleFonts.inter(
                                     fontSize: 11,
-                                    color: Colors.white.withOpacity(0.8))),
+                                    color: Colors.white)),
                           ],
                         ),
                       ),
+                    ),
                     ),
                   ],
                 ),
@@ -1155,13 +1166,13 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildBalanceRow() {
+    final hidden = PrivacyModeService().isPrivacyModeEnabled.value;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+        padding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -1171,125 +1182,97 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Sold disponibil',
-                    style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500)),
-                const SizedBox(height: 6),
-                _loadingBalance
-                    ? const SizedBox(
-                        width: 120,
-                        height: 18,
-                        child: LinearProgressIndicator(),
-                      )
-                    : Row(
-                        children: [
-                          Text(
-                            _balanceVisible
-                                ? '${_formatBalance(_balance)} RON'
-                                : '*****',
+            Text(context.l10n.commonSoldDisponibil,
+                style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: context.colors.textSecondary,
+                    fontWeight: FontWeight.w500)),
+            const SizedBox(height: 4),
+            _loadingBalance
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: SizedBox(
+                      width: 120,
+                      child: LinearProgressIndicator(),
+                    ),
+                  )
+                : Row(
+                    children: [
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            hidden
+                                ? maskedMoney(_currentCurrency)
+                                : formatMoney(_balance, _currentCurrency),
+                            maxLines: 1,
                             style: GoogleFonts.poppins(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(darkGreyColor),
+                                color: context.colors.textPrimary,
                                 letterSpacing: -0.5),
                           ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: _toggleBalance,
-                            child: Icon(
-                              _balanceVisible
-                                  ? Icons.visibility_rounded
-                                  : Icons.visibility_off_rounded,
-                              size: 20,
-                              color: Colors.grey[400],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-              ],
-            ),
-            Row(
+                      IconButton(
+                        onPressed: _toggleBalance,
+                        tooltip: hidden ? context.l10n.homeArataSoldul : context.l10n.homeAscundeSoldul,
+                        icon: Icon(
+                          hidden
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
+                          size: 20,
+                          color: context.colors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                GestureDetector(
-                  onTap: _openCurrencyDialog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(lightForestGreenColor)
-                          .withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.add_rounded,
-                            size: 16,
-                            color: Color(lightForestGreenColor)),
-                        const SizedBox(width: 4),
-                        Text('+ Valută',
-                            style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color:
-                                    const Color(lightForestGreenColor))),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _goToStatement,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(lightForestGreenColor)
-                          .withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.description_outlined,
-                            size: 16,
-                            color: Color(lightForestGreenColor)),
-                        const SizedBox(width: 6),
-                        Text('Extras',
-                            style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color:
-                                    const Color(lightForestGreenColor))),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _showAccountDetails,
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(lightForestGreenColor).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.info_outline_rounded,
-                      size: 16,
-                      color: Color(lightForestGreenColor),
-                    ),
-                  ),
-                ),
+                _buildBalanceAction(
+                    Icons.add_rounded, context.l10n.homeValuta, _openCurrencyDialog),
+                _buildBalanceAction(
+                    Icons.description_outlined, context.l10n.homeExtras, _goToStatement),
+                _buildBalanceAction(Icons.info_outline_rounded, context.l10n.homeDetaliiCont,
+                    _showAccountDetails),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBalanceAction(
+      IconData icon, String label, VoidCallback onTap) {
+    return Material(
+      color: context.colors.brand.withOpacity(0.08),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: kMinTapTarget),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: context.colors.brand),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: context.colors.brand)),
+            ],
+          ),
         ),
       ),
     );
@@ -1302,19 +1285,19 @@ class _HomeScreenState extends State<HomeScreen>
         children: [
           Expanded(
               child: _buildActionCard(
-                  Icons.send_rounded, 'Transfer', _goToTransfer)),
+                  Icons.send_rounded, context.l10n.commonTransfer, _goToTransfer)),
           const SizedBox(width: 8),
           Expanded(
               child: _buildActionCard(Icons.receipt_long_rounded,
-                  'Istoric', _goToHistory)),
+                  context.l10n.homeIstoric, _goToHistory)),
           const SizedBox(width: 8),
           Expanded(
               child: _buildActionCard(Icons.currency_exchange_rounded,
-                  'Schimb', _goToExchange)),
+                  context.l10n.homeSchimb, _goToExchange)),
           const SizedBox(width: 8),
           Expanded(
               child: _buildActionCard(Icons.pie_chart_outline_rounded,
-                  'Statistici', _goToAnalytics)),
+                  context.l10n.homeStatistici, _goToAnalytics)),
         ],
       ),
     );
@@ -1322,7 +1305,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildActionCard(
       IconData icon, String label, VoidCallback onTap) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      container: true,
+      child: GestureDetector(
       onTap: () {
         HapticFeedbackHelper.buttonTap();
         onTap();
@@ -1330,7 +1316,7 @@ class _HomeScreenState extends State<HomeScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 22),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -1346,12 +1332,12 @@ class _HomeScreenState extends State<HomeScreen>
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(lightForestGreenColor)
+                color: context.colors.brand
                     .withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon,
-                  color: const Color(lightForestGreenColor),
+                  color: context.colors.brand,
                   size: 22),
             ),
             const SizedBox(height: 10),
@@ -1359,10 +1345,111 @@ class _HomeScreenState extends State<HomeScreen>
                 style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: const Color(darkGreyColor))),
+                    color: context.colors.textPrimary)),
           ],
         ),
       ),
+    ),
+    );
+  }
+
+  Widget _buildVaultsBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Semantics(
+        button: true,
+        container: true,
+        child: GestureDetector(
+        onTap: () {
+          HapticFeedbackHelper.buttonTap();
+          _goToVaults();
+        },
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: context.colors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: context.colors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [context.colors.heroStart, context.colors.heroEnd],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.savings_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                          context.l10n.homeSeifuriRoundUp,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: context.colors.textPrimary,
+                          ),
+                        ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: context.colors.brand.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            context.l10n.homeNou,
+                            style: GoogleFonts.inter(
+                              color: context.colors.brand,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      context.l10n.homeEconomisesteAutomatMaruntisulTranzactiilor,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: context.colors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: context.colors.textMuted),
+            ],
+          ),
+        ),
+      ),
+    ),
     );
   }
 
@@ -1375,8 +1462,8 @@ class _HomeScreenState extends State<HomeScreen>
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              const Color(lightForestGreenColor).withOpacity(0.08),
-              const Color(darkForestGreenColor).withOpacity(0.04),
+              context.colors.brand.withOpacity(0.08),
+              context.colors.brandStrong.withOpacity(0.04),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -1384,37 +1471,37 @@ class _HomeScreenState extends State<HomeScreen>
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
               color:
-                  const Color(lightForestGreenColor).withOpacity(0.15)),
+                  context.colors.brand.withOpacity(0.15)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.trending_up_rounded,
-                    size: 18, color: Color(lightForestGreenColor)),
+                Icon(Icons.trending_up_rounded,
+                    size: 18, color: context.colors.brand),
                 const SizedBox(width: 8),
-                Text('Curs valutar',
+                Text(context.l10n.homeCursValutar,
                     style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: const Color(darkGreyColor))),
+                        color: context.colors.textPrimary)),
               ],
             ),
             const SizedBox(height: 12),
             if (!rates.hasRates)
               Center(
-                child: Text('Se încarcă...',
+                child: Text(context.l10n.homeSeIncarca,
                     style: GoogleFonts.inter(
-                        fontSize: 12, color: Colors.grey[500])),
+                        fontSize: 12, color: context.colors.textMuted)),
               )
             else
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildRateTile('EUR', rates.getRate('EUR', 'RON')),
-                  _buildRateTile('USD', rates.getRate('USD', 'RON')),
-                  _buildRateTile('GBP', rates.getRate('GBP', 'RON')),
+                  Expanded(child: _buildRateTile('EUR', rates.getRate('EUR', 'RON'))),
+                  Expanded(child: _buildRateTile('USD', rates.getRate('USD', 'RON'))),
+                  Expanded(child: _buildRateTile('GBP', rates.getRate('GBP', 'RON'))),
                 ],
               ),
           ],
@@ -1430,14 +1517,14 @@ class _HomeScreenState extends State<HomeScreen>
             style: GoogleFonts.inter(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: const Color(darkGreyColor))),
+                color: context.colors.textPrimary)),
         const SizedBox(height: 4),
         Text(
-          rate != null ? rate.toStringAsFixed(4) : '---',
+          rate != null ? formatRate(rate) : '---',
           style: GoogleFonts.spaceMono(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: const Color(lightForestGreenColor)),
+              color: context.colors.brand),
         ),
       ],
     );
@@ -1452,19 +1539,19 @@ class _HomeScreenState extends State<HomeScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Tranzacții recente',
+              Text(context.l10n.homeTranzactiiRecente,
                   style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: const Color(darkGreyColor))),
+                      color: context.colors.textPrimary)),
               if (_currentAccountId != null)
-                GestureDetector(
-                  onTap: _goToHistory,
-                  child: Text('Vezi toate',
+                TextButton(
+                  onPressed: _goToHistory,
+                  child: Text(context.l10n.homeVeziToate,
                       style: GoogleFonts.inter(
                           fontSize: 12,
                           color:
-                              const Color(lightForestGreenColor),
+                              context.colors.brand,
                           fontWeight: FontWeight.w600)),
                 ),
             ],
@@ -1477,34 +1564,96 @@ class _HomeScreenState extends State<HomeScreen>
               child: CircularProgressIndicator(strokeWidth: 2),
             ))
           else if (_recentTransactions.isEmpty)
-            const EmptyStatePlaceholder(
+            EmptyStatePlaceholder(
               icon: Icons.receipt_long_outlined,
-              title: 'Nu există tranzacții recente',
+              title: context.l10n.homeExistaTranzactiiRecente,
             )
           else
             ...(_recentTransactions.asMap().entries.map((entry) {
               final tx = entry.value;
-              final isPositive = tx['type'] == 'received';
-              final amtStr = _txAmount(tx);
+              final parsed = TransactionEntry.fromJson(tx);
               return Padding(
                 padding: EdgeInsets.only(
                     bottom: entry.key <
                             _recentTransactions.length - 1
                         ? 10
                         : 0),
-                child: GestureDetector(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadii.md),
                   onTap: () => TransactionDetailsBottomSheet.show(context, tx),
                   child: TransactionListItem(
-                    beneficiary:
-                        tx['beneficiary'] ?? tx['motiv'] ?? '',
-                    date: _txDate(tx['dataTransfer'] ?? ''),
-                    amount: amtStr,
-                    isPositive: isPositive,
+                    beneficiary: parsed.title,
+                    date: parsed.date == null ? '' : formatDate(parsed.date!),
+                    amount: _txAmount(parsed),
+                    isPositive: parsed.isIncoming,
                   ),
                 ),
               );
             })),
         ],
+      ),
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.active = false,
+    this.badgeCount = 0,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final bool active;
+  final int badgeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Semantics(
+      button: true,
+      label: badgeCount > 0 ? context.l10n.homeNecitite(tooltip, badgeCount) : tooltip,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: tooltip,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Material(
+              color: active ? c.brand.withValues(alpha: 0.15) : c.surfaceMuted,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onTap,
+                child: SizedBox(
+                  width: kMinTapTarget,
+                  height: kMinTapTarget,
+                  child: Icon(icon, size: 20, color: active ? c.brand : c.textSecondary),
+                ),
+              ),
+            ),
+            if (badgeCount > 0)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                  decoration: BoxDecoration(color: c.danger, shape: BoxShape.circle),
+                  child: Center(
+                    child: Text(
+                      badgeCount > 99 ? '99+' : '$badgeCount',
+                      style: TextStyle(color: c.onDanger, fontSize: 10, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

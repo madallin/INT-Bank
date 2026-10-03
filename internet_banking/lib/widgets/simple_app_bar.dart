@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../config/app_config.dart';
+import '../theme/app_tokens.dart';
+import '../l10n/l10n.dart';
 
+/// Back button + title bar used by secondary screens.
 class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback? onBack;
@@ -18,16 +19,17 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return SafeArea(
       bottom: false,
       child: Container(
         height: 60,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: c.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: c.shadow.withValues(alpha: c.shadow.a * 0.5),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -37,15 +39,19 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+              tooltip: context.l10n.commonInapoi,
               onPressed: onBack ?? () => Navigator.of(context).maybePop(),
-              color: const Color(darkGreyColor),
+              color: c.textPrimary,
             ),
-            Text(
-              title,
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: const Color(darkGreyColor),
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.titleMedium,
+                ),
               ),
             ),
           ],

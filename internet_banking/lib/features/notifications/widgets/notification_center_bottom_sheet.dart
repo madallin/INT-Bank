@@ -1,7 +1,8 @@
+import '../../../theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../config/app_config.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../l10n/l10n.dart';
 
 class NotificationCenterBottomSheet extends StatefulWidget {
   final int userId;
@@ -31,7 +32,7 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
   bool _loading = true;
   int _selectedFilter = 0;
 
-  final List<String> _filters = ['Toate', 'Tranzacții', 'Securitate'];
+  List<String> get _filters => [context.l10n.historyToate, context.l10n.notificationsTranzactii, context.l10n.notificationsSecuritate];
 
   @override
   void initState() {
@@ -98,8 +99,8 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.colors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -110,7 +111,7 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
             child: Container(
               width: 40,
               height: 4,
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: context.colors.border, borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 16),
@@ -119,17 +120,19 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Centru Notificări',
-                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(darkGreyColor)),
+              Expanded(
+                child: Text(
+                  context.l10n.notificationsCentruNotificari,
+                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
+                ),
               ),
               if (_notifications.any((n) => n['read'] == false || n['isRead'] == false))
                 TextButton.icon(
                   onPressed: _markAllAsRead,
-                  icon: const Icon(Icons.done_all_rounded, size: 16, color: Color(lightForestGreenColor)),
+                  icon: Icon(Icons.done_all_rounded, size: 16, color: context.colors.brand),
                   label: Text(
-                    'Marchează citite',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(lightForestGreenColor)),
+                    context.l10n.notificationsMarcheazaCitite,
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.brand),
                   ),
                 ),
             ],
@@ -147,12 +150,12 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
                     label: Text(_filters[index]),
                     selected: isSelected,
                     onSelected: (_) => setState(() => _selectedFilter = index),
-                    selectedColor: const Color(lightForestGreenColor),
-                    backgroundColor: const Color(0xFFF1F5F3),
+                    selectedColor: context.colors.brand,
+                    backgroundColor: context.colors.surfaceMuted,
                     labelStyle: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : const Color(darkGreyColor),
+                      color: isSelected ? context.colors.onBrand : context.colors.textPrimary,
                     ),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     side: BorderSide.none,
@@ -165,15 +168,15 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
 
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Color(lightForestGreenColor)))
+                ? Center(child: CircularProgressIndicator(color: context.colors.brand))
                 : _filteredList.isEmpty
                 ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.notifications_none_rounded, size: 48, color: Colors.grey[300]),
+                  Icon(Icons.notifications_none_rounded, size: 48, color: context.colors.border),
                   const SizedBox(height: 12),
-                  Text('Nicio notificare disponibilă', style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[500])),
+                  Text(context.l10n.notificationsNicioNotificareDisponibila, style: GoogleFonts.inter(fontSize: 13, color: context.colors.textMuted)),
                 ],
               ),
             )
@@ -183,7 +186,7 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
                 final n = _filteredList[index];
                 final isRead = n['read'] == true || n['isRead'] == true;
                 final type = n['type'] ?? 'SYSTEM';
-                final title = n['title'] ?? 'Notificare';
+                final title = n['title'] ?? context.l10n.notificationsNotificare;
                 final message = n['message'] ?? '';
                 final id = n['id'] as int? ?? 0;
 
@@ -195,10 +198,10 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isRead ? Colors.white : const Color(0xFFF0F7F4),
+                      color: isRead ? context.colors.surface : context.colors.brandSurface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isRead ? Colors.grey[200]! : const Color(0xFFC2E0D4),
+                        color: isRead ? context.colors.border : context.colors.brand.withValues(alpha: 0.3),
                         width: isRead ? 1 : 1.5,
                       ),
                     ),
@@ -220,7 +223,7 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
                                       style: GoogleFonts.inter(
                                         fontSize: 13,
                                         fontWeight: isRead ? FontWeight.w600 : FontWeight.w700,
-                                        color: const Color(darkGreyColor),
+                                        color: context.colors.textPrimary,
                                       ),
                                     ),
                                   ),
@@ -228,8 +231,8 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
                                     Container(
                                       width: 8,
                                       height: 8,
-                                      decoration: const BoxDecoration(
-                                        color: Color(lightForestGreenColor),
+                                      decoration: BoxDecoration(
+                                        color: context.colors.brand,
                                         shape: BoxShape.circle,
                                       ),
                                     ),
@@ -238,7 +241,7 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
                               const SizedBox(height: 4),
                               Text(
                                 message,
-                                style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
+                                style: GoogleFonts.inter(fontSize: 12, color: context.colors.textSecondary),
                               ),
                             ],
                           ),
@@ -263,23 +266,23 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
     switch (type) {
       case 'TRANSFER_RECEIVED':
         iconData = Icons.arrow_downward_rounded;
-        iconColor = const Color(0xFF2E7D32);
-        bgColor = const Color(0xFFE8F5E9);
+        iconColor = context.colors.positive;
+        bgColor = context.colors.brandSurface;
         break;
       case 'TRANSFER_SENT':
         iconData = Icons.arrow_upward_rounded;
-        iconColor = const Color(0xFF1565C0);
-        bgColor = const Color(0xFFE3F2FD);
+        iconColor = const Color(0xFF1E88E5);
+        bgColor = iconColor.withValues(alpha: 0.14);
         break;
       case 'SECURITY_ALERT':
         iconData = Icons.shield_outlined;
-        iconColor = const Color(0xFFC62828);
-        bgColor = const Color(0xFFFFEBEE);
+        iconColor = context.colors.danger;
+        bgColor = context.colors.dangerSurface;
         break;
       default:
         iconData = Icons.info_outline_rounded;
-        iconColor = const Color(lightForestGreenColor);
-        bgColor = const Color(0xFFE0F2F1);
+        iconColor = context.colors.brand;
+        bgColor = context.colors.brandSurface;
         break;
     }
 

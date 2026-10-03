@@ -1,7 +1,10 @@
+import '../../../theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../config/app_config.dart';
+import '../../../core/utils/helpers.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../l10n/l10n.dart';
 
 class TransactionDetailsBottomSheet extends StatelessWidget {
   final Map<String, dynamic> transaction;
@@ -27,16 +30,18 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
         ? (transaction['amount'] as num).toDouble()
         : double.tryParse(transaction['amount']?.toString() ?? '0') ?? 0.0;
     final currency = transaction['currency'] ?? 'RON';
-    final description = transaction['reason'] ?? transaction['description'] ?? 'Transfer bancar';
-    final date = transaction['date'] ?? '-';
+    final description = transaction['reason'] ?? transaction['description'] ?? context.l10n.commonTransferBancar;
+    final rawDate = transaction['date']?.toString();
+    final date = rawDate == null ? '-' : formatIsoDate(rawDate, withTime: true);
+    final signedAmount = formatMoney(isDebit ? -amount.abs() : amount.abs(), currency.toString(), showSign: true);
     final trackingId = transaction['trackingId'] ?? transaction['id'] ?? 'TX-INTBANK';
     final fromIban = transaction['fromIban'] ?? '-';
     final toIban = transaction['toIban'] ?? transaction['partyIban'] ?? '-';
     final status = transaction['status'] ?? 'COMPLETED';
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.colors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -49,7 +54,7 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: context.colors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -59,31 +64,34 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Dovadă de plată',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(darkGreyColor),
+              Expanded(
+                child: Text(
+                  context.l10n.txDetailsDovadaPlata,
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textPrimary,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
+                  color: context.colors.brandSurface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF2E7D32)),
+                    Icon(Icons.check_circle_rounded, size: 14, color: context.colors.positive),
                     const SizedBox(width: 4),
                     Text(
-                      status == 'COMPLETED' ? 'Finalizată' : 'În procesare',
+                      status == 'COMPLETED' ? context.l10n.txDetailsFinalizata : context.l10n.commonProcesare,
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF2E7D32),
+                        color: context.colors.positive,
                       ),
                     ),
                   ],
@@ -97,11 +105,11 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  '${isDebit ? "-" : "+"}${amount.toStringAsFixed(2)} $currency',
+                  signedAmount,
                   style: GoogleFonts.inter(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
-                    color: isDebit ? const Color(0xFFC62828) : const Color(lightForestGreenColor),
+                    color: isDebit ? context.colors.danger : context.colors.brand,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -110,7 +118,7 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: context.colors.textSecondary,
                   ),
                 ),
               ],
@@ -120,11 +128,11 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: 16),
 
-          _buildDetailRow('Data & Ora', date),
-          _buildDetailRow('Referință tranzacție', trackingId.toString(), copyable: true, context: context),
-          _buildDetailRow('Tip operațiune', isDebit ? 'Plată / Transfer trimis' : 'Încasare / Transfer primit'),
-          if (fromIban != '-') _buildDetailRow('Cont expeditor (IBAN)', fromIban, copyable: true, context: context),
-          if (toIban != '-') _buildDetailRow('Cont beneficiar (IBAN)', toIban, copyable: true, context: context),
+          _buildDetailRow(context, context.l10n.txDetailsDataOra, date),
+          _buildDetailRow(context, context.l10n.txDetailsReferintaTranzactie, trackingId.toString(), copyable: true),
+          _buildDetailRow(context, context.l10n.txDetailsTipOperatiune, isDebit ? context.l10n.txDetailsPlataTransferTrimis : context.l10n.txDetailsIncasareTransferPrimit),
+          if (fromIban != '-') _buildDetailRow(context, context.l10n.txDetailsContExpeditorIban, fromIban, copyable: true),
+          if (toIban != '-') _buildDetailRow(context, context.l10n.txDetailsContBeneficiarIban, toIban, copyable: true),
 
           const SizedBox(height: 24),
 
@@ -133,20 +141,14 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: 'Tranzacție INTBank: $trackingId | Suma: ${isDebit ? "-" : "+"}${amount.toStringAsFixed(2)} $currency | Data: $date'));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Detaliile tranzacției au fost copiate', style: GoogleFonts.inter()),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: const Color(lightForestGreenColor),
-                      ),
-                    );
+                    Clipboard.setData(ClipboardData(text: context.l10n.txDetailsTranzactieIntbankSumaData(trackingId, signedAmount, date)));
+                    showSuccessSnackBar(context, context.l10n.txDetailsDetaliileTranzactieiAuFost);
                   },
                   icon: const Icon(Icons.copy_rounded, size: 18),
-                  label: Text('Copiază', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  label: Text(context.l10n.txDetailsCopiaza, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(lightForestGreenColor),
-                    side: const BorderSide(color: Color(lightForestGreenColor)),
+                    foregroundColor: context.colors.brand,
+                    side: BorderSide(color: context.colors.brand),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
@@ -157,10 +159,10 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.check_rounded, size: 18),
-                  label: Text('Închide', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  label: Text(context.l10n.commonInchide, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(lightForestGreenColor),
-                    foregroundColor: Colors.white,
+                    backgroundColor: context.colors.brand,
+                    foregroundColor: context.colors.onBrand,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
@@ -174,7 +176,7 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool copyable = false, BuildContext? context}) {
+  Widget _buildDetailRow(BuildContext context, String label, String value, {bool copyable = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -187,7 +189,7 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
               label,
               style: GoogleFonts.inter(
                 fontSize: 13,
-                color: Colors.grey[500],
+                color: context.colors.textMuted,
               ),
             ),
           ),
@@ -204,24 +206,18 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: const Color(darkGreyColor),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                 ),
-                if (copyable && context != null) ...[
-                  const SizedBox(width: 6),
-                  GestureDetector(
-                    onTap: () {
+                if (copyable) ...[
+                  IconButton(
+                    tooltip: context.l10n.commonCopiaza(label),
+                    onPressed: () {
                       Clipboard.setData(ClipboardData(text: value));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('$label a fost copiat în clipboard', style: GoogleFonts.inter()),
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: const Color(lightForestGreenColor),
-                        ),
-                      );
+                      showSuccessSnackBar(context, context.l10n.txDetailsFostCopiatClipboard(label));
                     },
-                    child: const Icon(Icons.copy_rounded, size: 14, color: Color(lightForestGreenColor)),
+                    icon: Icon(Icons.copy_rounded, size: 16, color: context.colors.brand),
                   ),
                 ],
               ],

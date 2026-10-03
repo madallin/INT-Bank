@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import '../theme/app_tokens.dart';
 
 class EmptyStatePlaceholder extends StatelessWidget {
   final IconData icon;
@@ -15,19 +16,21 @@ class EmptyStatePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 16),
+            ExcludeSemantics(child: Icon(icon, size: 64, color: c.border)),
+            const SizedBox(height: AppSpacing.md),
             Text(
               title,
-              style: GoogleFonts.inter(
+              style: context.text.bodyLarge?.copyWith(
                 fontSize: 16,
-                color: Colors.grey[500],
+                fontWeight: FontWeight.w400,
+                color: c.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -35,9 +38,9 @@ class EmptyStatePlaceholder extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 subtitle!,
-                style: GoogleFonts.inter(
+                style: context.text.bodySmall?.copyWith(
                   fontSize: 13,
-                  color: Colors.grey[400],
+                  color: c.textMuted,
                 ),
                 textAlign: TextAlign.center,
               ),

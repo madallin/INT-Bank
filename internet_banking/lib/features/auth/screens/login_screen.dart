@@ -1,11 +1,11 @@
+import '../../../theme/app_tokens.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_libphonenumber/flutter_libphonenumber.dart';
 
-import '../../../config/app_config.dart';
 import '../../../core/network/dio_client.dart';
-import '../../../widgets/action_button.dart';
+import '../../../widgets/app_button.dart';
 import '../../../widgets/error_banner.dart';
 import '../../../widgets/phone_input_field.dart';
 import '../../../widgets/section_header.dart';
@@ -13,6 +13,7 @@ import '../../../widgets/simple_app_bar.dart';
 import '../../onboarding/screens/tos_screen.dart';
 import '../../onboarding/screens/approval_screen.dart';
 import 'two_factor_screen.dart';
+import '../../../l10n/l10n.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -66,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen>
     final fullNumber = '+${_selectedCountry!.phoneCode}$cleanPhone';
     if (cleanPhone.length < 8 || cleanPhone.length > 15) {
       if (mounted) {
-        setState(() => textEroare = 'Lungimea numărului nu este validă');
+        setState(() => textEroare = context.l10n.loginLungimeaNumaruluiEsteValida);
       }
       return null;
     }
@@ -125,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen>
         } else {
           if (mounted) {
             setState(
-              () => textEroare = 'Numărul de telefon nu aparține unui client',
+              () => textEroare = context.l10n.loginNumarulTelefonApartineUnui,
             );
           }
         }
@@ -133,7 +134,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (mounted) {
           setState(
             () => textEroare =
-                'Eroare la comunicarea cu serverul (cod: ${response.statusCode})',
+                context.l10n.loginEroareComunicareaServerulCod(response.statusCode ?? 0),
           );
         }
       }
@@ -141,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (mounted) {
         setState(
           () => textEroare =
-              'Nu te poți conecta la server. Verifică conexiunea la internet',
+              context.l10n.loginPotiConectaServerVerifica,
         );
       }
       debugPrint('Eroare _attemptLogin: $e');
@@ -152,13 +153,13 @@ class _LoginScreenState extends State<LoginScreen>
     if (_selectedCountry == null) return;
     final phoneRaw = _phoneController.text.trim();
     if (phoneRaw.isEmpty) {
-      setState(() => textEroare = 'Introdu numărul de telefon');
+      setState(() => textEroare = context.l10n.loginIntroduNumarulTelefon);
       return;
     }
 
     final fullPhoneNumber = _formatPhoneForServer(phoneRaw);
     if (fullPhoneNumber == null) {
-      setState(() => textEroare = 'Numărul de telefon nu este valid');
+      setState(() => textEroare = context.l10n.loginNumarulTelefonEsteValid);
       return;
     }
 
@@ -236,14 +237,14 @@ class _LoginScreenState extends State<LoginScreen>
     return Container(
       width: 120,
       height: 120,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(lightForestGreenColor),
-            Color(darkForestGreenColor),
+            context.colors.heroStart,
+            context.colors.heroEnd,
           ],
         ),
         boxShadow: [
@@ -259,10 +260,10 @@ class _LoginScreenState extends State<LoginScreen>
           width: 40,
           height: 60,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: const Color(lightForestGreenColor),
+              color: context.colors.brand,
               width: 2,
             ),
           ),
@@ -273,7 +274,7 @@ class _LoginScreenState extends State<LoginScreen>
                 width: 12,
                 height: 2,
                 decoration: BoxDecoration(
-                  color: Colors.grey[400],
+                  color: context.colors.textMuted,
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),
@@ -282,14 +283,14 @@ class _LoginScreenState extends State<LoginScreen>
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: const Color(lightForestGreenColor).withOpacity(0.1),
+                    color: context.colors.brand.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.phone,
                       size: 16,
-                      color: Color(lightForestGreenColor),
+                      color: context.colors.brand,
                     ),
                   ),
                 ),
@@ -300,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen>
                 height: 8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey[400]!, width: 1.5),
+                  border: Border.all(color: context.colors.textMuted, width: 1.5),
                 ),
               ),
               const SizedBox(height: 4),
@@ -314,12 +315,12 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Column(
           children: [
             SimpleAppBar(
-              title: 'Conectare',
+              title: context.l10n.loginConectare,
               onBack: () => Navigator.pop(context),
             ),
             Expanded(
@@ -333,18 +334,18 @@ class _LoginScreenState extends State<LoginScreen>
                             const SizedBox(height: 90),
                             _buildPhoneIcon(),
                             const SizedBox(height: 54),
-                            const PageTitle(
-                              title: 'Introdu numărul de telefon',
+                            PageTitle(
+                              title: context.l10n.loginIntroduNumarulTelefon,
                               subtitle:
-                                  'Te rugăm să introduci numărul declarat băncii',
+                                  context.l10n.loginRugamSaIntroduciNumarul,
                             ),
                             const SizedBox(height: 48),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const SectionHeader(
+                                SectionHeader(
                                   icon: Icons.phone_outlined,
-                                  title: 'Număr de telefon',
+                                  title: context.l10n.commonNumarTelefon,
                                   subtitle: '',
                                 ),
                                 PhoneInputField(
@@ -360,8 +361,11 @@ class _LoginScreenState extends State<LoginScreen>
                                     }
                                   },
                                   formatAsYouType: _formatAsYouType,
+                                  onSubmitted: (_) {
+                                    if (!_loading) _login();
+                                  },
                                   hintText: _countries.isEmpty
-                                      ? 'Încărcare...'
+                                      ? context.l10n.commonIncarcare
                                       : _getHintForCountry(),
                                 ),
                               ],
@@ -379,11 +383,10 @@ class _LoginScreenState extends State<LoginScreen>
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-              child: ActionButton(
-                label: 'Confirmă',
-                onTap: _loading ? null : _login,
+              child: AppButton(
+                label: context.l10n.commonConfirma,
+                onPressed: _login,
                 isLoading: _loading,
-                isExpanded: false,
               ),
             ),
           ],

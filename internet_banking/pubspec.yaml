@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
   cupertino_icons: ^1.0.8
   google_fonts: ^6.3.2
   http: ^1.5.0
@@ -46,6 +49,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # Generates AppLocalizations from lib/l10n/*.arb (see l10n.yaml).
+  generate: true
   assets:
     - .env
     - assets/judete.json
@@ -53,6 +58,8 @@ flutter:
     - assets/images/logo.png
     - assets/images/logo_full_white.png
     - assets/images/visa.png
+    # Bundled so google_fonts never fetches from the network (see main.dart).
+    - assets/google_fonts/
 
   fonts:
     - family: OCRA

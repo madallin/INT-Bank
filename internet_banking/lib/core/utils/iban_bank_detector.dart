@@ -30,7 +30,7 @@ class IbanBankDetector {
     final clean = iban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
     if (clean.length >= 8 && clean.startsWith('RO')) {
       final code = clean.substring(4, 8);
-      return _knownBanks[code] ?? RomanianBankInfo(code: code, name: 'Banca din România ()', primaryColor: Colors.grey.shade700);
+      return _knownBanks[code] ?? RomanianBankInfo(code: code, name: 'Bancă din România ($code)', primaryColor: Colors.grey.shade700);
     }
     return null;
   }

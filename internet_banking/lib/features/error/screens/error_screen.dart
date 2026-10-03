@@ -1,10 +1,13 @@
+import '../../../theme/app_tokens.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 
+import '../../../widgets/app_button.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../l10n/l10n.dart';
 
 class ErrorScreen extends StatefulWidget
 {
@@ -35,6 +38,9 @@ class _ErrorScreenState extends State<ErrorScreen>
   bool _cycleFlipped = false;
 
   Timer? _connectionTimer;
+  bool _checking = false;
+  bool _manualChecking = false;
+  bool _manualCheckFailed = false;
 
   @override
   void initState()
@@ -102,15 +108,42 @@ class _ErrorScreenState extends State<ErrorScreen>
 
   void _startConnectionCheck()
   {
-    _connectionTimer = Timer.periodic(const Duration(seconds: 3), (timer) async
+    _connectionTimer = Timer.periodic(
+      const Duration(seconds: 3),
+      (_) => _attemptReconnect(),
+    );
+  }
+
+  Future<void> _attemptReconnect({bool manual = false}) async
+  {
+    if(manual)
     {
-      final isConnected = await _checkServerConnection();
-      if(isConnected && mounted)
-{
-        _connectionTimer?.cancel();
-        widget.onConnectionRestored(context);
-      }
-    });
+      setState(() {
+        _manualChecking = true;
+        _manualCheckFailed = false;
+      });
+    }
+    // A slow health check must not overlap the next tick and navigate twice;
+    // a tap during an in-flight check is answered by that check's result.
+    if(_checking) return;
+    _checking = true;
+
+    final isConnected = await _checkServerConnection();
+    _checking = false;
+    if(!mounted) return;
+
+    if(isConnected)
+    {
+      _connectionTimer?.cancel();
+      widget.onConnectionRestored(context);
+    }
+    else if(_manualChecking)
+    {
+      setState(() {
+        _manualChecking = false;
+        _manualCheckFailed = true;
+      });
+    }
   }
 
   Future<bool> _checkServerConnection() async
@@ -140,12 +173,26 @@ class _ErrorScreenState extends State<ErrorScreen>
   @override
   Widget build(BuildContext context)
   {
-    const Color bankDark = Color(0xFF2C2C2C);
+    final Color bankDark = context.colors.textPrimary;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
-        child: Padding(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(child: _buildContent(bankDark)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(Color bankDark)
+  {
+    return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -160,6 +207,8 @@ class _ErrorScreenState extends State<ErrorScreen>
                     return CustomPaint(
                       size: const Size(400, 350),
                       painter: ScenePainter(
+                        ink: context.colors.textPrimary,
+                        metal: context.colors.textSecondary,
                         progress: _craneController.value,
                         pillar1InBank: _pillar1InBank,
                         pillar5InBank: _pillar5InBank,
@@ -173,7 +222,7 @@ class _ErrorScreenState extends State<ErrorScreen>
               ),
               const SizedBox(height: 48),
               Text(
-                'Ups, ceva nu a funcționat...',
+                context.l10n.errorUpsCevaFunctionat,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 28,
@@ -188,17 +237,33 @@ class _ErrorScreenState extends State<ErrorScreen>
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontSize: 15,
-                  color: Colors.grey[600],
+                  color: context.colors.textSecondary,
                   fontWeight: FontWeight.w400,
                   height: 1.6,
                 ),
               ),
+              const SizedBox(height: 24),
+              AppButton(
+                label: context.l10n.errorReincearcaAcum,
+                icon: Icons.refresh_rounded,
+                variant: AppButtonVariant.outline,
+                expand: false,
+                isLoading: _manualChecking,
+                onPressed: () => _attemptReconnect(manual: true),
+              ),
+              if(_manualCheckFailed) ...[
+                const SizedBox(height: 8),
+                Text(
+                  context.l10n.errorIncaAvemConexiuneReincercam,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 13, color: context.colors.textSecondary),
+                ),
+              ],
               const Spacer(),
+              const SizedBox(height: 16),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 }
 
@@ -211,7 +276,14 @@ class ScenePainter extends CustomPainter
   final bool pillar5OnGround;
   final bool cycle1Active;
 
+  /// Building and crane-metal colours, from the theme so the drawing stays
+  /// visible on dark backgrounds.
+  final Color ink;
+  final Color metal;
+
   ScenePainter({
+    required this.ink,
+    required this.metal,
     required this.progress,
     required this.pillar1InBank,
     required this.pillar5InBank,
@@ -226,14 +298,14 @@ class ScenePainter extends CustomPainter
     final w = size.width;
     final h = size.height;
 
-    final bankPaint = Paint()..color = const Color(0xFF1A1A1A);
+    final bankPaint = Paint()..color = ink;
     final cranePaint = Paint()..color = const Color(0xFFFFB300);
-    final craneMetalPaint = Paint()..color = const Color(0xFF424242);
+    final craneMetalPaint = Paint()..color = metal;
     final hookPaint = Paint()
-      ..color = const Color(0xFF616161)
+      ..color = metal
       ..style = PaintingStyle.fill;
     final cablePaint = Paint()
-      ..color = const Color(0xFF757575)
+      ..color = metal.withValues(alpha: 0.8)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 

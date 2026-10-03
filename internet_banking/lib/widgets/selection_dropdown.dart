@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../config/app_config.dart';
+import '../theme/app_tokens.dart';
+import 'section_header.dart';
 
 class SelectionDropdown<T> extends StatelessWidget {
   final T value;
@@ -10,6 +10,10 @@ class SelectionDropdown<T> extends StatelessWidget {
   final String label;
   final IconData icon;
 
+  /// Display text per item; defaults to `toString()`. Lets the value stay a
+  /// stable API code while the label is translated.
+  final String Function(T item)? itemLabel;
+
   const SelectionDropdown({
     super.key,
     required this.value,
@@ -17,56 +21,42 @@ class SelectionDropdown<T> extends StatelessWidget {
     required this.onChanged,
     required this.label,
     required this.icon,
+    this.itemLabel,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 6, bottom: 8),
-          child: Row(
-            children: [
-              Icon(icon, size: 16, color: const Color(0xFF6B7280)),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF6B7280),
-                ),
+        SectionHeader(icon: icon, title: label, subtitle: ''),
+        Semantics(
+          label: label,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: c.surface,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(color: c.border, width: 1.5),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<T>(
+                value: value,
+                isExpanded: true,
+                dropdownColor: c.surface,
+                icon: Icon(Icons.keyboard_arrow_down_rounded,
+                    color: c.textMuted, size: 20),
+                style: context.text.bodyLarge,
+                items: items.map((item) {
+                  return DropdownMenuItem<T>(
+                    value: item,
+                    child: Text(itemLabel?.call(item) ?? item.toString()),
+                  );
+                }).toList(),
+                onChanged: onChanged,
               ),
-            ],
-          ),
-        ),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[200]!, width: 1.5),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              value: value,
-              isExpanded: true,
-              icon: Icon(Icons.keyboard_arrow_down_rounded,
-                  color: Colors.grey[400], size: 20),
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: const Color(darkGreyColor),
-              ),
-              items: items.map((item) {
-                return DropdownMenuItem<T>(
-                  value: item,
-                  child: Text(item.toString()),
-                );
-              }).toList(),
-              onChanged: onChanged,
             ),
           ),
         ),

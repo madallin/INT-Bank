@@ -71,6 +71,87 @@ class Validators
     return null;
   }
 
+  /// Validates Romanian IBAN using ISO 7064 MOD 97-10 checksum algorithm.
+  /// Romanian IBAN format: ROkk BBBB CCCC CCCC CCCC CCCC (24 chars)
+  static bool isValidRomanianIban(String iban)
+  {
+    final cleaned = iban.replaceAll(' ', '').toUpperCase();
+    if (cleaned.length != 24 || !cleaned.startsWith('RO'))
+    {
+      return false;
+    }
+    if (!RegExp(r'^RO\d{2}[A-Z]{4}[0-9A-Z]{16}$').hasMatch(cleaned))
+    {
+      return false;
+    }
+
+    // Move first 4 characters to end: BBBB CCCC CCCC CCCC CCCC ROkk
+    final rearranged = cleaned.substring(4) + cleaned.substring(0, 4);
+
+    // Replace letters with numbers: A=10, B=11, ..., Z=35
+    final buffer = StringBuffer();
+    for (int i = 0; i < rearranged.length; i++)
+    {
+      final code = rearranged.codeUnitAt(i);
+      if (code >= 48 && code <= 57)
+      {
+        buffer.writeCharCode(code);
+      }
+      else if (code >= 65 && code <= 90)
+      {
+        buffer.write((code - 55).toString());
+      }
+      else
+      {
+        return false;
+      }
+    }
+
+    final digits = buffer.toString();
+    int remainder = 0;
+    for (int i = 0; i < digits.length; i++)
+    {
+      final d = digits.codeUnitAt(i) - 48;
+      remainder = (remainder * 10 + d) % 97;
+    }
+
+    return remainder == 1;
+  }
+
+  static String? validateRomanianIBAN(String? value)
+  {
+    if (value == null || value.trim().isEmpty) return 'IBAN-ul este obligatoriu';
+    final cleaned = value.replaceAll(' ', '').toUpperCase();
+    if (cleaned.length != 24)
+    {
+      return 'IBAN-ul românesc trebuie să aibă exact 24 caractere';
+    }
+    if (!cleaned.startsWith('RO'))
+    {
+      return 'IBAN-ul românesc trebuie să înceapă cu RO';
+    }
+    if (!isValidRomanianIban(cleaned))
+    {
+      return 'Cifrele de control IBAN sunt invalide (checksum incorect)';
+    }
+    return null;
+  }
+
+  static bool isValidCNP(String cnp)
+  {
+    final cleaned = cnp.replaceAll(' ', '');
+    if (cleaned.length != 13 || !RegExp(r'^\d{13}$').hasMatch(cleaned)) return false;
+    const weights = [2, 7, 9, 1, 4, 6, 3, 5, 8, 2, 7, 9];
+    int sum = 0;
+    for (int i = 0; i < 12; i++)
+    {
+      sum += (cleaned.codeUnitAt(i) - 48) * weights[i];
+    }
+    int check = sum % 11;
+    if (check == 10) check = 1;
+    return (cleaned.codeUnitAt(12) - 48) == check;
+  }
+
   static String? validateCNP(String? value)
   {
     if(value == null || value.isEmpty) return 'CNP is required';

@@ -1,17 +1,21 @@
+import '../../../theme/app_tokens.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../config/app_config.dart';
+import '../../../core/utils/input_formatters.dart';
+import '../../../core/utils/helpers.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../core/utils/error_messages.dart';
 import '../../../core/network/dio_client.dart';
 import '../../home/widgets/open_currency_account_dialog.dart';
 import '../../../services/currency_service.dart';
-import '../../../widgets/action_button.dart';
+import '../../../widgets/app_button.dart';
 import '../../../widgets/circular_icon_badge.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/simple_app_bar.dart';
+import '../../../l10n/l10n.dart';
 
 class ExchangeScreen extends StatefulWidget {
   final int userId;
@@ -117,24 +121,12 @@ class _ExchangeScreenState extends State<ExchangeScreen>
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.inter(color: Colors.white)),
-        backgroundColor: Colors.red[700],
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    showErrorSnackBar(context, message);
   }
 
   void _showSuccess(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.inter(color: Colors.white)),
-        backgroundColor: const Color(lightForestGreenColor),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    showSuccessSnackBar(context, message);
   }
 
   void _confirmAndExecuteExchange() {
@@ -142,7 +134,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     final toAcc = _getAccountForCurrency(_toCurrency);
 
     if (fromAcc == null) {
-      _showError('Nu ai un cont activ în $_fromCurrency.');
+      _showError(context.l10n.exchangeContActiv(_fromCurrency));
       return;
     }
     if (toAcc == null) {
@@ -150,10 +142,10 @@ class _ExchangeScreenState extends State<ExchangeScreen>
         context: context,
         builder: (_) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('Cont în $_toCurrency inexistent', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-          content: Text('Pentru a cumpăra $_toCurrency, trebuie să deschizi mai întâi un sub-cont în această valută.', style: GoogleFonts.inter()),
+          title: Text(context.l10n.exchangeContInexistent(_toCurrency), style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+          content: Text(context.l10n.exchangeCumparaTrebuieSaDeschizi(_toCurrency), style: GoogleFonts.inter()),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Închide', style: GoogleFonts.inter(color: Colors.grey))),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(context.l10n.commonInchide, style: GoogleFonts.inter(color: context.colors.textMuted))),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
@@ -163,8 +155,8 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                   onAccountCreated: _fetchAccounts,
                 );
               },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(lightForestGreenColor)),
-              child: Text('Deschide cont', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(backgroundColor: context.colors.brand),
+              child: Text(context.l10n.exchangeDeschideCont, style: GoogleFonts.inter(color: context.colors.onBrand, fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -172,15 +164,15 @@ class _ExchangeScreenState extends State<ExchangeScreen>
       return;
     }
 
-    final amount = double.tryParse(_fromAmountController.text.replaceAll(',', '')) ?? 0.0;
+    final amount = parseRomanianNumber(_fromAmountController.text) ?? 0.0;
     if (amount <= 0) {
-      _showError('Introdu o sumă validă pentru schimb');
+      _showError(context.l10n.exchangeIntroduSumaValidaSchimb);
       return;
     }
 
     final available = (fromAcc['sold'] as num?)?.toDouble() ?? 0.0;
     if (amount > available) {
-      _showError('Fonduri insuficiente! Disponibil: ${available.toStringAsFixed(2)} $_fromCurrency');
+      _showError(context.l10n.exchangeFonduriInsuficienteDisponibil(formatMoney(available, _fromCurrency)));
       return;
     }
 
@@ -194,45 +186,45 @@ class _ExchangeScreenState extends State<ExchangeScreen>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(
-              child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+              child: Container(width: 40, height: 4, decoration: BoxDecoration(color: context.colors.border, borderRadius: BorderRadius.circular(2))),
             ),
             const SizedBox(height: 20),
-            Text('Confirmă schimbul valutar', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(darkGreyColor))),
+            Text(context.l10n.exchangeConfirmaSchimbulValutar, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.textPrimary)),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFFF7FAF8), borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(color: context.colors.surfaceMuted, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Plătești:', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 13)),
-                      Text('${amount.toStringAsFixed(2)} $_fromCurrency', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, color: Colors.red[700])),
+                      Text(context.l10n.exchangePlatesti, style: GoogleFonts.inter(color: context.colors.textSecondary, fontSize: 13)),
+                      Text(formatMoney(amount, _fromCurrency), style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, color: context.colors.danger)),
                     ],
                   ),
                   const Divider(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Primești:', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 13)),
-                      Text('${_toAmountController.text} $_toCurrency', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, color: const Color(lightForestGreenColor))),
+                      Text(context.l10n.exchangePrimesti, style: GoogleFonts.inter(color: context.colors.textSecondary, fontSize: 13)),
+                      Text('${_toAmountController.text} $_toCurrency', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15, color: context.colors.brand)),
                     ],
                   ),
                   const Divider(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Curs schimb:', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 13)),
-                      Text('1 $_fromCurrency = ${_originalRate.toStringAsFixed(4)} $_toCurrency', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                      Text(context.l10n.exchangeCursSchimb, style: GoogleFonts.inter(color: context.colors.textSecondary, fontSize: 13)),
+                      Text('1 $_fromCurrency = ${formatRate(_originalRate)} $_toCurrency', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Comision tranzacție:', style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 13)),
-                      Text('0.00 $_fromCurrency (Gratuit)', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(lightForestGreenColor), fontSize: 13)),
+                      Text(context.l10n.exchangeComisionTranzactie, style: GoogleFonts.inter(color: context.colors.textSecondary, fontSize: 13)),
+                      Text(_commissionAmount == 0 ? context.l10n.exchangeGratuit : '${formatMoney(_commissionAmount, _toCurrency)} (${formatPercent(CurrencyService.instance.commissionPercent)})', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: context.colors.brand, fontSize: 13)),
                     ],
                   ),
                 ],
@@ -245,7 +237,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(ctx),
                     style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                    child: Text('Anulează', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.grey[600])),
+                    child: Text(context.l10n.commonAnuleaza, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: context.colors.textSecondary)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -255,8 +247,8 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                       Navigator.pop(ctx);
                       await _executeExchange(fromAcc['id'], toAcc['id'], amount);
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(lightForestGreenColor), padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                    child: Text('Confirmă', style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: Colors.white)),
+                    style: ElevatedButton.styleFrom(backgroundColor: context.colors.brand, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                    child: Text(context.l10n.commonConfirma, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: context.colors.onBrand)),
                   ),
                 ),
               ],
@@ -280,15 +272,15 @@ class _ExchangeScreenState extends State<ExchangeScreen>
       );
 
       if (response.statusCode == 200) {
-        _showSuccess('Schimb valutar realizat cu succes!');
+        _showSuccess(AppL10n.current.exchangeSchimbValutarRealizatSucces);
         _fromAmountController.clear();
         _toAmountController.clear();
         await _fetchAccounts();
       } else {
-        _showError('Eroare la realizarea schimbului valutar');
+        _showError(AppL10n.current.exchangeEroareRealizareaSchimbuluiValutar);
       }
     } catch (e) {
-      _showError('Eroare: $e');
+      _showError(friendlyErrorMessage(e, fallback: AppL10n.current.exchangeSchimbulValutarPututFi));
     } finally {
       if (mounted) setState(() => _isExecuting = false);
     }
@@ -311,7 +303,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     }
 
     final amount =
-        double.tryParse(_fromAmountController.text.replaceAll(',', '')) ?? 0;
+        parseRomanianNumber(_fromAmountController.text) ?? 0;
 
     setState(() {
       _originalRate = rate;
@@ -321,7 +313,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
       _hasRate = true;
 
       final result = amount * _rateWithCommission;
-      _toAmountController.text = _formatAmount(result.toStringAsFixed(2));
+      _toAmountController.text = formatAmount(result);
     });
   }
 
@@ -353,27 +345,6 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     _recalculate();
   }
 
-  String _formatAmount(String input) {
-    String clean = input.replaceAll(RegExp(r'[^\d.]'), '');
-    if (clean.isEmpty) return '';
-
-    final parts = clean.split('.');
-    String intPart = parts[0];
-
-    String reversed = intPart.split('').reversed.join('');
-    String formatted = '';
-    for (int i = 0; i < reversed.length; i++) {
-      if (i > 0 && i % 3 == 0) formatted += ',';
-      formatted += reversed[i];
-    }
-    intPart = formatted.split('').reversed.join('');
-
-    if (parts.length > 1) {
-      return '$intPart.${parts[1]}';
-    }
-    return intPart;
-  }
-
   Widget _buildCurrencyInput({
     required String label,
     required TextEditingController controller,
@@ -389,7 +360,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
           style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF6B7280),
+            color: context.colors.textSecondary,
             letterSpacing: 0.3,
           ),
         ),
@@ -401,21 +372,21 @@ class _ExchangeScreenState extends State<ExchangeScreen>
               height: 58,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(16),
                 border:
-                    Border.all(color: Colors.grey[200]!, width: 1.5),
+                    Border.all(color: context.colors.border, width: 1.5),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: currency,
                   isExpanded: true,
                   icon: Icon(Icons.keyboard_arrow_down_rounded,
-                      color: Colors.grey[400], size: 20),
+                      color: context.colors.textMuted, size: 20),
                   style: GoogleFonts.inter(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: const Color(darkGreyColor),
+                    color: context.colors.textPrimary,
                   ),
                   items: currencyKeys.map((curr) {
                     return DropdownMenuItem<String>(
@@ -431,56 +402,37 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                 controller: controller,
                 keyboardType: const TextInputType.numberWithOptions(
                     decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-                  TextInputFormatter.withFunction(
-                      (oldValue, newValue) {
-                    if (newValue.text.contains('.')) {
-                      final parts = newValue.text.split('.');
-                      if (parts.length > 2) return oldValue;
-                      if (parts.length == 2 && parts[1].length > 2) {
-                        return oldValue;
-                      }
-                    }
-                    final formatted =
-                        _formatAmount(newValue.text);
-                    return TextEditingValue(
-                      text: formatted,
-                      selection: TextSelection.collapsed(
-                          offset: formatted.length),
-                    );
-                  }),
-                ],
+                inputFormatters: [RomanianAmountInputFormatter()],
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: const Color(darkGreyColor),
+                  color: context.colors.textPrimary,
                 ),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: context.colors.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide(
-                        color: Colors.grey[200]!, width: 1.5),
+                        color: context.colors.border, width: 1.5),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide(
-                        color: Colors.grey[200]!, width: 1.5),
+                        color: context.colors.border, width: 1.5),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                        color: Color(lightForestGreenColor),
+                    borderSide: BorderSide(
+                        color: context.colors.brand,
                         width: 2),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: 18, vertical: 18),
-                  hintText: '0.00',
+                  hintText: '0,00',
                   hintStyle: GoogleFonts.inter(
                     fontSize: 15,
-                    color: Colors.grey[400],
+                    color: context.colors.textMuted,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -497,12 +449,12 @@ class _ExchangeScreenState extends State<ExchangeScreen>
     final service = CurrencyService.instance;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Column(
           children: [
             SimpleAppBar(
-              title: 'Schimb valutar',
+              title: context.l10n.exchangeSchimbValutar,
               onBack: () => Navigator.pop(context),
             ),
             Expanded(
@@ -521,14 +473,14 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                               size: 90,
                             ),
                             const SizedBox(height: 40),
-                            const PageTitle(
-                              title: 'Schimb valutar',
+                            PageTitle(
+                              title: context.l10n.exchangeSchimbValutar,
                               subtitle:
-                                  'Schimbă între diferite valute la cursul zilei',
+                                  context.l10n.exchangeSchimbaIntreDiferiteValute,
                             ),
                             const SizedBox(height: 40),
                             _buildCurrencyInput(
-                              label: 'Din valuta',
+                              label: context.l10n.exchangeValuta,
                               controller: _fromAmountController,
                               currency: _fromCurrency,
                               onCurrencyChanged:
@@ -539,25 +491,24 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                               child: RotationTransition(
                                 turns: _swapAnimation!,
                                 child: Container(
-                                  width: 48,
-                                  height: 48,
+                                  // 48dp button inside the 2px ring.
+                                  width: 52,
+                                  height: 52,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: const Color(
-                                            lightForestGreenColor)
+                                    color: context.colors.brand
                                         .withOpacity(0.1),
                                     border: Border.all(
-                                      color: const Color(
-                                              lightForestGreenColor)
+                                      color: context.colors.brand
                                           .withOpacity(0.3),
                                       width: 2,
                                     ),
                                   ),
                                   child: IconButton(
+                                    tooltip: context.l10n.exchangeInverseazaValutele,
                                     icon: Icon(
                                         Icons.swap_vert_rounded,
-                                        color: const Color(
-                                            lightForestGreenColor),
+                                        color: context.colors.brand,
                                         size: 24),
                                     onPressed: _swapCurrencies,
                                   ),
@@ -565,7 +516,7 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                               ),
                             ),
                             _buildCurrencyInput(
-                              label: 'În valuta',
+                              label: context.l10n.exchangeValuta2,
                               controller: _toAmountController,
                               currency: _toCurrency,
                               onCurrencyChanged:
@@ -587,26 +538,26 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.withOpacity(0.08),
+                                  color: context.colors.danger.withOpacity(0.08),
                                   borderRadius:
                                       BorderRadius.circular(12),
                                   border: Border.all(
-                                      color: Colors.red
+                                      color: context.colors.danger
                                           .withOpacity(0.2)),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                         Icons.error_outline_rounded,
-                                        color: Colors.red,
+                                        color: context.colors.danger,
                                         size: 18),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'Cursul valutar nu este disponibil',
+                                        context.l10n.exchangeCursulValutarEsteDisponibil,
                                         style: GoogleFonts.inter(
                                             fontSize: 13,
-                                            color: Colors.red[700],
+                                            color: context.colors.danger,
                                             fontWeight:
                                                 FontWeight.w500),
                                       ),
@@ -618,14 +569,12 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: const Color(
-                                          lightForestGreenColor)
+                                  color: context.colors.brand
                                       .withOpacity(0.05),
                                   borderRadius:
                                       BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: const Color(
-                                            lightForestGreenColor)
+                                    color: context.colors.brand
                                         .withOpacity(0.2),
                                     width: 1,
                                   ),
@@ -638,19 +587,17 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                                       children: [
                                         Icon(
                                             Icons.info_outline_rounded,
-                                            color: const Color(
-                                                lightForestGreenColor),
+                                            color: context.colors.brand,
                                             size: 18),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            '1 $_fromCurrency = ${_originalRate.toStringAsFixed(4)} $_toCurrency',
+                                            '1 $_fromCurrency = ${formatRate(_originalRate)} $_toCurrency',
                                             style: GoogleFonts.inter(
                                                 fontSize: 13,
                                                 fontWeight:
                                                     FontWeight.w600,
-                                                color: const Color(
-                                                    darkGreyColor)),
+                                                color: context.colors.textPrimary),
                                           ),
                                         ),
                                       ],
@@ -661,13 +608,13 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                                         const SizedBox(width: 26),
                                         Expanded(
                                           child: Text(
-                                            'Comision ${service.commissionPercent}%: ${_commissionAmount.toStringAsFixed(2)} ${_currencySymbols[_fromCurrency] ?? _fromCurrency}',
+                                            context.l10n.exchangeComision(formatPercent(service.commissionPercent), formatMoney(_commissionAmount, _toCurrency)),
                                             style: GoogleFonts.inter(
                                                 fontSize: 12,
                                                 fontWeight:
                                                     FontWeight.w400,
                                                 color:
-                                                    Colors.grey[600]),
+                                                    context.colors.textSecondary),
                                           ),
                                         ),
                                       ],
@@ -678,13 +625,12 @@ class _ExchangeScreenState extends State<ExchangeScreen>
                                         const SizedBox(width: 26),
                                         Expanded(
                                           child: Text(
-                                            'Rată efectivă: 1 $_fromCurrency = ${_rateWithCommission.toStringAsFixed(4)} $_toCurrency',
+                                            context.l10n.exchangeRataEfectiva1(_fromCurrency, formatRate(_rateWithCommission), _toCurrency),
                                             style: GoogleFonts.inter(
                                                 fontSize: 12,
                                                 fontWeight:
                                                     FontWeight.w500,
-                                                color: const Color(
-                                                    darkForestGreenColor)),
+                                                color: context.colors.brandStrong),
                                           ),
                                         ),
                                       ],
@@ -701,12 +647,12 @@ class _ExchangeScreenState extends State<ExchangeScreen>
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-              child: ActionButton(
-                label: _isExecuting ? 'Se procesează...' : 'Schimbă valuta',
-                onTap: (!service.hasRates || !_hasRate || _isExecuting)
+              child: AppButton(
+                label: context.l10n.exchangeSchimbaValuta,
+                isLoading: _isExecuting,
+                onPressed: (!service.hasRates || !_hasRate)
                     ? null
                     : _confirmAndExecuteExchange,
-                isExpanded: false,
               ),
             ),
           ],

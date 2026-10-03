@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_tokens.dart';
+
 /// Reusable zero-dependency shimmer effect widget.
 class ShimmerLoading extends StatefulWidget {
   final Widget child;
   final bool isLoading;
-  final Color baseColor;
-  final Color highlightColor;
+  /// Default to the theme's border/surface tokens, so skeletons match the
+  /// active light or dark theme.
+  final Color? baseColor;
+  final Color? highlightColor;
 
   const ShimmerLoading({
     super.key,
     required this.child,
     this.isLoading = true,
-    this.baseColor = const Color(0xFFE5E9EB),
-    this.highlightColor = const Color(0xFFF7F9FA),
+    this.baseColor,
+    this.highlightColor,
   });
 
   @override
@@ -59,9 +63,9 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
                 (_controller.value + 0.3).clamp(0.0, 1.0),
               ],
               colors: [
-                widget.baseColor,
-                widget.highlightColor,
-                widget.baseColor,
+                widget.baseColor ?? context.colors.border,
+                widget.highlightColor ?? context.colors.surface,
+                widget.baseColor ?? context.colors.border,
               ],
             ).createShader(bounds);
           },
@@ -77,14 +81,14 @@ class SkeletonBox extends StatelessWidget {
   final double? width;
   final double? height;
   final double borderRadius;
-  final Color color;
+  final Color? color;
 
   const SkeletonBox({
     super.key,
     this.width,
     this.height,
     this.borderRadius = 8.0,
-    this.color = const Color(0xFFE5E9EB),
+    this.color,
   });
 
   @override
@@ -93,7 +97,7 @@ class SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: color,
+        color: color ?? context.colors.border,
         borderRadius: BorderRadius.circular(borderRadius),
       ),
     );
@@ -199,7 +203,7 @@ class HomeScreenSkeleton extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.colors.surface,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -247,7 +251,7 @@ class TransactionListSkeleton extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(

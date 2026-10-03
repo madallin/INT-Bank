@@ -1,12 +1,13 @@
+import '../../../theme/app_tokens.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_libphonenumber/flutter_libphonenumber.dart';
 import 'package:dio/dio.dart';
 
-import '../../../config/app_config.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/network/dio_client.dart';
-import '../../../widgets/action_button.dart';
+import '../../../widgets/app_button.dart';
 import '../../../widgets/circular_icon_badge.dart';
 import '../../../widgets/date_picker_field.dart';
 import '../../../widgets/error_banner.dart';
@@ -19,6 +20,7 @@ import '../../../widgets/selection_dropdown.dart';
 import '../../../widgets/step_indicator.dart';
 import '../../onboarding/screens/approval_screen.dart';
 import '../../onboarding/screens/tos_screen.dart';
+import '../../../l10n/l10n.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -43,8 +45,20 @@ class _RegisterScreenState extends State<RegisterScreen>
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _cnpController = TextEditingController();
 
+  // Values are what the backend stores; labels are translated for display.
   String _selectedGender = 'Masculin';
   String _selectedMaritalStatus = 'Necăsătorit';
+
+  String _genderLabel(String value) => switch (value) {
+        'Feminin' => context.l10n.registerFeminin,
+        _ => context.l10n.registerMasculin,
+      };
+
+  String _maritalLabel(String value) => switch (value) {
+        'Căsătorit' => context.l10n.registerCasatorit,
+        'Divorțat' => context.l10n.registerDivortat,
+        _ => context.l10n.registerNecasatorit,
+      };
 
   DateTime? _selectedDate;
 
@@ -121,7 +135,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     try {
       final dob = _selectedDate != null
-          ? '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}'
+          ? formatApiDate(_selectedDate!)
           : '';
 
       final response = await DioClient().post(
@@ -167,13 +181,13 @@ class _RegisterScreenState extends State<RegisterScreen>
             );
           }
         } else {
-          _showError(data['error'] ?? 'Contul există deja');
+          _showError(data['error'] ?? AppL10n.current.registerContulExistaDeja);
         }
       } else {
-        _showError(data['error'] ?? 'Eroare la înregistrare');
+        _showError(data['error'] ?? AppL10n.current.registerEroareInregistrare);
       }
     } catch (e) {
-      _showError('Nu te poți conecta la server. Verifică conexiunea');
+      _showError(AppL10n.current.registerPotiConectaServerVerifica);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -242,17 +256,17 @@ class _RegisterScreenState extends State<RegisterScreen>
           const SizedBox(height: 60),
           _buildPhoneIcon(),
           const SizedBox(height: 40),
-          const PageTitle(
-            title: 'Verificare număr',
-            subtitle: 'Introdu numărul tău de telefon',
+          PageTitle(
+            title: context.l10n.registerVerificareNumar,
+            subtitle: context.l10n.registerIntroduNumarulTauTelefon,
           ),
           const SizedBox(height: 40),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SectionHeader(
+              SectionHeader(
                 icon: Icons.phone_outlined,
-                title: 'Număr de telefon',
+                title: context.l10n.commonNumarTelefon,
                 subtitle: '',
               ),
               PhoneInputField(
@@ -266,7 +280,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 },
                 formatAsYouType: _formatAsYouType,
                 hintText: _countries.isEmpty
-                    ? 'Încărcare...'
+                    ? context.l10n.commonIncarcare
                     : _getHintForCountry(),
               ),
             ],
@@ -283,17 +297,17 @@ class _RegisterScreenState extends State<RegisterScreen>
       height: 120,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(lightForestGreenColor),
-            Color(darkForestGreenColor),
+            context.colors.heroStart,
+            context.colors.heroEnd,
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(lightForestGreenColor).withOpacity(0.3),
+            color: context.colors.brand.withOpacity(0.3),
             blurRadius: 25,
             offset: const Offset(0, 10),
           ),
@@ -304,10 +318,10 @@ class _RegisterScreenState extends State<RegisterScreen>
           width: 40,
           height: 60,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: const Color(lightForestGreenColor),
+              color: context.colors.brand,
               width: 2,
             ),
           ),
@@ -318,7 +332,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 width: 12,
                 height: 2,
                 decoration: BoxDecoration(
-                  color: Colors.grey[400],
+                  color: context.colors.textMuted,
                   borderRadius: BorderRadius.circular(1),
                 ),
               ),
@@ -327,14 +341,14 @@ class _RegisterScreenState extends State<RegisterScreen>
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: const Color(lightForestGreenColor).withOpacity(0.1),
+                    color: context.colors.brand.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.phone,
                       size: 16,
-                      color: Color(lightForestGreenColor),
+                      color: context.colors.brand,
                     ),
                   ),
                 ),
@@ -345,7 +359,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 height: 8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey[400]!, width: 1.5),
+                  border: Border.all(color: context.colors.textMuted, width: 1.5),
                 ),
               ),
             ],
@@ -366,31 +380,47 @@ class _RegisterScreenState extends State<RegisterScreen>
             size: 100,
           ),
           const SizedBox(height: 32),
-          const PageTitle(
-            title: 'Date personale',
-            subtitle: 'Completează datele tale',
+          PageTitle(
+            title: context.l10n.registerDatePersonale,
+            subtitle: context.l10n.registerCompleteazaDateleTale,
           ),
           const SizedBox(height: 32),
-          FormTextField(
-            controller: _firstNameController,
-            label: 'Prenume',
-            icon: Icons.person_outline,
-            hint: 'Introdu prenumele',
-          ),
-          const SizedBox(height: 16),
-          FormTextField(
-            controller: _lastNameController,
-            label: 'Nume',
-            icon: Icons.person_outline,
-            hint: 'Introdu numele',
-          ),
-          const SizedBox(height: 16),
-          FormTextField(
-            controller: _emailController,
-            label: 'Email',
-            icon: Icons.email_outlined,
-            hint: 'email@exemplu.ro',
-            keyboardType: TextInputType.emailAddress,
+          AutofillGroup(
+            child: Column(
+              children: [
+                FormTextField(
+                  controller: _firstNameController,
+                  label: context.l10n.registerPrenume,
+                  icon: Icons.person_outline,
+                  hint: context.l10n.registerIntroduPrenumele,
+                  keyboardType: TextInputType.name,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.givenName],
+                ),
+                const SizedBox(height: 16),
+                FormTextField(
+                  controller: _lastNameController,
+                  label: context.l10n.registerNume,
+                  icon: Icons.person_outline,
+                  hint: context.l10n.registerIntroduNumele,
+                  keyboardType: TextInputType.name,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.familyName],
+                ),
+                const SizedBox(height: 16),
+                FormTextField(
+                  controller: _emailController,
+                  label: context.l10n.registerEmail,
+                  icon: Icons.email_outlined,
+                  hint: context.l10n.registerEmailExempluRo,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.email],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           DatePickerField(
@@ -401,30 +431,34 @@ class _RegisterScreenState extends State<RegisterScreen>
           SelectionDropdown<String>(
             value: _selectedGender,
             items: const ['Masculin', 'Feminin'],
+            itemLabel: _genderLabel,
             onChanged: (value) {
               if (value != null) setState(() => _selectedGender = value);
             },
-            label: 'Gen',
+            label: context.l10n.registerGen,
             icon: Icons.wc_outlined,
           ),
           const SizedBox(height: 16),
           FormTextField(
             controller: _cnpController,
-            label: 'CNP',
+            label: context.l10n.registerCnp,
             icon: Icons.badge_outlined,
             hint: '123 456 789 012 3',
             maxLength: 16,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
           ),
           const SizedBox(height: 16),
           SelectionDropdown<String>(
             value: _selectedMaritalStatus,
             items: const ['Necăsătorit', 'Căsătorit', 'Divorțat'],
+            itemLabel: _maritalLabel,
             onChanged: (value) {
               if (value != null) {
                 setState(() => _selectedMaritalStatus = value);
               }
             },
-            label: 'Stare civilă',
+            label: context.l10n.registerStareCivila,
             icon: Icons.favorite_outline_rounded,
           ),
           const SizedBox(height: 24),
@@ -444,25 +478,24 @@ class _RegisterScreenState extends State<RegisterScreen>
             size: 100,
           ),
           const SizedBox(height: 32),
-          const PageTitle(
-            title: 'Confirmare date',
-            subtitle: 'Verifică datele introduse',
+          PageTitle(
+            title: context.l10n.registerConfirmareDate,
+            subtitle: context.l10n.registerVerificaDateleIntroduse,
           ),
           const SizedBox(height: 32),
-          ReviewItemRow(label: 'Telefon', value: _phoneController.text),
-          ReviewItemRow(label: 'Prenume', value: _firstNameController.text),
-          ReviewItemRow(label: 'Nume', value: _lastNameController.text),
-          ReviewItemRow(label: 'Email', value: _emailController.text),
+          ReviewItemRow(label: context.l10n.registerTelefon, value: _phoneController.text),
+          ReviewItemRow(label: context.l10n.registerPrenume, value: _firstNameController.text),
+          ReviewItemRow(label: context.l10n.registerNume, value: _lastNameController.text),
+          ReviewItemRow(label: context.l10n.registerEmail, value: _emailController.text),
           if (_selectedDate != null)
             ReviewItemRow(
-              label: 'Data nașterii',
-              value:
-                  '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+              label: context.l10n.commonDataNasterii,
+              value: formatDate(_selectedDate!),
             ),
-          ReviewItemRow(label: 'Gen', value: _selectedGender),
-          ReviewItemRow(label: 'CNP', value: _cnpController.text),
+          ReviewItemRow(label: context.l10n.registerGen, value: _genderLabel(_selectedGender)),
+          ReviewItemRow(label: context.l10n.registerCnp, value: _cnpController.text),
           ReviewItemRow(
-              label: 'Stare civilă', value: _selectedMaritalStatus),
+              label: context.l10n.registerStareCivila, value: _maritalLabel(_selectedMaritalStatus)),
           const SizedBox(height: 24),
         ],
       ),
@@ -474,12 +507,12 @@ class _RegisterScreenState extends State<RegisterScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surface,
       body: SafeArea(
         child: Column(
           children: [
             SimpleAppBar(
-              title: 'Înregistrare',
+              title: context.l10n.registerInregistrare,
               onBack: () => Navigator.pop(context),
             ),
             StepIndicator(currentStep: _currentStep),
@@ -499,24 +532,30 @@ class _RegisterScreenState extends State<RegisterScreen>
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
-                  if (_currentStep > 0 && _currentStep < 2)
-                    ActionButton(
-                      label: 'Înapoi',
-                      onTap: _previousStep,
-                      variant: ActionButtonVariant.secondary,
+                  if (_currentStep > 0 && _currentStep < 2) ...[
+                    Expanded(
+                      child: AppButton(
+                        label: context.l10n.commonInapoi,
+                        onPressed: _previousStep,
+                        variant: AppButtonVariant.secondary,
+                      ),
                     ),
+                    const SizedBox(width: 12),
+                  ],
                   if (_currentStep < 2)
-                    ActionButton(
-                      label: 'Continuă',
-                      onTap: _nextStep,
+                    Expanded(
+                      child: AppButton(
+                        label: context.l10n.registerContinua,
+                        onPressed: _nextStep,
+                      ),
                     ),
                   if (_currentStep == 2)
-                    ActionButton(
-                      label: 'Confirmă înregistrarea',
-                      onTap: _loading ? null : _register,
-                      isLoading: _loading,
-                      variant: ActionButtonVariant.primary,
-                      isExpanded: false,
+                    Expanded(
+                      child: AppButton(
+                        label: context.l10n.registerConfirmaInregistrarea,
+                        onPressed: _register,
+                        isLoading: _loading,
+                      ),
                     ),
                 ],
               ),

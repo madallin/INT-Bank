@@ -1,36 +1,58 @@
 import 'package:flutter/material.dart';
 
-void showErrorSnackBar(BuildContext context, String message)
+import '../../theme/app_tokens.dart';
+
+enum SnackBarTone { error, success, info }
+
+/// The one way screens show transient feedback, so colour, icon, placement and
+/// timing stay consistent. A new message replaces the visible one instead of
+/// queueing behind it.
+void showAppSnackBar(
+  BuildContext context,
+  String message, {
+  SnackBarTone tone = SnackBarTone.info,
+  Duration duration = const Duration(seconds: 4),
+})
 {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.white),
-          const SizedBox(width: 12),
-          Expanded(child: Text(message, style: const TextStyle(color: Colors.white))),
-        ],
+  final colors = context.colors;
+  final (Color background, IconData icon) = switch (tone)
+  {
+    SnackBarTone.error => (colors.danger, Icons.error_outline_rounded),
+    SnackBarTone.success => (colors.brand, Icons.check_circle_outline_rounded),
+    SnackBarTone.info => (colors.textPrimary, Icons.info_outline_rounded),
+  };
+
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: background,
+        duration: duration,
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                message,
+                style: context.text.bodyMedium?.copyWith(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
-      backgroundColor: Colors.red,
-    ),
-  );
+    );
 }
 
-void showSuccessSnackBar(BuildContext context, String message)
-{
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Row(
-        children: [
-          const Icon(Icons.check_circle_outline, color: Colors.white),
-          const SizedBox(width: 12),
-          Expanded(child: Text(message, style: const TextStyle(color: Colors.white))),
-        ],
-      ),
-      backgroundColor: Colors.green,
-    ),
-  );
-}
+void showErrorSnackBar(BuildContext context, String message) =>
+    showAppSnackBar(context, message, tone: SnackBarTone.error);
+
+void showSuccessSnackBar(BuildContext context, String message) =>
+    showAppSnackBar(context, message, tone: SnackBarTone.success);
+
+void showInfoSnackBar(BuildContext context, String message) =>
+    showAppSnackBar(context, message);
 
 String formatPhoneDisplay(String phone)
 {
@@ -49,19 +71,6 @@ String countryCodeToEmoji(String countryCode)
   final codePoint1 = 0x1F1E6 + countryCode.codeUnitAt(0) - 65;
   final codePoint2 = 0x1F1E6 + countryCode.codeUnitAt(1) - 65;
   return String.fromCharCodes([codePoint1, codePoint2]);
-}
-
-String formatDate(String dateStr)
-{
-  try
-  {
-    final date = DateTime.parse(dateStr);
-    return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-  }
-  catch(e)
-{
-    return dateStr;
-  }
 }
 
 double? parseRomanianNumber(String text)
@@ -89,18 +98,6 @@ String toTitleCase(String text)
 ImageProvider cachedNetworkImage(String url)
 {
   return NetworkImage(url);
-}
-
-String formatIBAN(String iban)
-{
-  final cleaned = iban.replaceAll(' ', '');
-  final buffer = StringBuffer();
-  for(int i = 0; i < cleaned.length; i++)
-{
-    if(i > 0 && i % 4 == 0) buffer.write(' ');
-    buffer.write(cleaned[i]);
-  }
-  return buffer.toString();
 }
 
 T enumFromString<T>(String key, List<T> values)

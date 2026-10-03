@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../config/app_config.dart';
+import '../theme/app_tokens.dart';
 
+/// Small icon + label shown above a form field or group.
 class SectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -17,27 +17,21 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Padding(
-      padding: const EdgeInsets.only(left: 6, bottom: 10),
+      padding: const EdgeInsets.only(left: 6, bottom: AppSpacing.xs),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF6B7280)),
+          ExcludeSemantics(child: Icon(icon, size: 16, color: c.textSecondary)),
           const SizedBox(width: 6),
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF6B7280),
-              letterSpacing: 0.3,
-            ),
-          ),
+          Flexible(child: Text(title, style: context.text.labelMedium)),
         ],
       ),
     );
   }
 }
 
+/// Large centred page title with a supporting line.
 class PageTitle extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -50,24 +44,22 @@ class PageTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(
       children: [
-        Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 26,
-            fontWeight: FontWeight.w700,
-            color: const Color(darkGreyColor),
+        Semantics(
+          header: true,
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: context.text.headlineSmall,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: context.text.bodyMedium?.copyWith(color: c.textSecondary),
         ),
       ],
     );

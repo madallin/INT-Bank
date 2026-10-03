@@ -157,4 +157,28 @@ void main() {
       expect(Validators.validateName('John'), isNotNull);
     });
   });
+
+  group('Validators.validateRomanianIBAN', () {
+    test('returns error for null or empty', () {
+      expect(Validators.validateRomanianIBAN(null), isNotNull);
+      expect(Validators.validateRomanianIBAN(''), isNotNull);
+    });
+
+    test('returns error when not starting with RO', () {
+      expect(Validators.validateRomanianIBAN('GB49AAAA1B31007593840000'), isNotNull);
+    });
+
+    test('returns error when length is not 24', () {
+      expect(Validators.validateRomanianIBAN('RO1234'), isNotNull);
+    });
+
+    test('returns error when checksum is invalid', () {
+      expect(Validators.validateRomanianIBAN('RO00AAAA1B31007593840000'), isNotNull);
+    });
+
+    test('returns null for valid Romanian IBAN', () {
+      expect(Validators.validateRomanianIBAN('RO49AAAA1B31007593840000'), isNull);
+      expect(Validators.validateRomanianIBAN('RO49 AAAA 1B31 0075 9384 0000'), isNull);
+    });
+  });
 }

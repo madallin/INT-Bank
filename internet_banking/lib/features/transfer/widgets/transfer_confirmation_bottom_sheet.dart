@@ -1,15 +1,19 @@
+import '../../../theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../config/app_config.dart';
+import '../../../widgets/app_button.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/utils/haptic_feedback_helper.dart';
 import '../../../core/utils/iban_bank_detector.dart';
+import '../../../l10n/l10n.dart';
 
 class TransferConfirmationBottomSheet extends StatelessWidget {
   final String beneficiaryName;
   final String toIban;
   final String fromIban;
   final double amount;
+  final String currency;
   final String reason;
   final RomanianBankInfo? bankInfo;
   final bool isScheduled;
@@ -22,6 +26,7 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
     required this.toIban,
     required this.fromIban,
     required this.amount,
+    this.currency = 'RON',
     required this.reason,
     this.bankInfo,
     this.isScheduled = false,
@@ -29,41 +34,16 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
     required this.onConfirm,
   });
 
-  String _formatAmount(double val) {
-    final parts = val.toStringAsFixed(2).split('.');
-    final integerPart = parts[0];
-    final decimalPart = parts[1];
-    final buffer = StringBuffer();
-    for (int i = 0; i < integerPart.length; i++) {
-      if (i > 0 && (integerPart.length - i) % 3 == 0) {
-        buffer.write('.');
-      }
-      buffer.write(integerPart[i]);
-    }
-    return '${buffer.toString()},$decimalPart';
-  }
-
-  String _formatIban(String iban) {
-    final clean = iban.replaceAll(' ', '').toUpperCase();
-    final buffer = StringBuffer();
-    for (int i = 0; i < clean.length; i++) {
-      if (i > 0 && i % 4 == 0) buffer.write(' ');
-      buffer.write(clean[i]);
-    }
-    return buffer.toString();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161B22) : Colors.white,
+        color: context.colors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+            color: context.colors.shadow,
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -75,7 +55,8 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
         top: 12,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -85,7 +66,7 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
               width: 44,
               height: 4,
               decoration: BoxDecoration(
-                color: isDark ? Colors.grey[700] : Colors.grey[300],
+                color: context.colors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -98,12 +79,12 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(lightForestGreenColor).withOpacity(0.12),
+                  color: context.colors.brand.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.verified_user_rounded,
-                  color: Color(lightForestGreenColor),
+                  color: context.colors.brand,
                   size: 24,
                 ),
               ),
@@ -113,18 +94,18 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Verificare transfer',
+                      context.l10n.transferConfirmVerificareTransfer,
                       style: GoogleFonts.inter(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : const Color(darkGreyColor),
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     Text(
-                      'Verifică detaliile plății înainte de trimitere',
+                      context.l10n.transferConfirmVerificaDetaliilePlatiiInainte,
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: Colors.grey[500],
+                        color: context.colors.textMuted,
                       ),
                     ),
                   ],
@@ -139,66 +120,68 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: isDark
-                    ? [const Color(0xFF1E2633), const Color(0xFF151C28)]
-                    : [const Color(0xFFF0FDF4), const Color(0xFFE8F5E9)],
+                colors: [context.colors.surfaceMuted, context.colors.brandSurface],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: const Color(lightForestGreenColor).withOpacity(0.2),
+                color: context.colors.brand.withOpacity(0.2),
               ),
             ),
             child: Column(
               children: [
                 Text(
-                  'SUMĂ DE TRANSFERAT',
+                  context.l10n.transferConfirmSumaTransferat,
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
-                    color: const Color(lightForestGreenColor),
+                    color: context.colors.brand,
                   ),
                 ),
                 const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                // Large amounts shrink to fit instead of overflowing.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      _formatAmount(amount),
+                      formatAmount(amount),
                       style: GoogleFonts.spaceMono(
                         fontSize: 32,
                         fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(darkGreyColor),
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'RON',
+                      currency,
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: const Color(lightForestGreenColor),
+                        color: context.colors.brand,
                       ),
                     ),
                   ],
+                ),
                 ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(lightForestGreenColor).withOpacity(0.15),
+                    color: context.colors.brand.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    'Comision: 0.00 RON • Transfer gratuit',
+                    context.l10n.transferConfirmComisionTransferGratuit(formatMoney(0, currency)),
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: const Color(lightForestGreenColor),
+                      color: context.colors.brand,
                     ),
                   ),
                 ),
@@ -211,46 +194,47 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F141C) : Colors.grey[50],
+              color: context.colors.surfaceMuted,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                color: context.colors.border,
               ),
             ),
             child: Column(
               children: [
-                _buildRow(
-                  label: 'Destinatar',
-                  value: beneficiaryName,
-                  isDark: isDark,
-                  isBold: true,
-                ),
-                const Divider(height: 20),
-                _buildRow(
-                  label: 'Bancă beneficiar',
-                  value: bankInfo != null ? bankInfo!.name : 'Bancă Comercială',
-                  isDark: isDark,
-                  trailingBadge: bankInfo?.code,
-                ),
-                const Divider(height: 20),
-                _buildRow(
-                  label: 'IBAN Destinație',
-                  value: _formatIban(toIban),
-                  isDark: isDark,
+                _buildRow(context,
+                  label: context.l10n.commonContul,
+                  value: fromIban.isEmpty ? '—' : formatIban(fromIban),
                   isMono: true,
                 ),
                 const Divider(height: 20),
-                _buildRow(
-                  label: 'Detalii plată',
+                _buildRow(context,
+                  label: context.l10n.transferConfirmDestinatar,
+                  value: beneficiaryName,
+                  isBold: true,
+                ),
+                const Divider(height: 20),
+                _buildRow(context,
+                  label: context.l10n.transferConfirmBancaBeneficiar,
+                  value: bankInfo != null ? bankInfo!.name : context.l10n.transferConfirmBancaComerciala,
+                  trailingBadge: bankInfo?.code,
+                ),
+                const Divider(height: 20),
+                _buildRow(context,
+                  label: context.l10n.transferConfirmIbanDestinatie,
+                  value: formatIban(toIban),
+                  isMono: true,
+                ),
+                const Divider(height: 20),
+                _buildRow(context,
+                  label: context.l10n.commonDetaliiPlata,
                   value: reason,
-                  isDark: isDark,
                 ),
                 if (isScheduled && scheduleDetails != null) ...[
                   const Divider(height: 20),
-                  _buildRow(
-                    label: 'Programare',
+                  _buildRow(context,
+                    label: context.l10n.commonProgramare,
                     value: scheduleDetails!,
-                    isDark: isDark,
                     highlight: true,
                   ),
                 ],
@@ -259,18 +243,22 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Security Footnote
+          // What happens after confirming
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.shield_outlined, size: 14, color: Colors.grey[500]),
-              const SizedBox(width: 6),
-              Text(
-                'Securizat prin Double-Entry Ledger & Strong Customer Authentication',
-                style: GoogleFonts.inter(
-                  fontSize: 10,
-                  color: Colors.grey[500],
-                  fontWeight: FontWeight.w500,
+              Icon(Icons.info_outline_rounded, size: 16, color: context.colors.textMuted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  isScheduled
+                      ? context.l10n.transferConfirmPlataVaFiExecutata
+                      : context.l10n.transferConfirmVerificaIbanUlSuma,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: context.colors.textSecondary,
+                    height: 1.4,
+                  ),
                 ),
               ),
             ],
@@ -278,35 +266,13 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Buttons
-          ElevatedButton(
+          AppButton(
+            label: isScheduled ? context.l10n.transferConfirmConfirmaProgramarea : context.l10n.transferConfirmConfirmaTransferul,
+            icon: isScheduled ? Icons.event_available_rounded : Icons.send_rounded,
             onPressed: () {
-              HapticFeedbackHelper.buttonTap();
               Navigator.pop(context);
               onConfirm();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(lightForestGreenColor),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.lock_outline_rounded, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  'Confirmă și autorizează',
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 10),
           TextButton(
@@ -315,23 +281,23 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
               Navigator.pop(context);
             },
             child: Text(
-              'Modifică detaliile',
+              context.l10n.transferConfirmModificaDetaliile,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: context.colors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
         ],
       ),
+      ),
     );
   }
 
-  Widget _buildRow({
+  Widget _buildRow(BuildContext context, {
     required String label,
     required String value,
-    required bool isDark,
     bool isBold = false,
     bool isMono = false,
     bool highlight = false,
@@ -344,7 +310,7 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
           label,
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: Colors.grey[500],
+            color: context.colors.textMuted,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -358,7 +324,7 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 6),
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(lightForestGreenColor).withOpacity(0.15),
+                    color: context.colors.brand.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -366,7 +332,7 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: const Color(lightForestGreenColor),
+                      color: context.colors.brand,
                     ),
                   ),
                 ),
@@ -379,14 +345,14 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
                       ? GoogleFonts.spaceMono(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white70 : const Color(darkGreyColor),
+                          color: context.colors.textPrimary,
                         )
                       : GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
                           color: highlight
-                              ? const Color(lightForestGreenColor)
-                              : (isDark ? Colors.white : const Color(darkGreyColor)),
+                              ? context.colors.brand
+                              : (context.colors.textPrimary),
                         ),
                 ),
               ),

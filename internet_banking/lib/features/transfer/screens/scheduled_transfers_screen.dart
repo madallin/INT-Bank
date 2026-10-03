@@ -1,10 +1,16 @@
+import '../../../theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../config/app_config.dart';
+import '../../../widgets/confirm_dialog.dart';
+import '../../../widgets/error_retry_view.dart';
+import '../../../core/utils/helpers.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../core/utils/error_messages.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/iban_bank_detector.dart';
 import '../../../widgets/simple_app_bar.dart';
+import '../../../l10n/l10n.dart';
 
 class ScheduledTransfersScreen extends StatefulWidget {
   final int userId;
@@ -45,13 +51,13 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
         });
       } else {
         setState(() {
-          _errorMessage = 'Nu s-au putut încărca plățile programate.';
+          _errorMessage = context.l10n.scheduledSAuPututIncarca;
           _loading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Eroare de conexiune: $e';
+        _errorMessage = friendlyErrorMessage(e, fallback: context.l10n.scheduledSAuPututIncarca);
         _loading = false;
       });
     }
@@ -62,96 +68,55 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
       final response = await _dioClient.delete('/users/${widget.userId}/scheduled-transfers/$id');
       if (response.statusCode == 200 || response.statusCode == 204) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Plata programată a fost anulată.', style: GoogleFonts.inter()),
-            backgroundColor: const Color(lightForestGreenColor),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        showSuccessSnackBar(context, context.l10n.scheduledPlataProgramataFostAnulata);
         _fetchScheduledTransfers();
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Eroare la anulare: $e', style: GoogleFonts.inter()),
-          backgroundColor: Colors.red[700],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      showErrorSnackBar(context, friendlyErrorMessage(e, fallback: context.l10n.scheduledPlataProgramataPututFi));
     }
   }
 
-  void _confirmCancel(int id, String beneficiary, double amount) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Anulare plată recurentă', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-        content: Text(
-          'Ești sigur că dorești să anulezi plata recurentă de ${amount.toStringAsFixed(2)} RON către $beneficiary?',
-          style: GoogleFonts.inter(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Păstrează', style: GoogleFonts.inter(color: Colors.grey[600], fontWeight: FontWeight.w600)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _deleteTransfer(id);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
-            child: Text('Anulează plata', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
+  Future<void> _confirmCancel(int id, String beneficiary, double amount) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: context.l10n.scheduledAnuleziPlataRecurenta,
+      message:
+          context.l10n.scheduledPlataCatreVaMai(formatMoney(amount, 'RON'), beneficiary),
+      confirmLabel: context.l10n.scheduledAnuleazaPlata,
+      cancelLabel: context.l10n.scheduledPastreaza,
+      destructive: true,
     );
+    if (confirmed) _deleteTransfer(id);
   }
 
   String _formatFrequency(String freq) {
     switch (freq.toUpperCase()) {
       case 'WEEKLY':
-        return 'Săptămânal';
+        return context.l10n.commonSaptamanal;
       case 'MONTHLY':
-        return 'Lunar';
+        return context.l10n.commonLunar;
       default:
-        return 'O singură dată';
+        return context.l10n.scheduledSinguraData;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7FAF8),
+      backgroundColor: context.colors.surfaceMuted,
       appBar: SimpleAppBar(
-        title: 'Plăți programate',
+        title: context.l10n.scheduledPlatiProgramate,
         onBack: () => Navigator.pop(context),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Color(lightForestGreenColor)))
+          ? Center(child: CircularProgressIndicator(color: context.colors.brand))
           : _errorMessage != null
-          ? Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline_rounded, size: 48, color: Colors.red[400]),
-              const SizedBox(height: 12),
-              Text(_errorMessage!, textAlign: TextAlign.center, style: GoogleFonts.inter(color: Colors.red[700])),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _fetchScheduledTransfers,
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(lightForestGreenColor)),
-                child: const Text('Reîncearcă', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        ),
-      )
+          ? ErrorRetryView(
+              message: _errorMessage!,
+              onRetry: _fetchScheduledTransfers,
+              icon: Icons.event_busy_rounded,
+            )
           : _transfers.isEmpty
           ? Center(
         child: Padding(
@@ -162,21 +127,21 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(lightForestGreenColor).withOpacity(0.08),
+                  color: context.colors.brand.withOpacity(0.08),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.calendar_month_outlined, size: 48, color: Color(lightForestGreenColor)),
+                child: Icon(Icons.calendar_month_outlined, size: 48, color: context.colors.brand),
               ),
               const SizedBox(height: 16),
               Text(
-                'Nicio plată programată',
-                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(darkGreyColor)),
+                context.l10n.scheduledNicioPlataProgramata,
+                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
               ),
               const SizedBox(height: 8),
               Text(
-                'Poți seta plăți recurente sau viitoare direct din ecranul de transfer activând opțiunea "Programare plată".',
+                context.l10n.scheduledPotiSetaPlatiRecurente,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
+                style: GoogleFonts.inter(fontSize: 13, color: context.colors.textSecondary),
               ),
             ],
           ),
@@ -184,14 +149,14 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
       )
           : RefreshIndicator(
         onRefresh: _fetchScheduledTransfers,
-        color: const Color(lightForestGreenColor),
+        color: context.colors.brand,
         child: ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           itemCount: _transfers.length,
           itemBuilder: (context, index) {
             final t = _transfers[index];
             final id = t['id'] as int? ?? 0;
-            final beneficiary = t['beneficiaryName'] ?? 'Beneficiar';
+            final beneficiary = t['beneficiaryName'] ?? context.l10n.scheduledBeneficiar;
             final iban = t['toIban'] ?? '';
             final amount = (t['amount'] as num?)?.toDouble() ?? 0.0;
             final freq = t['frequency'] ?? 'ONCE';
@@ -203,7 +168,7 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 3)),
@@ -215,49 +180,50 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
+                      Expanded(child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(lightForestGreenColor).withOpacity(0.1),
+                              color: context.colors.brand.withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.repeat_rounded, color: Color(lightForestGreenColor), size: 18),
+                            child: Icon(Icons.repeat_rounded, color: context.colors.brand, size: 18),
                           ),
                           const SizedBox(width: 10),
-                          Column(
+                          Expanded(child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 beneficiary,
-                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(darkGreyColor)),
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
                               ),
                               if (bank != null)
                                 Text(
                                   bank.name,
-                                  style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w500),
+                                  style: GoogleFonts.inter(fontSize: 11, color: context.colors.textMuted, fontWeight: FontWeight.w500),
                                 ),
                             ],
-                          ),
+                          )),
                         ],
-                      ),
+                      )),
+                      const SizedBox(width: 8),
                       Text(
-                        '${amount.toStringAsFixed(2)} RON',
-                        style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: const Color(darkGreyColor)),
+                        formatMoney(amount, 'RON'),
+                        style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
                     iban,
-                    style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600], letterSpacing: 0.5),
+                    style: GoogleFonts.inter(fontSize: 12, color: context.colors.textSecondary, letterSpacing: 0.5),
                   ),
                   if (reason.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Detalii: $reason',
-                      style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500]),
+                      context.l10n.commonDetalii(reason),
+                      style: GoogleFonts.inter(fontSize: 12, color: context.colors.textMuted),
                     ),
                   ],
                   const Divider(height: 24),
@@ -269,24 +235,24 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8F5E9),
+                              color: context.colors.brandSurface,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               _formatFrequency(freq),
-                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF2E7D32)),
+                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.positive),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Următoarea: $nextRun',
-                            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
+                            context.l10n.scheduledUrmatoarea(nextRun),
+                            style: GoogleFonts.inter(fontSize: 11, color: context.colors.textMuted),
                           ),
                         ],
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                        tooltip: 'Anulează',
+                        icon: Icon(Icons.delete_outline_rounded, color: context.colors.danger, size: 20),
+                        tooltip: context.l10n.commonAnuleaza,
                         onPressed: () => _confirmCancel(id, beneficiary, amount),
                       ),
                     ],

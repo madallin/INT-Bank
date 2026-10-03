@@ -1,10 +1,15 @@
+import '../../../theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../config/app_config.dart';
+import '../../../widgets/confirm_dialog.dart';
+import '../../../core/utils/helpers.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../core/utils/error_messages.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/haptic_feedback_helper.dart';
 import '../../../data/models/card_model.dart';
 import '../../../widgets/simple_app_bar.dart';
+import '../../../l10n/l10n.dart';
 
 class CardSettingsScreen extends StatefulWidget {
   final int userId;
@@ -37,6 +42,18 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
 
   Future<void> _toggleFreeze(bool value) async {
     HapticFeedbackHelper.selection();
+    // Blocking stops every card payment, so ask first; unblocking does not.
+    if (value) {
+      final confirmed = await showConfirmDialog(
+        context,
+        title: context.l10n.cardSettingsBlocheziTemporarCardul,
+        message:
+            context.l10n.cardSettingsPlatileCardulRetragerileAtm(widget.card.last4),
+        confirmLabel: context.l10n.cardSettingsBlocheaza,
+        destructive: true,
+      );
+      if (!confirmed || !mounted) return;
+    }
     setState(() => _saving = true);
     final endpoint = value ? 'freeze' : 'unfreeze';
     try {
@@ -46,26 +63,11 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
       if (response.statusCode == 200) {
         setState(() => _isBlocked = value);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              value ? 'Cardul a fost blocat temporar' : 'Cardul a fost deblocat cu succes',
-              style: GoogleFonts.inter(),
-            ),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(lightForestGreenColor),
-          ),
-        );
+        showSuccessSnackBar(context, value ? context.l10n.cardSettingsCardulFostBlocatTemporar : context.l10n.cardSettingsCardulFostDeblocatSucces);
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Eroare la modificarea stării cardului: $e', style: GoogleFonts.inter()),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red[700],
-        ),
-      );
+      showErrorSnackBar(context, friendlyErrorMessage(e, fallback: context.l10n.cardSettingsStareaCarduluiPututFi));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -86,23 +88,11 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
       if (response.statusCode == 200) {
         HapticFeedbackHelper.success();
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Noua limită (${_spendingLimit.toStringAsFixed(0)} RON) a fost salvată cu succes!', style: GoogleFonts.inter()),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(lightForestGreenColor),
-          ),
-        );
+        showSuccessSnackBar(context, context.l10n.cardSettingsNouaLimitaFostSalvata(formatMoney(_spendingLimit, 'RON', decimals: 0)));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Eroare la salvarea limitei: $e', style: GoogleFonts.inter()),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red[700],
-        ),
-      );
+      showErrorSnackBar(context, friendlyErrorMessage(e, fallback: context.l10n.cardSettingsLimitaPututFiSalvata));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -127,32 +117,20 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
       );
       HapticFeedbackHelper.buttonTap();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Opțiunile de plată au fost actualizate.', style: GoogleFonts.inter()),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 1),
-          backgroundColor: const Color(lightForestGreenColor),
-        ),
-      );
+      showAppSnackBar(context, context.l10n.cardSettingsOptiunilePlataAuFost,
+          tone: SnackBarTone.success, duration: const Duration(seconds: 2));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Eroare la salvarea opțiunilor: $e', style: GoogleFonts.inter()),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red[700],
-        ),
-      );
+      showErrorSnackBar(context, friendlyErrorMessage(e, fallback: context.l10n.cardSettingsOptiunileAuPututFi));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAF9),
+      backgroundColor: context.colors.background,
       appBar: SimpleAppBar(
-        title: 'Setări Card',
+        title: context.l10n.cardSettingsSetariCard,
         onBack: () => Navigator.pop(context),
       ),
       body: SingleChildScrollView(
@@ -167,7 +145,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                 gradient: LinearGradient(
                   colors: _isBlocked
                       ? [const Color(0xFF4A5568), const Color(0xFF2D3748)]
-                      : [const Color(lightForestGreenColor), const Color(darkForestGreenColor)],
+                      : [context.colors.heroStart, context.colors.heroEnd],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -184,12 +162,12 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                     children: [
                       Text(
                         'INTBank Debit',
-                        style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.poppins(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _isBlocked ? Colors.red.withOpacity(0.3) : Colors.white.withOpacity(0.2),
+                          color: _isBlocked ? context.colors.danger.withOpacity(0.3) : Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -197,7 +175,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                             Icon(_isBlocked ? Icons.lock_rounded : Icons.check_circle_rounded, color: Colors.white, size: 12),
                             const SizedBox(width: 4),
                             Text(
-                              _isBlocked ? 'BLOCAT' : 'ACTIV',
+                              _isBlocked ? context.l10n.cardSettingsBlocat : context.l10n.cardSettingsActiv,
                               style: GoogleFonts.inter(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
                             ),
                           ],
@@ -219,8 +197,8 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                         style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                       Text(
-                        'EXP: ${widget.card.expiryDate}',
-                        style: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
+                        context.l10n.cardSettingsExp(widget.card.expiryDate),
+                        style: GoogleFonts.inter(color: Colors.white, fontSize: 11),
                       ),
                     ],
                   ),
@@ -229,11 +207,11 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
             ),
             const SizedBox(height: 24),
 
-            Text('SECURITATE CARD', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey[500])),
+            Text(context.l10n.cardSettingsSecuritateCard, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.textMuted)),
             const SizedBox(height: 10),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 2)),
@@ -242,24 +220,24 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
               child: SwitchListTile(
                 value: _isBlocked,
                 onChanged: _saving ? null : _toggleFreeze,
-                activeColor: Colors.red[700],
-                title: Text('Blocare temporară card', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
-                subtitle: Text('Dezactivează plățile și retragerile ATM instant.', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500])),
+                activeColor: context.colors.danger,
+                title: Text(context.l10n.cardSettingsBlocareTemporaraCard, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
+                subtitle: Text(context.l10n.cardSettingsDezactiveazaPlatileRetragerileAtm, style: GoogleFonts.inter(fontSize: 12, color: context.colors.textMuted)),
                 secondary: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
-                  child: Icon(Icons.lock_outline_rounded, color: Colors.red[700], size: 20),
+                  decoration: BoxDecoration(color: context.colors.danger.withOpacity(0.1), shape: BoxShape.circle),
+                  child: Icon(Icons.lock_outline_rounded, color: context.colors.danger, size: 20),
                 ),
               ),
             ),
             const SizedBox(height: 24),
 
-            Text('LIMITE TRANZACȚII', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey[500])),
+            Text(context.l10n.cardSettingsLimiteTranzactii, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.textMuted)),
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 2)),
@@ -271,8 +249,9 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Limită zilnică de cheltuieli', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
-                      Text('${_spendingLimit.toStringAsFixed(0)} RON', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(lightForestGreenColor))),
+                      Expanded(child: Text(context.l10n.cardSettingsLimitaZilnicaCheltuieli, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textPrimary))),
+                      const SizedBox(width: 8),
+                      Text(formatMoney(_spendingLimit, 'RON', decimals: 0), style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: context.colors.brand)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -281,8 +260,8 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                     min: 500,
                     max: 20000,
                     divisions: 39,
-                    activeColor: const Color(lightForestGreenColor),
-                    inactiveColor: Colors.grey[200],
+                    activeColor: context.colors.brand,
+                    inactiveColor: context.colors.border,
                     onChanged: (val) {
                       setState(() => _spendingLimit = val);
                     },
@@ -291,14 +270,14 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                   ElevatedButton(
                     onPressed: _saving ? null : _saveLimits,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(lightForestGreenColor),
-                      foregroundColor: Colors.white,
+                      backgroundColor: context.colors.brand,
+                      foregroundColor: context.colors.onBrand,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       minimumSize: const Size(double.infinity, 44),
                     ),
                     child: _saving
-                        ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text('Salvează noua limită', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                        ? SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: context.colors.onBrand, strokeWidth: 2))
+                        : Text(context.l10n.cardSettingsSalveazaNouaLimita, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
@@ -306,11 +285,11 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
             const SizedBox(height: 24),
 
             // Online & Contactless Switches
-            Text('OPȚIUNI PLĂȚI', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey[500])),
+            Text(context.l10n.cardSettingsOptiuniPlati, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.textMuted)),
             const SizedBox(height: 10),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 2)),
@@ -321,26 +300,26 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                   SwitchListTile(
                     value: _onlinePayments,
                     onChanged: (val) => _updatePaymentOption(online: val),
-                    activeColor: const Color(lightForestGreenColor),
-                    title: Text('Plăți online (e-Commerce)', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
-                    subtitle: Text('Permite tranzacții securizate pe internet.', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500])),
+                    activeColor: context.colors.brand,
+                    title: Text(context.l10n.cardSettingsPlatiOnlineECommerce, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
+                    subtitle: Text(context.l10n.cardSettingsPermiteTranzactiiSecurizateInternet, style: GoogleFonts.inter(fontSize: 12, color: context.colors.textMuted)),
                     secondary: Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: const Color(lightForestGreenColor).withOpacity(0.1), shape: BoxShape.circle),
-                      child: const Icon(Icons.language_rounded, color: Color(lightForestGreenColor), size: 20),
+                      decoration: BoxDecoration(color: context.colors.brand.withOpacity(0.1), shape: BoxShape.circle),
+                      child: Icon(Icons.language_rounded, color: context.colors.brand, size: 20),
                     ),
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
                     value: _contactless,
                     onChanged: (val) => _updatePaymentOption(contactless: val),
-                    activeColor: const Color(lightForestGreenColor),
-                    title: Text('Plăți contactless POS', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(darkGreyColor))),
-                    subtitle: Text('Plăți rapide fără contact la magazine.', style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500])),
+                    activeColor: context.colors.brand,
+                    title: Text(context.l10n.cardSettingsPlatiContactlessPos, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
+                    subtitle: Text(context.l10n.cardSettingsPlatiRapideFaraContact, style: GoogleFonts.inter(fontSize: 12, color: context.colors.textMuted)),
                     secondary: Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: const Color(lightForestGreenColor).withOpacity(0.1), shape: BoxShape.circle),
-                      child: const Icon(Icons.contactless_outlined, color: Color(lightForestGreenColor), size: 20),
+                      decoration: BoxDecoration(color: context.colors.brand.withOpacity(0.1), shape: BoxShape.circle),
+                      child: Icon(Icons.contactless_outlined, color: context.colors.brand, size: 20),
                     ),
                   ),
                 ],

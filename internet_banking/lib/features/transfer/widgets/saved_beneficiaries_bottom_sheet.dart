@@ -1,8 +1,9 @@
+import '../../../theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../config/app_config.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/iban_bank_detector.dart';
+import '../../../l10n/l10n.dart';
 
 class SavedBeneficiariesBottomSheet extends StatefulWidget {
   final int userId;
@@ -84,8 +85,8 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.colors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -96,7 +97,7 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
             child: Container(
               width: 40,
               height: 4,
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: context.colors.border, borderRadius: BorderRadius.circular(2)),
             ),
           ),
           const SizedBox(height: 16),
@@ -105,18 +106,18 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Beneficiari salvați',
-                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(darkGreyColor)),
+                context.l10n.beneficiariesBeneficiariSalvati,
+                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(lightForestGreenColor).withOpacity(0.08),
+                  color: context.colors.brand.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  '${_beneficiaries.length} contacte',
-                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(lightForestGreenColor)),
+                  context.l10n.beneficiariesContacte(_beneficiaries.length),
+                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.brand),
                 ),
               ),
             ],
@@ -127,11 +128,11 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
             controller: _searchController,
             onChanged: (val) => setState(() => _searchQuery = val),
             decoration: InputDecoration(
-              hintText: 'Caută după nume sau IBAN...',
-              hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey[400]),
-              prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(lightForestGreenColor)),
+              hintText: context.l10n.beneficiariesCautaDupaNumeIban,
+              hintStyle: GoogleFonts.inter(fontSize: 13, color: context.colors.textMuted),
+              prefixIcon: Icon(Icons.search_rounded, size: 20, color: context.colors.brand),
               filled: true,
-              fillColor: const Color(0xFFF7FAF8),
+              fillColor: context.colors.surfaceMuted,
               contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
             ),
@@ -140,17 +141,17 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
 
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Color(lightForestGreenColor)))
+                ? Center(child: CircularProgressIndicator(color: context.colors.brand))
                 : _filteredBeneficiaries.isEmpty
                 ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.person_search_outlined, size: 48, color: Colors.grey[300]),
+                  Icon(Icons.person_search_outlined, size: 48, color: context.colors.border),
                   const SizedBox(height: 10),
                   Text(
-                    _searchQuery.isEmpty ? 'Nu ai niciun beneficiar salvat încă' : 'Niciun rezultat găsit',
-                    style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[500]),
+                    _searchQuery.isEmpty ? context.l10n.beneficiariesNiciunBeneficiarSalvatInca : context.l10n.beneficiariesNiciunRezultatGasit,
+                    style: GoogleFonts.inter(fontSize: 13, color: context.colors.textMuted),
                   ),
                 ],
               ),
@@ -167,9 +168,9 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.colors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey[200]!),
+                    border: Border.all(color: context.colors.border),
                     boxShadow: [
                       BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2)),
                     ],
@@ -183,7 +184,7 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: (bankInfo?.primaryColor ?? const Color(lightForestGreenColor)).withOpacity(0.12),
+                        color: (bankInfo?.primaryColor ?? context.colors.brand).withOpacity(0.12),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -192,24 +193,24 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
                           style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: bankInfo?.primaryColor ?? const Color(lightForestGreenColor),
+                            color: bankInfo?.primaryColor ?? context.colors.brand,
                           ),
                         ),
                       ),
                     ),
                     title: Text(
                       name,
-                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(darkGreyColor)),
+                      style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(iban, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+                        Text(iban, style: GoogleFonts.inter(fontSize: 12, color: context.colors.textSecondary, fontWeight: FontWeight.w500)),
                         if (bankName.isNotEmpty)
-                          Text(bankName, style: GoogleFonts.inter(fontSize: 10, color: const Color(lightForestGreenColor), fontWeight: FontWeight.w600)),
+                          Text(bankName, style: GoogleFonts.inter(fontSize: 10, color: context.colors.brand, fontWeight: FontWeight.w600)),
                       ],
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+                    trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: context.colors.textMuted),
                   ),
                 );
               },

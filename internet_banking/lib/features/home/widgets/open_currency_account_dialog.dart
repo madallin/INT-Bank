@@ -1,7 +1,10 @@
+import '../../../theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../config/app_config.dart';
+import '../../../core/utils/helpers.dart';
+import '../../../core/utils/error_messages.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../l10n/l10n.dart';
 
 class OpenCurrencyAccountDialog extends StatefulWidget {
   final int userId;
@@ -35,10 +38,10 @@ class _OpenCurrencyAccountDialogState extends State<OpenCurrencyAccountDialog> {
   String _selectedCurrency = 'EUR';
   bool _loading = false;
 
-  final List<Map<String, String>> _currencies = [
-    {'code': 'EUR', 'name': 'Euro', 'symbol': '€', 'desc': 'Cont curent în Euro pentru plăți SEPA'},
-    {'code': 'USD', 'name': 'Dolar American', 'symbol': r'$', 'desc': 'Cont curent în USD pentru transferuri internaționale'},
-    {'code': 'GBP', 'name': 'Liră sterlină', 'symbol': '£', 'desc': 'Cont curent în GBP pentru plăți în Regatul Unit'},
+  List<Map<String, String>> get _currencies => [
+    {'code': 'EUR', 'name': context.l10n.openCurrencyEuro, 'symbol': '€', 'desc': context.l10n.openCurrencyContCurentEuroPlati},
+    {'code': 'USD', 'name': context.l10n.openCurrencyDolarAmerican, 'symbol': r'$', 'desc': context.l10n.openCurrencyContCurentUsdTransferuri},
+    {'code': 'GBP', 'name': context.l10n.openCurrencyLiraSterlina, 'symbol': '£', 'desc': context.l10n.openCurrencyContCurentGbpPlati},
   ];
 
   Future<void> _createAccount() async {
@@ -53,18 +56,12 @@ class _OpenCurrencyAccountDialogState extends State<OpenCurrencyAccountDialog> {
         if (!mounted) return;
         Navigator.pop(context);
         widget.onAccountCreated();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Contul tău în $_selectedCurrency a fost deschis cu succes!', style: GoogleFonts.inter()),
-            backgroundColor: const Color(lightForestGreenColor),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        showSuccessSnackBar(context, context.l10n.openCurrencyContulTauFostDeschis(_selectedCurrency));
       } else {
-        _showError('Eroare la deschiderea contului');
+        _showError(AppL10n.current.openCurrencyEroareDeschidereaContului);
       }
     } catch (e) {
-      _showError('Eroare: $e');
+      _showError(friendlyErrorMessage(e, fallback: AppL10n.current.openCurrencyContulPututFiDeschis));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -72,9 +69,7 @@ class _OpenCurrencyAccountDialogState extends State<OpenCurrencyAccountDialog> {
 
   void _showError(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg, style: GoogleFonts.inter()), backgroundColor: Colors.red[700], behavior: SnackBarBehavior.floating),
-    );
+    showErrorSnackBar(context, msg);
   }
 
   @override
@@ -92,22 +87,22 @@ class _OpenCurrencyAccountDialogState extends State<OpenCurrencyAccountDialog> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(lightForestGreenColor).withOpacity(0.1),
+                    color: context.colors.brand.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.currency_exchange_rounded, color: Color(lightForestGreenColor), size: 22),
+                  child: Icon(Icons.currency_exchange_rounded, color: context.colors.brand, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Deschide cont valutar',
-                  style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: const Color(darkGreyColor)),
+                  context.l10n.openCurrencyDeschideContValutar,
+                  style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             Text(
-              'Alege moneda dorită. Se va genera instant un IBAN unic fără comisioane de administrare.',
-              style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
+              context.l10n.openCurrencyAlegeMonedaDoritaSe,
+              style: GoogleFonts.inter(fontSize: 13, color: context.colors.textSecondary),
             ),
             const SizedBox(height: 16),
 
@@ -119,10 +114,10 @@ class _OpenCurrencyAccountDialogState extends State<OpenCurrencyAccountDialog> {
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFF0F7F4) : Colors.white,
+                    color: isSelected ? context.colors.brandSurface : context.colors.surface,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: isSelected ? const Color(lightForestGreenColor) : Colors.grey[300]!,
+                      color: isSelected ? context.colors.brand : context.colors.border,
                       width: isSelected ? 1.8 : 1,
                     ),
                   ),
@@ -132,14 +127,14 @@ class _OpenCurrencyAccountDialogState extends State<OpenCurrencyAccountDialog> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(lightForestGreenColor) : Colors.grey[200],
+                          color: isSelected ? context.colors.brand : context.colors.border,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: Text(
                             c['symbol']!,
                             style: GoogleFonts.inter(
-                              color: isSelected ? Colors.white : const Color(darkGreyColor),
+                              color: isSelected ? context.colors.onBrand : context.colors.textPrimary,
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
                             ),
@@ -153,17 +148,17 @@ class _OpenCurrencyAccountDialogState extends State<OpenCurrencyAccountDialog> {
                           children: [
                             Text(
                               '${c['name']} (${c['code']})',
-                              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(darkGreyColor)),
+                              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
                             ),
                             Text(
                               c['desc']!,
-                              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
+                              style: GoogleFonts.inter(fontSize: 11, color: context.colors.textMuted),
                             ),
                           ],
                         ),
                       ),
                       if (isSelected)
-                        const Icon(Icons.check_circle_rounded, color: Color(lightForestGreenColor), size: 20),
+                        Icon(Icons.check_circle_rounded, color: context.colors.brand, size: 20),
                     ],
                   ),
                 ),
@@ -180,7 +175,7 @@ class _OpenCurrencyAccountDialogState extends State<OpenCurrencyAccountDialog> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: Text('Anulează', style: GoogleFonts.inter(color: Colors.grey[600], fontWeight: FontWeight.w600)),
+                    child: Text(context.l10n.commonAnuleaza, style: GoogleFonts.inter(color: context.colors.textSecondary, fontWeight: FontWeight.w600)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -188,14 +183,14 @@ class _OpenCurrencyAccountDialogState extends State<OpenCurrencyAccountDialog> {
                   child: ElevatedButton(
                     onPressed: _loading ? null : _createAccount,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(lightForestGreenColor),
-                      foregroundColor: Colors.white,
+                      backgroundColor: context.colors.brand,
+                      foregroundColor: context.colors.onBrand,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: _loading
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text('Deschide', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+                        ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: context.colors.onBrand, strokeWidth: 2))
+                        : Text(context.l10n.openCurrencyDeschide, style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],

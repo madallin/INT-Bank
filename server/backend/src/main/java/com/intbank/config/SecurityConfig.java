@@ -47,6 +47,8 @@ public class SecurityConfig
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
         ClientTokenFilter clientTokenFilter = new ClientTokenFilter(jwtSecret, rsaKeyProvider, tokenBlacklistService);
+        com.intbank.infrastructure.security.TokenBucketRateLimiter rateLimiter = new com.intbank.infrastructure.security.TokenBucketRateLimiter();
+        com.intbank.infrastructure.security.RateLimitingFilter rateLimitingFilter = new com.intbank.infrastructure.security.RateLimitingFilter(rateLimiter);
 
         http
             .csrf(csrf -> csrf.disable())
@@ -75,7 +77,8 @@ public class SecurityConfig
                 body.put("error", "Unauthorized");
                 response.getWriter().write(new ObjectMapper().writeValueAsString(body));
             }))
-            .addFilterBefore(clientTokenFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(clientTokenFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(rateLimitingFilter, ClientTokenFilter.class);
 
         return http.build();
     }

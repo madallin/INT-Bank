@@ -6,6 +6,7 @@ import '../../services/jwt_api_service.dart';
 import '../welcome/welcome_screen.dart';
 import '../auth/screens/pin_screen.dart';
 import '../error/screens/error_screen.dart';
+import '../../l10n/l10n.dart';
 
 class SplashScreen extends StatefulWidget
 {
@@ -55,7 +56,7 @@ class _SplashScreenState extends State<SplashScreen>
         MaterialPageRoute(
           builder: (_) => ErrorScreen(
             errorMessage:
-                'Nu s-a putut realiza conexiunea cu serverul. Așteptăm conexiunea...',
+                context.l10n.splashSPututRealizaConexiunea,
             onConnectionRestored: (context)
             {
               Navigator.of(context).pushAndRemoveUntil(

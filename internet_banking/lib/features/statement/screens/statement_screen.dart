@@ -1,9 +1,14 @@
+import '../../../theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../config/app_config.dart';
+import '../../../widgets/error_retry_view.dart';
+import '../../../core/utils/helpers.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../core/utils/error_messages.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../widgets/simple_app_bar.dart';
 import '../../transactions/widgets/transaction_details_bottom_sheet.dart';
+import '../../../l10n/l10n.dart';
 
 class StatementScreen extends StatefulWidget {
   final int userId;
@@ -35,7 +40,7 @@ class _StatementScreenState extends State<StatementScreen> {
   Map<String, dynamic>? _statementData;
   String? _errorMessage;
 
-  final List<String> _presets = ['30 zile', '3 luni', '6 luni', '1 an', 'Personalizat'];
+  List<String> get _presets => [context.l10n.statement30Zile, context.l10n.statement3Luni, context.l10n.statement6Luni, context.l10n.statement1An, context.l10n.statementPersonalizat];
 
   @override
   void initState() {
@@ -82,18 +87,6 @@ class _StatementScreenState extends State<StatementScreen> {
       firstDate: oneYearAgo,
       lastDate: now,
       initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(lightForestGreenColor),
-              onPrimary: Colors.white,
-              onSurface: Color(darkGreyColor),
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (picked != null) {
@@ -105,28 +98,14 @@ class _StatementScreenState extends State<StatementScreen> {
     }
   }
 
-  String _formatDate(DateTime dt) {
-    final y = dt.year.toString().padLeft(4, '0');
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
-  }
-
-  String _formatDisplayDate(DateTime dt) {
-    final d = dt.day.toString().padLeft(2, '0');
-    final m = dt.month.toString().padLeft(2, '0');
-    final y = dt.year.toString();
-    return '$d.$m.$y';
-  }
-
   Future<void> _fetchStatement() async {
     setState(() {
       _loading = true;
       _errorMessage = null;
     });
 
-    final fromStr = _formatDate(_startDate);
-    final toStr = _formatDate(_endDate);
+    final fromStr = formatApiDate(_startDate);
+    final toStr = formatApiDate(_endDate);
 
     try {
       final response = await _client.get(
@@ -138,10 +117,10 @@ class _StatementScreenState extends State<StatementScreen> {
           _statementData = Map<String, dynamic>.from(response.data as Map);
         });
       } else {
-        setState(() => _errorMessage = 'Nu s-a putut încărca extrasul de cont.');
+        setState(() => _errorMessage = context.l10n.statementSPututIncarcaExtrasul);
       }
     } catch (e) {
-      setState(() => _errorMessage = 'Eroare de comunicare cu serverul: $e');
+      setState(() => _errorMessage = friendlyErrorMessage(e, fallback: context.l10n.statementSPututIncarcaExtrasul));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -149,8 +128,8 @@ class _StatementScreenState extends State<StatementScreen> {
 
   Future<void> _downloadPdf() async {
     setState(() => _downloadingPdf = true);
-    final fromStr = _formatDate(_startDate);
-    final toStr = _formatDate(_endDate);
+    final fromStr = formatApiDate(_startDate);
+    final toStr = formatApiDate(_endDate);
 
     try {
       final response = await _client.get(
@@ -159,35 +138,12 @@ class _StatementScreenState extends State<StatementScreen> {
 
       if (response.statusCode == 200) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Extrasul PDF ($fromStr - $toStr) a fost generat cu succes!',
-                    style: GoogleFonts.inter(fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: const Color(lightForestGreenColor),
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        showSuccessSnackBar(context,
+            context.l10n.statementExtrasulPdfFostGenerat(formatDate(_startDate), formatDate(_endDate)));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Eroare la descărcarea PDF-ului: $e', style: GoogleFonts.inter()),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red[700],
-        ),
-      );
+      showErrorSnackBar(context, friendlyErrorMessage(e, fallback: context.l10n.statementPdfUlPututFi));
     } finally {
       if (mounted) setState(() => _downloadingPdf = false);
     }
@@ -196,13 +152,13 @@ class _StatementScreenState extends State<StatementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAF9),
-      appBar: const SimpleAppBar(title: 'Extras de cont'),
+      backgroundColor: context.colors.background,
+      appBar: SimpleAppBar(title: context.l10n.statementExtrasCont),
       body: Column(
         children: [
           // Period Selector Chips
           Container(
-            color: Colors.white,
+            color: context.colors.surface,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,12 +174,12 @@ class _StatementScreenState extends State<StatementScreen> {
                           label: Text(_presets[index]),
                           selected: isSelected,
                           onSelected: (_) => _onPresetSelected(index),
-                          selectedColor: const Color(lightForestGreenColor),
-                          backgroundColor: const Color(0xFFF1F5F3),
+                          selectedColor: context.colors.brand,
+                          backgroundColor: context.colors.surfaceMuted,
                           labelStyle: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: isSelected ? Colors.white : const Color(darkGreyColor),
+                            color: isSelected ? context.colors.onBrand : context.colors.textPrimary,
                           ),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           side: BorderSide.none,
@@ -233,16 +189,18 @@ class _StatementScreenState extends State<StatementScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 8,
+                  runSpacing: 2,
                   children: [
                     Text(
-                      'Perioada: ${_formatDisplayDate(_startDate)} - ${_formatDisplayDate(_endDate)}',
-                      style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                      context.l10n.statementPerioada(formatDate(_startDate), formatDate(_endDate)),
+                      style: GoogleFonts.inter(fontSize: 12, color: context.colors.textSecondary, fontWeight: FontWeight.w500),
                     ),
                     Text(
-                      widget.iban,
-                      style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w600),
+                      formatIban(widget.iban),
+                      style: GoogleFonts.inter(fontSize: 11, color: context.colors.textMuted, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -251,27 +209,13 @@ class _StatementScreenState extends State<StatementScreen> {
           ),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Color(lightForestGreenColor)))
+                ? Center(child: CircularProgressIndicator(color: context.colors.brand))
                 : _errorMessage != null
-                ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
-                    const SizedBox(height: 12),
-                    Text(_errorMessage!, textAlign: TextAlign.center, style: GoogleFonts.inter(color: Colors.red)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _fetchStatement,
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(lightForestGreenColor)),
-                      child: const Text('Reîncearcă', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ),
-            )
+                ? ErrorRetryView(
+                    message: _errorMessage!,
+                    onRetry: _fetchStatement,
+                    icon: Icons.description_outlined,
+                  )
                 : _buildStatementContent(),
           ),
         ],
@@ -279,7 +223,7 @@ class _StatementScreenState extends State<StatementScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surface,
           boxShadow: [
             BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2)),
           ],
@@ -288,15 +232,15 @@ class _StatementScreenState extends State<StatementScreen> {
           child: ElevatedButton.icon(
             onPressed: (_loading || _downloadingPdf) ? null : _downloadPdf,
             icon: _downloadingPdf
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: context.colors.onBrand, strokeWidth: 2))
                 : const Icon(Icons.picture_as_pdf_rounded, size: 20),
             label: Text(
-              _downloadingPdf ? 'Se generează PDF...' : 'Descarcă extras PDF',
+              _downloadingPdf ? context.l10n.statementSeGenereazaPdf : context.l10n.statementDescarcaExtrasPdf,
               style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(lightForestGreenColor),
-              foregroundColor: Colors.white,
+              backgroundColor: context.colors.brand,
+              foregroundColor: context.colors.onBrand,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -322,7 +266,7 @@ class _StatementScreenState extends State<StatementScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.colors.surface,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 2)),
@@ -332,17 +276,17 @@ class _StatementScreenState extends State<StatementScreen> {
             children: [
               Row(
                 children: [
-                  Expanded(child: _buildSummaryBox('SOLD INIȚIAL', openingBalance, currency, const Color(darkGreyColor))),
+                  Expanded(child: _buildSummaryBox(context.l10n.statementSoldInitial, openingBalance, currency, context.colors.textPrimary)),
                   const SizedBox(width: 12),
-                  Expanded(child: _buildSummaryBox('SOLD FINAL', closingBalance, currency, const Color(lightForestGreenColor))),
+                  Expanded(child: _buildSummaryBox(context.l10n.statementSoldFinal, closingBalance, currency, context.colors.brand)),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _buildSummaryBox('ÎNCASĂRI (+)', totalInflows, currency, const Color(0xFF2E7D32), isPositive: true)),
+                  Expanded(child: _buildSummaryBox(context.l10n.statementIncasari, totalInflows, currency, context.colors.positive, isPositive: true)),
                   const SizedBox(width: 12),
-                  Expanded(child: _buildSummaryBox('PLĂȚI (-)', totalOutflows, currency, const Color(0xFFC62828), isNegative: true)),
+                  Expanded(child: _buildSummaryBox(context.l10n.statementPlati, totalOutflows, currency, context.colors.danger, isNegative: true)),
                 ],
               ),
             ],
@@ -350,16 +294,18 @@ class _StatementScreenState extends State<StatementScreen> {
         ),
         const SizedBox(height: 20),
 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          spacing: 8,
+          runSpacing: 2,
           children: [
             Text(
-              'OPERAȚIUNI (${transactions.length})',
-              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey[500], letterSpacing: 0.5),
+              context.l10n.statementOperatiuni(transactions.length),
+              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.textMuted, letterSpacing: 0.5),
             ),
             Text(
-              'Atinge o tranzacție pentru detalii',
-              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[400]),
+              context.l10n.statementAtingeTranzactieDetalii,
+              style: GoogleFonts.inter(fontSize: 11, color: context.colors.textMuted),
             ),
           ],
         ),
@@ -369,15 +315,15 @@ class _StatementScreenState extends State<StatementScreen> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.colors.surface,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.receipt_long_outlined, size: 40, color: Colors.grey[300]),
+                  Icon(Icons.receipt_long_outlined, size: 40, color: context.colors.border),
                   const SizedBox(height: 10),
-                  Text('Nicio operațiune în această perioadă', style: GoogleFonts.inter(color: Colors.grey[500], fontSize: 13)),
+                  Text(context.l10n.statementNicioOperatiuneAceastaPerioada, style: GoogleFonts.inter(color: context.colors.textMuted, fontSize: 13)),
                 ],
               ),
             ),
@@ -386,14 +332,14 @@ class _StatementScreenState extends State<StatementScreen> {
           ...transactions.map((tx) {
             final isDebit = tx['type'] == 'DEBIT';
             final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
-            final partyName = tx['partyName'] ?? 'Transfer';
+            final partyName = tx['partyName'] ?? context.l10n.commonTransfer;
             final desc = tx['description'] ?? '';
             final date = tx['date'] ?? '';
 
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2)),
@@ -405,31 +351,31 @@ class _StatementScreenState extends State<StatementScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: isDebit ? const Color(0xFFFFEBEE) : const Color(0xFFE8F5E9),
+                    color: isDebit ? context.colors.dangerSurface : context.colors.brandSurface,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     isDebit ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                    color: isDebit ? const Color(0xFFC62828) : const Color(0xFF2E7D32),
+                    color: isDebit ? context.colors.danger : context.colors.positive,
                     size: 20,
                   ),
                 ),
                 title: Text(
                   partyName,
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(darkGreyColor)),
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
                 ),
                 subtitle: Text(
                   date.isNotEmpty && desc.isNotEmpty ? '$date • $desc' : (date.isNotEmpty ? date : desc),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
+                  style: GoogleFonts.inter(fontSize: 11, color: context.colors.textMuted),
                 ),
                 trailing: Text(
-                  '${isDebit ? "-" : "+"}${amount.toStringAsFixed(2)} $currency',
+                  formatMoney(isDebit ? -amount.abs() : amount.abs(), currency, showSign: true),
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: isDebit ? const Color(0xFFC62828) : const Color(0xFF2E7D32),
+                    color: isDebit ? context.colors.danger : context.colors.positive,
                   ),
                 ),
               ),
@@ -444,16 +390,20 @@ class _StatementScreenState extends State<StatementScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7FAF8),
+        color: context.colors.surfaceMuted,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey[500])),
+          Text(label, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: context.colors.textMuted)),
           const SizedBox(height: 4),
           Text(
-            '${isPositive ? "+" : isNegative ? "-" : ""}${amount.toStringAsFixed(2)} $currency',
+            formatMoney(
+              isNegative ? -amount.abs() : (isPositive ? amount.abs() : amount),
+              currency,
+              showSign: isPositive,
+            ),
             style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800, color: color),
           ),
         ],

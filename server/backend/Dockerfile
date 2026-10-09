@@ -12,7 +12,7 @@ COPY backend/src ./src
 RUN mvn -B -e clean package -DskipTests
 
 # ---- Stage 2: minimal runtime image ----
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/urandom"
 

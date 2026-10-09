@@ -1,5 +1,5 @@
 # ---- Stage 1: build the Spring Boot executable JAR ----
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-26 AS build
 WORKDIR /workspace
 
 # Cache Maven dependencies first (only re-downloaded when pom.xml changes).

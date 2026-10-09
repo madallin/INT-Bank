@@ -15,7 +15,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   google_fonts: ^6.3.2
   device_info_plus: ^12.1.0
-  dio: ^5.7.0
+  dio: ^5.11.1
 
   json_annotation: ^4.9.0
 

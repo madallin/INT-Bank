@@ -1,3 +1,5 @@
+import 'transaction_category.dart';
+
 /// One row of `GET /users/{id}/accounts/{accountId}/transactions`.
 ///
 /// The backend sends `amount`, `currency`, `type` (`DEBIT`/`CREDIT`), `reason`
@@ -14,6 +16,7 @@ class TransactionEntry
     this.date,
     this.fromIban,
     this.toIban,
+    this.category,
   });
 
   /// Always positive; direction is in [isIncoming].
@@ -24,6 +27,9 @@ class TransactionEntry
   final DateTime? date;
   final String? fromIban;
   final String? toIban;
+
+  /// What it was for, when the bank says (older servers do not).
+  final TransactionCategory? category;
 
   /// Amount with its direction applied (negative for money out).
   double get signedAmount => isIncoming ? amount : -amount;
@@ -57,6 +63,7 @@ class TransactionEntry
       date: rawDate == null ? null : DateTime.tryParse(rawDate),
       fromIban: text(['fromIban']),
       toIban: text(['toIban', 'iban']),
+      category: TransactionCategory.fromKey(json['category']),
     );
   }
 

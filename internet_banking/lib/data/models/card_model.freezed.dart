@@ -31,6 +31,8 @@ mixin _$CardModel {
   double get spendingLimit => throw _privateConstructorUsedError;
   bool get isBlocked => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
+  bool get onlinePayments => throw _privateConstructorUsedError;
+  bool get contactless => throw _privateConstructorUsedError;
   String? get pin => throw _privateConstructorUsedError;
 
   /// Serializes this CardModel to a JSON map.
@@ -59,6 +61,8 @@ abstract class $CardModelCopyWith<$Res> {
     double spendingLimit,
     bool isBlocked,
     String status,
+    bool onlinePayments,
+    bool contactless,
     String? pin,
   });
 }
@@ -88,6 +92,8 @@ class _$CardModelCopyWithImpl<$Res, $Val extends CardModel>
     Object? spendingLimit = null,
     Object? isBlocked = null,
     Object? status = null,
+    Object? onlinePayments = null,
+    Object? contactless = null,
     Object? pin = freezed,
   }) {
     return _then(
@@ -132,6 +138,14 @@ class _$CardModelCopyWithImpl<$Res, $Val extends CardModel>
                 ? _value.status
                 : status // ignore: cast_nullable_to_non_nullable
                       as String,
+            onlinePayments: null == onlinePayments
+                ? _value.onlinePayments
+                : onlinePayments // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            contactless: null == contactless
+                ? _value.contactless
+                : contactless // ignore: cast_nullable_to_non_nullable
+                      as bool,
             pin: freezed == pin
                 ? _value.pin
                 : pin // ignore: cast_nullable_to_non_nullable
@@ -162,6 +176,8 @@ abstract class _$$CardModelImplCopyWith<$Res>
     double spendingLimit,
     bool isBlocked,
     String status,
+    bool onlinePayments,
+    bool contactless,
     String? pin,
   });
 }
@@ -190,6 +206,8 @@ class __$$CardModelImplCopyWithImpl<$Res>
     Object? spendingLimit = null,
     Object? isBlocked = null,
     Object? status = null,
+    Object? onlinePayments = null,
+    Object? contactless = null,
     Object? pin = freezed,
   }) {
     return _then(
@@ -234,6 +252,14 @@ class __$$CardModelImplCopyWithImpl<$Res>
             ? _value.status
             : status // ignore: cast_nullable_to_non_nullable
                   as String,
+        onlinePayments: null == onlinePayments
+            ? _value.onlinePayments
+            : onlinePayments // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        contactless: null == contactless
+            ? _value.contactless
+            : contactless // ignore: cast_nullable_to_non_nullable
+                  as bool,
         pin: freezed == pin
             ? _value.pin
             : pin // ignore: cast_nullable_to_non_nullable
@@ -257,6 +283,8 @@ class _$CardModelImpl implements _CardModel {
     this.spendingLimit = 0,
     this.isBlocked = false,
     this.status = 'active',
+    this.onlinePayments = true,
+    this.contactless = true,
     this.pin,
   });
 
@@ -287,11 +315,17 @@ class _$CardModelImpl implements _CardModel {
   @JsonKey()
   final String status;
   @override
+  @JsonKey()
+  final bool onlinePayments;
+  @override
+  @JsonKey()
+  final bool contactless;
+  @override
   final String? pin;
 
   @override
   String toString() {
-    return 'CardModel(id: $id, accountId: $accountId, cardNumber: $cardNumber, cardHolder: $cardHolder, expiryDate: $expiryDate, cvv: $cvv, cardType: $cardType, spendingLimit: $spendingLimit, isBlocked: $isBlocked, status: $status, pin: $pin)';
+    return 'CardModel(id: $id, accountId: $accountId, cardNumber: $cardNumber, cardHolder: $cardHolder, expiryDate: $expiryDate, cvv: $cvv, cardType: $cardType, spendingLimit: $spendingLimit, isBlocked: $isBlocked, status: $status, onlinePayments: $onlinePayments, contactless: $contactless, pin: $pin)';
   }
 
   @override
@@ -316,6 +350,10 @@ class _$CardModelImpl implements _CardModel {
             (identical(other.isBlocked, isBlocked) ||
                 other.isBlocked == isBlocked) &&
             (identical(other.status, status) || other.status == status) &&
+            (identical(other.onlinePayments, onlinePayments) ||
+                other.onlinePayments == onlinePayments) &&
+            (identical(other.contactless, contactless) ||
+                other.contactless == contactless) &&
             (identical(other.pin, pin) || other.pin == pin));
   }
 
@@ -333,6 +371,8 @@ class _$CardModelImpl implements _CardModel {
     spendingLimit,
     isBlocked,
     status,
+    onlinePayments,
+    contactless,
     pin,
   );
 
@@ -362,6 +402,8 @@ abstract class _CardModel implements CardModel {
     final double spendingLimit,
     final bool isBlocked,
     final String status,
+    final bool onlinePayments,
+    final bool contactless,
     final String? pin,
   }) = _$CardModelImpl;
 
@@ -388,6 +430,10 @@ abstract class _CardModel implements CardModel {
   bool get isBlocked;
   @override
   String get status;
+  @override
+  bool get onlinePayments;
+  @override
+  bool get contactless;
   @override
   String? get pin;
 

@@ -45,8 +45,16 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
     try {
       final response = await _dioClient.get('/users/${widget.userId}/scheduled-transfers');
       if (response.statusCode == 200 && response.data != null) {
+        // The API wraps the list: {"scheduledTransfers": [...]}.
+        final data = response.data;
+        final raw = data is Map ? data['scheduledTransfers'] : data;
         setState(() {
-          _transfers = List<Map<String, dynamic>>.from(response.data as List);
+          _transfers = raw is List
+              ? raw.whereType<Map>()
+                  .map((t) => Map<String, dynamic>.from(t))
+                  .where((t) => t['status'] != 'CANCELLED')
+                  .toList()
+              : [];
           _loading = false;
         });
       } else {
@@ -127,7 +135,7 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: context.colors.brand.withOpacity(0.08),
+                  color: context.colors.brand.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.calendar_month_outlined, size: 48, color: context.colors.brand),
@@ -157,11 +165,20 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
             final t = _transfers[index];
             final id = t['id'] as int? ?? 0;
             final beneficiary = t['beneficiaryName'] ?? context.l10n.scheduledBeneficiar;
-            final iban = t['toIban'] ?? '';
+            final iban = formatIban((t['toIban'] ?? '').toString());
             final amount = (t['amount'] as num?)?.toDouble() ?? 0.0;
             final freq = t['frequency'] ?? 'ONCE';
-            final nextRun = t['nextRunDate'] ?? '-';
+            final nextRun = formatIsoDate(t['nextRunDate']?.toString());
             final reason = t['reason'] ?? '';
+            final currency = t['currency']?.toString() ?? 'RON';
+            final status = t['status']?.toString() ?? 'ACTIVE';
+            final lastError = t['lastError']?.toString();
+            final statusLabel = switch (status) {
+              'FAILED' => context.l10n.scheduledStatusFailed,
+              'PAUSED' => context.l10n.scheduledStatusPaused,
+              'COMPLETED' => context.l10n.scheduledStatusCompleted,
+              _ => null,
+            };
             final bank = IbanBankDetector.detectBank(iban);
 
             return Container(
@@ -171,7 +188,7 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
                 color: context.colors.surface,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 3)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 3)),
                 ],
               ),
               child: Column(
@@ -185,7 +202,7 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: context.colors.brand.withOpacity(0.1),
+                              color: context.colors.brand.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(Icons.repeat_rounded, color: context.colors.brand, size: 18),
@@ -209,7 +226,7 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
                       )),
                       const SizedBox(width: 8),
                       Text(
-                        formatMoney(amount, 'RON'),
+                        formatMoney(amount, currency),
                         style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
                       ),
                     ],
@@ -226,35 +243,70 @@ class _ScheduledTransfersScreenState extends State<ScheduledTransfersScreen> {
                       style: GoogleFonts.inter(fontSize: 12, color: context.colors.textMuted),
                     ),
                   ],
+                  if (statusLabel != null) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: status == 'COMPLETED' ? context.colors.brandSurface : context.colors.dangerSurface,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            statusLabel,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: status == 'COMPLETED' ? context.colors.positive : context.colors.danger,
+                            ),
+                          ),
+                        ),
+                        if (lastError != null && lastError.isNotEmpty && status != 'COMPLETED')
+                          Text(
+                            context.l10n.scheduledLastError(lastError),
+                            style: GoogleFonts.inter(fontSize: 12, color: context.colors.textSecondary),
+                          ),
+                      ],
+                    ),
+                  ],
                   const Divider(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: context.colors.brandSurface,
-                              borderRadius: BorderRadius.circular(8),
+                      // Wraps at large text sizes instead of overflowing.
+                      Expanded(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: context.colors.brandSurface,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _formatFrequency(freq),
+                                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.positive),
+                              ),
                             ),
-                            child: Text(
-                              _formatFrequency(freq),
-                              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.positive),
+                            Text(
+                              context.l10n.scheduledUrmatoarea(nextRun),
+                              style: GoogleFonts.inter(fontSize: 11, color: context.colors.textMuted),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            context.l10n.scheduledUrmatoarea(nextRun),
-                            style: GoogleFonts.inter(fontSize: 11, color: context.colors.textMuted),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.delete_outline_rounded, color: context.colors.danger, size: 20),
-                        tooltip: context.l10n.commonAnuleaza,
-                        onPressed: () => _confirmCancel(id, beneficiary, amount),
-                      ),
+                      if (status == 'ACTIVE' || status == 'PAUSED')
+                        IconButton(
+                          icon: Icon(Icons.delete_outline_rounded, color: context.colors.danger, size: 20),
+                          tooltip: context.l10n.commonAnuleaza,
+                          onPressed: () => _confirmCancel(id, beneficiary, amount),
+                        ),
                     ],
                   ),
                 ],

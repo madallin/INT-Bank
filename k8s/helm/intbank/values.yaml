@@ -116,7 +116,6 @@ secrets:
   dbPassword: "changeme"
   jwtSecret: "change-me-in-prod-please-rotate"
   aesKeyHex: ""
-  hmacKeyHex: ""
   cardEncryptionKey: ""
   twilioAccountSid: ""
   twilioAuthToken: ""

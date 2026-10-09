@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// Application name
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank'**
+  /// **'INTBank'**
   String get appTitle;
 
   /// Used in error_messages.dart
@@ -881,12 +881,6 @@ abstract class AppLocalizations {
   /// Used in exchange_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Schimb valutar realizat cu succes!'**
-  String get exchangeSchimbValutarRealizatSucces;
-
-  /// Used in exchange_screen.dart
-  ///
-  /// In ro, this message translates to:
   /// **'Schimbul valutar nu a putut fi efectuat.'**
   String get exchangeSchimbulValutarPututFi;
 
@@ -899,26 +893,8 @@ abstract class AppLocalizations {
   /// Used in exchange_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Schimbă între diferite valute la cursul zilei'**
-  String get exchangeSchimbaIntreDiferiteValute;
-
-  /// Used in exchange_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'Din valuta'**
-  String get exchangeValuta;
-
-  /// Used in exchange_screen.dart
-  ///
-  /// In ro, this message translates to:
   /// **'Inversează valutele'**
   String get exchangeInverseazaValutele;
-
-  /// Used in exchange_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'În valuta'**
-  String get exchangeValuta2;
 
   /// Used in exchange_screen.dart
   ///
@@ -1143,7 +1119,7 @@ abstract class AppLocalizations {
   /// Used in home_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Seifuri & Round-Up'**
+  /// **'Seifuri de economii'**
   String get homeSeifuriRoundUp;
 
   /// Used in home_screen.dart
@@ -1155,7 +1131,7 @@ abstract class AppLocalizations {
   /// Used in home_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Economisește automat din mărunțișul tranzacțiilor.'**
+  /// **'Pune bani deoparte pentru obiectivele tale.'**
   String get homeEconomisesteAutomatMaruntisulTranzactiilor;
 
   /// Used in home_screen.dart
@@ -1449,13 +1425,13 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Toate conturile deschise la INT Bank trebuie să fie înregistrate cu date reale și corecte.'**
+  /// **'Toate conturile deschise la INTBank trebuie să fie înregistrate cu date reale și corecte.'**
   String get tosToateConturileDeschiseInt;
 
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Fiecare client poate deține un singur cont personal la INT Bank.'**
+  /// **'Fiecare client poate deține un singur cont personal la INTBank.'**
   String get tosFiecareClientPoateDetine;
 
   /// Used in tos_screen.dart
@@ -1479,7 +1455,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate solicita documente suplimentare pentru verificare.'**
+  /// **'INTBank poate solicita documente suplimentare pentru verificare.'**
   String get tosIntBankPoateSolicita;
 
   /// Used in tos_screen.dart
@@ -1503,7 +1479,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Conturile neregulate pot fi închise de INT Bank fără notificare prealabilă.'**
+  /// **'Conturile neregulate pot fi închise de INTBank fără notificare prealabilă.'**
   String get tosConturileNeregulatePotFi;
 
   /// Used in tos_screen.dart
@@ -1515,7 +1491,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Modificarea datelor personale trebuie raportată imediat la INT Bank.'**
+  /// **'Modificarea datelor personale trebuie raportată imediat la INTBank.'**
   String get tosModificareaDatelorPersonaleTrebuie;
 
   /// Used in tos_screen.dart
@@ -1533,7 +1509,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank nu răspunde pentru pierderi cauzate de neglijența clientului.'**
+  /// **'INTBank nu răspunde pentru pierderi cauzate de neglijența clientului.'**
   String get tosIntBankRaspundePierderi;
 
   /// Used in tos_screen.dart
@@ -1557,13 +1533,13 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank nu va solicita niciodată parole prin email sau telefon.'**
+  /// **'INTBank nu va solicita niciodată parole prin email sau telefon.'**
   String get tosIntBankVaSolicita;
 
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Raportați imediat orice activitate suspectă la INT Bank.'**
+  /// **'Raportați imediat orice activitate suspectă la INTBank.'**
   String get tosRaportatiImediatOriceActivitate;
 
   /// Used in tos_screen.dart
@@ -1581,7 +1557,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Datele personale sunt procesate conform politicii de confidențialitate INT Bank.'**
+  /// **'Datele personale sunt procesate conform politicii de confidențialitate INTBank.'**
   String get tosDatelePersonaleSuntProcesate;
 
   /// Used in tos_screen.dart
@@ -1593,7 +1569,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Clienții trebuie să folosească doar canalele oficiale INT Bank.'**
+  /// **'Clienții trebuie să folosească doar canalele oficiale INTBank.'**
   String get tosClientiiTrebuieSaFoloseasca;
 
   /// Used in tos_screen.dart
@@ -1605,7 +1581,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate introduce autentificări suplimentare pentru protecție.'**
+  /// **'INTBank poate introduce autentificări suplimentare pentru protecție.'**
   String get tosIntBankPoateIntroduce;
 
   /// Used in tos_screen.dart
@@ -1641,13 +1617,13 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate audita securitatea conturilor pentru prevenirea fraudei.'**
+  /// **'INTBank poate audita securitatea conturilor pentru prevenirea fraudei.'**
   String get tosIntBankPoateAudita;
 
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Plățile efectuate prin INT Bank sunt finale și ireversibile fără acordul băncii.'**
+  /// **'Plățile efectuate prin INTBank sunt finale și ireversibile fără acordul băncii.'**
   String get tosPlatileEfectuatePrinInt;
 
   /// Used in tos_screen.dart
@@ -1665,7 +1641,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate refuza tranzacții suspecte fără notificare.'**
+  /// **'INTBank poate refuza tranzacții suspecte fără notificare.'**
   String get tosIntBankPoateRefuza;
 
   /// Used in tos_screen.dart
@@ -1695,7 +1671,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Plățile automate trebuie configurate corect conform instrucțiunilor INT Bank.'**
+  /// **'Plățile automate trebuie configurate corect conform instrucțiunilor INTBank.'**
   String get tosPlatileAutomateTrebuieConfigurate;
 
   /// Used in tos_screen.dart
@@ -1725,7 +1701,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate suspenda tranzacțiile dacă sunt detectate nereguli.'**
+  /// **'INTBank poate suspenda tranzacțiile dacă sunt detectate nereguli.'**
   String get tosIntBankPoateSuspenda;
 
   /// Used in tos_screen.dart
@@ -1737,7 +1713,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate modifica termenii și condițiile în orice moment.'**
+  /// **'INTBank poate modifica termenii și condițiile în orice moment.'**
   String get tosIntBankPoateModifica;
 
   /// Used in tos_screen.dart
@@ -1785,7 +1761,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate schimba taxele și comisioanele percepute.'**
+  /// **'INTBank poate schimba taxele și comisioanele percepute.'**
   String get tosIntBankPoateSchimba;
 
   /// Used in tos_screen.dart
@@ -1869,7 +1845,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank nu garantează disponibilitatea neîntreruptă a serviciilor.'**
+  /// **'INTBank nu garantează disponibilitatea neîntreruptă a serviciilor.'**
   String get tosIntBankGaranteazaDisponibilitatea;
 
   /// Used in tos_screen.dart
@@ -1887,7 +1863,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Respectarea limitelor de retragere și transfer impuse de INT Bank este obligatorie.'**
+  /// **'Respectarea limitelor de retragere și transfer impuse de INTBank este obligatorie.'**
   String get tosRespectareaLimitelorRetragereTransfer;
 
   /// Used in tos_screen.dart
@@ -1899,7 +1875,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Protejarea dispozitivelor și a aplicației INT Bank este obligatorie.'**
+  /// **'Protejarea dispozitivelor și a aplicației INTBank este obligatorie.'**
   String get tosProtejareaDispozitivelorAplicatieiInt;
 
   /// Used in tos_screen.dart
@@ -1917,13 +1893,13 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank colectează și procesează date personale conform legislației.'**
+  /// **'INTBank colectează și procesează date personale conform legislației.'**
   String get tosIntBankColecteazaProceseaza;
 
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Clientul trebuie să accepte politica de confidențialitate INT Bank.'**
+  /// **'Clientul trebuie să accepte politica de confidențialitate INTBank.'**
   String get tosClientulTrebuieSaAccepte2;
 
   /// Used in tos_screen.dart
@@ -1959,7 +1935,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate procesa date anonimizate pentru statistici interne.'**
+  /// **'INTBank poate procesa date anonimizate pentru statistici interne.'**
   String get tosIntBankPoateProcesa;
 
   /// Used in tos_screen.dart
@@ -1995,7 +1971,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate bloca contul în caz de încălcare a politicii de date.'**
+  /// **'INTBank poate bloca contul în caz de încălcare a politicii de date.'**
   String get tosIntBankPoateBloca;
 
   /// Used in tos_screen.dart
@@ -2007,7 +1983,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank nu este responsabilă pentru pierderi cauzate de erori ale clienților.'**
+  /// **'INTBank nu este responsabilă pentru pierderi cauzate de erori ale clienților.'**
   String get tosIntBankEsteResponsabila;
 
   /// Used in tos_screen.dart
@@ -2019,7 +1995,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank nu răspunde pentru întârzieri cauzate de terți.'**
+  /// **'INTBank nu răspunde pentru întârzieri cauzate de terți.'**
   String get tosIntBankRaspundeIntarzieri;
 
   /// Used in tos_screen.dart
@@ -2043,7 +2019,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank nu răspunde pentru pierderi cauzate de fraude externe.'**
+  /// **'INTBank nu răspunde pentru pierderi cauzate de fraude externe.'**
   String get tosIntBankRaspundePierderi2;
 
   /// Used in tos_screen.dart
@@ -2055,7 +2031,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank nu garantează exactitatea informațiilor terților.'**
+  /// **'INTBank nu garantează exactitatea informațiilor terților.'**
   String get tosIntBankGaranteazaExactitatea;
 
   /// Used in tos_screen.dart
@@ -2079,7 +2055,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate ajusta termenii de responsabilitate prin notificare.'**
+  /// **'INTBank poate ajusta termenii de responsabilitate prin notificare.'**
   String get tosIntBankPoateAjusta;
 
   /// Used in tos_screen.dart
@@ -2091,7 +2067,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate suspenda sau restricționa conturile care încalcă termenii.'**
+  /// **'INTBank poate suspenda sau restricționa conturile care încalcă termenii.'**
   String get tosIntBankPoateSuspenda2;
 
   /// Used in tos_screen.dart
@@ -2103,13 +2079,13 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank nu este responsabil pentru pierderile cauzate de terți.'**
+  /// **'INTBank nu este responsabil pentru pierderile cauzate de terți.'**
   String get tosIntBankEsteResponsabil;
 
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Clienții trebuie să utilizeze doar canalele oficiale INT Bank.'**
+  /// **'Clienții trebuie să utilizeze doar canalele oficiale INTBank.'**
   String get tosClientiiTrebuieSaUtilizeze;
 
   /// Used in tos_screen.dart
@@ -2133,13 +2109,13 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Folosirea aplicației implică acordul față de toate regulile INT Bank.'**
+  /// **'Folosirea aplicației implică acordul față de toate regulile INTBank.'**
   String get tosFolosireaAplicatieiImplicaAcordul;
 
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate introduce noi funcționalități și servicii.'**
+  /// **'INTBank poate introduce noi funcționalități și servicii.'**
   String get tosIntBankPoateIntroduce2;
 
   /// Used in tos_screen.dart
@@ -2151,7 +2127,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Clienții trebuie să respecte toate notificările INT Bank.'**
+  /// **'Clienții trebuie să respecte toate notificările INTBank.'**
   String get tosClientiiTrebuieSaRespecte4;
 
   /// Used in tos_screen.dart
@@ -2169,7 +2145,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate modifica termenii pentru a proteja clienții.'**
+  /// **'INTBank poate modifica termenii pentru a proteja clienții.'**
   String get tosIntBankPoateModifica2;
 
   /// Used in tos_screen.dart
@@ -2187,7 +2163,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate modifica comisioanele prin notificare prealabilă.'**
+  /// **'INTBank poate modifica comisioanele prin notificare prealabilă.'**
   String get tosIntBankPoateModifica3;
 
   /// Used in tos_screen.dart
@@ -2211,7 +2187,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate suspenda contul pentru neplata taxelor aplicabile.'**
+  /// **'INTBank poate suspenda contul pentru neplata taxelor aplicabile.'**
   String get tosIntBankPoateSuspenda3;
 
   /// Used in tos_screen.dart
@@ -2223,7 +2199,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'Reduceri și promoții pot fi aplicate doar conform regulilor INT Bank.'**
+  /// **'Reduceri și promoții pot fi aplicate doar conform regulilor INTBank.'**
   String get tosReduceriPromotiiPotFi;
 
   /// Used in tos_screen.dart
@@ -2247,7 +2223,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate ajusta limitele taxelor în funcție de cont.'**
+  /// **'INTBank poate ajusta limitele taxelor în funcție de cont.'**
   String get tosIntBankPoateAjusta2;
 
   /// Used in tos_screen.dart
@@ -2271,7 +2247,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate rezilia contul în caz de încălcare a termenilor.'**
+  /// **'INTBank poate rezilia contul în caz de încălcare a termenilor.'**
   String get tosIntBankPoateRezilia;
 
   /// Used in tos_screen.dart
@@ -2295,7 +2271,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate închide contul pentru activități ilegale.'**
+  /// **'INTBank poate închide contul pentru activități ilegale.'**
   String get tosIntBankPoateInchide;
 
   /// Used in tos_screen.dart
@@ -2325,7 +2301,7 @@ abstract class AppLocalizations {
   /// Used in tos_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank poate suspenda serviciile în caz de risc de securitate.'**
+  /// **'INTBank poate suspenda serviciile în caz de risc de securitate.'**
   String get tosIntBankPoateSuspenda4;
 
   /// Used in tos_screen.dart
@@ -2773,7 +2749,7 @@ abstract class AppLocalizations {
   /// Used in transfer_receipt_screen.dart
   ///
   /// In ro, this message translates to:
-  /// **'INT Bank - {title}'**
+  /// **'INTBank - {title}'**
   String receiptIntBank(Object title);
 
   /// Used in transfer_receipt_screen.dart
@@ -3232,78 +3208,6 @@ abstract class AppLocalizations {
   /// **'Modifică detaliile'**
   String get transferConfirmModificaDetaliile;
 
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'Salut și bine ai venit în INT Bank!'**
-  String get welcomeSalutBineVenitInt;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'Ești deja client '**
-  String get welcomeEstiDejaClient;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'? Continuă cu '**
-  String get welcomeContinua;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'Conectează-te'**
-  String get welcomeConecteaza;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'.\n\nDacă nu ai cont, '**
-  String get welcomeDacaCont;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'poți deveni client direct din INT Bank'**
-  String get welcomePotiDeveniClientDirect;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'.\n\nEste '**
-  String get welcomeEste;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'rapid și sigur'**
-  String get welcomeRapidSigur;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **', iar tu vei avea acces la toate funcționalitățile contului tău bancar '**
-  String get welcomeIarTuVeiAvea;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'instant și de la distanță'**
-  String get welcomeInstantDistanta;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'Înregistrează-te'**
-  String get welcomeInregistreaza;
-
-  /// Used in welcome_screen.dart
-  ///
-  /// In ro, this message translates to:
-  /// **'Ai deja un cont? '**
-  String get welcomeDejaCont;
-
   /// Used in app_router.dart
   ///
   /// In ro, this message translates to:
@@ -3497,6 +3401,990 @@ abstract class AppLocalizations {
     String date,
     String amount,
   );
+
+  /// Server code CURRENCY_MISMATCH: transfer between accounts in different currencies
+  ///
+  /// In ro, this message translates to:
+  /// **'Contul destinatarului are altă monedă. Folosește schimbul valutar sau un cont în aceeași monedă.'**
+  String get errorsCodeCurrencyMismatch;
+
+  /// Server code INSUFFICIENT_FUNDS
+  ///
+  /// In ro, this message translates to:
+  /// **'Fonduri insuficiente în contul sursă.'**
+  String get errorsCodeInsufficientFunds;
+
+  /// Server code ACCOUNT_NOT_OWNED
+  ///
+  /// In ro, this message translates to:
+  /// **'Contul ales nu îți aparține.'**
+  String get errorsCodeAccountNotOwned;
+
+  /// Server code SAME_ACCOUNT
+  ///
+  /// In ro, this message translates to:
+  /// **'Alege două conturi diferite.'**
+  String get errorsCodeSameAccount;
+
+  /// Server code UNSUPPORTED_CURRENCY_PAIR
+  ///
+  /// In ro, this message translates to:
+  /// **'Schimbul între aceste monede nu este disponibil.'**
+  String get errorsCodeUnsupportedPair;
+
+  /// Server code INVALID_AMOUNT
+  ///
+  /// In ro, this message translates to:
+  /// **'Suma nu este validă sau este prea mică.'**
+  String get errorsCodeInvalidAmount;
+
+  /// Title of the PIN sheet that authorizes a large payment
+  ///
+  /// In ro, this message translates to:
+  /// **'Confirmă plata'**
+  String get scaTitle;
+
+  /// Explains why the PIN is asked again
+  ///
+  /// In ro, this message translates to:
+  /// **'Pentru plăți de valoare mare, introdu PIN-ul ca să autorizezi exact această plată.'**
+  String get scaSubtitle;
+
+  /// Closes the PIN confirmation without paying
+  ///
+  /// In ro, this message translates to:
+  /// **'Anulează'**
+  String get scaCancel;
+
+  /// Screen-reader progress of PIN entry
+  ///
+  /// In ro, this message translates to:
+  /// **'{entered} din {total} cifre introduse'**
+  String scaPinProgress(int entered, int total);
+
+  /// Server code SCA_PIN_INVALID with remaining attempts
+  ///
+  /// In ro, this message translates to:
+  /// **'{count, plural, =1{PIN incorect. Mai ai o încercare.} few{PIN incorect. Mai ai {count} încercări.} other{PIN incorect. Mai ai {count} de încercări.}}'**
+  String errorsCodeScaPinInvalid(int count);
+
+  /// Server code SCA_LOCKED
+  ///
+  /// In ro, this message translates to:
+  /// **'PIN-ul este blocat temporar după prea multe încercări. Reîncearcă peste 15 minute.'**
+  String get errorsCodeScaLocked;
+
+  /// Server code SCA_CHALLENGE_INVALID
+  ///
+  /// In ro, this message translates to:
+  /// **'Confirmarea a expirat sau plata s-a schimbat. Trimite plata din nou.'**
+  String get errorsCodeScaChallengeInvalid;
+
+  /// A valid IBAN of another bank: transfers stay inside INTBank
+  ///
+  /// In ro, this message translates to:
+  /// **'Poți trimite bani doar către conturi INTBank (IBAN-uri cu codul INTB).'**
+  String get transferValidationOnlyIntBank;
+
+  /// Server code DESTINATION_NOT_FOUND
+  ///
+  /// In ro, this message translates to:
+  /// **'Nu există niciun cont INTBank cu acest IBAN. Verifică IBAN-ul destinatarului.'**
+  String get errorsCodeDestinationNotFound;
+
+  /// Status chip: a one-off scheduled payment could not be made
+  ///
+  /// In ro, this message translates to:
+  /// **'Neefectuată'**
+  String get scheduledStatusFailed;
+
+  /// Status chip: a recurring payment paused after repeated failures
+  ///
+  /// In ro, this message translates to:
+  /// **'Suspendată'**
+  String get scheduledStatusPaused;
+
+  /// Status chip: a one-off scheduled payment was made
+  ///
+  /// In ro, this message translates to:
+  /// **'Efectuată'**
+  String get scheduledStatusCompleted;
+
+  /// Why the last scheduled run failed
+  ///
+  /// In ro, this message translates to:
+  /// **'Ultima încercare: {reason}'**
+  String scheduledLastError(String reason);
+
+  /// Vaults screen title
+  ///
+  /// In ro, this message translates to:
+  /// **'Seifuri de economii'**
+  String get vaultsTitle;
+
+  /// Summary label above the saved amounts
+  ///
+  /// In ro, this message translates to:
+  /// **'Total economisit'**
+  String get vaultsTotalSaved;
+
+  /// Honest note under the summary
+  ///
+  /// In ro, this message translates to:
+  /// **'Banii din seifuri rămân ai tăi; seifurile nu sunt purtătoare de dobândă.'**
+  String get vaultsNoInterestNote;
+
+  /// Empty state title
+  ///
+  /// In ro, this message translates to:
+  /// **'Niciun seif încă'**
+  String get vaultsEmptyTitle;
+
+  /// Empty state text
+  ///
+  /// In ro, this message translates to:
+  /// **'Pune deoparte bani pentru un obiectiv. Dintr-un seif flexibil îi poți retrage oricând.'**
+  String get vaultsEmptyBody;
+
+  /// Button that opens the create-vault form
+  ///
+  /// In ro, this message translates to:
+  /// **'Seif nou'**
+  String get vaultsNew;
+
+  /// Load error
+  ///
+  /// In ro, this message translates to:
+  /// **'Seifurile nu au putut fi încărcate.'**
+  String get vaultsLoadError;
+
+  /// Saved amount out of the target
+  ///
+  /// In ro, this message translates to:
+  /// **'{saved} din {target}'**
+  String vaultsProgress(String saved, String target);
+
+  /// Badge: money can be withdrawn any time
+  ///
+  /// In ro, this message translates to:
+  /// **'Flexibil'**
+  String get vaultsFlexible;
+
+  /// Badge: locked vault
+  ///
+  /// In ro, this message translates to:
+  /// **'Blocat până la {date}'**
+  String vaultsLockedUntil(String date);
+
+  /// Target date line
+  ///
+  /// In ro, this message translates to:
+  /// **'Țintă: {date}'**
+  String vaultsTargetBy(String date);
+
+  /// Shown when the balance reached the target
+  ///
+  /// In ro, this message translates to:
+  /// **'Obiectiv atins'**
+  String get vaultsGoalReached;
+
+  /// Deposit button
+  ///
+  /// In ro, this message translates to:
+  /// **'Depune'**
+  String get vaultsDeposit;
+
+  /// Withdraw button
+  ///
+  /// In ro, this message translates to:
+  /// **'Retrage'**
+  String get vaultsWithdraw;
+
+  /// Tooltip of the vault menu
+  ///
+  /// In ro, this message translates to:
+  /// **'Mai multe acțiuni pentru „{name}”'**
+  String vaultsMoreActions(String name);
+
+  /// Menu item
+  ///
+  /// In ro, this message translates to:
+  /// **'Închide seiful'**
+  String get vaultsClose;
+
+  /// Close confirmation title
+  ///
+  /// In ro, this message translates to:
+  /// **'Închizi seiful „{name}”?'**
+  String vaultsCloseTitle(String name);
+
+  /// Close confirmation text
+  ///
+  /// In ro, this message translates to:
+  /// **'{amount} se mută în contul tău {account}. Seiful dispare din listă.'**
+  String vaultsCloseMessage(String amount, String account);
+
+  /// Deposit sheet title
+  ///
+  /// In ro, this message translates to:
+  /// **'Depune în „{name}”'**
+  String vaultsDepositTitle(String name);
+
+  /// Withdraw sheet title
+  ///
+  /// In ro, this message translates to:
+  /// **'Retrage din „{name}”'**
+  String vaultsWithdrawTitle(String name);
+
+  /// Account picker label for deposits
+  ///
+  /// In ro, this message translates to:
+  /// **'Din contul'**
+  String get vaultsFromAccount;
+
+  /// Account picker label for withdrawals
+  ///
+  /// In ro, this message translates to:
+  /// **'În contul'**
+  String get vaultsToAccount;
+
+  /// Balance that can be moved
+  ///
+  /// In ro, this message translates to:
+  /// **'Disponibil: {amount}'**
+  String vaultsAvailable(String amount);
+
+  /// Amount field label
+  ///
+  /// In ro, this message translates to:
+  /// **'Suma ({currency})'**
+  String vaultsAmount(String currency);
+
+  /// Amount validation
+  ///
+  /// In ro, this message translates to:
+  /// **'Introdu o sumă mai mare de 0.'**
+  String get vaultsAmountInvalid;
+
+  /// Amount validation
+  ///
+  /// In ro, this message translates to:
+  /// **'Suma depășește {amount}.'**
+  String vaultsAmountTooHigh(String amount);
+
+  /// Confirm button in sheets
+  ///
+  /// In ro, this message translates to:
+  /// **'Confirmă'**
+  String get vaultsConfirm;
+
+  /// Success message
+  ///
+  /// In ro, this message translates to:
+  /// **'Ai depus {amount} în „{name}”.'**
+  String vaultsDeposited(String amount, String name);
+
+  /// Success message
+  ///
+  /// In ro, this message translates to:
+  /// **'Ai retras {amount} din „{name}”.'**
+  String vaultsWithdrawn(String amount, String name);
+
+  /// Success message
+  ///
+  /// In ro, this message translates to:
+  /// **'Seiful „{name}” a fost închis.'**
+  String vaultsClosed(String name);
+
+  /// Success message
+  ///
+  /// In ro, this message translates to:
+  /// **'Seiful „{name}” a fost creat.'**
+  String vaultsCreated(String name);
+
+  /// Create form
+  ///
+  /// In ro, this message translates to:
+  /// **'Numele seifului'**
+  String get vaultsNameLabel;
+
+  /// Create form hint
+  ///
+  /// In ro, this message translates to:
+  /// **'ex. Vacanță'**
+  String get vaultsNameHint;
+
+  /// Create form validation
+  ///
+  /// In ro, this message translates to:
+  /// **'Introdu un nume de cel mult 60 de caractere.'**
+  String get vaultsNameInvalid;
+
+  /// Create form
+  ///
+  /// In ro, this message translates to:
+  /// **'Suma țintă ({currency})'**
+  String vaultsTargetLabel(String currency);
+
+  /// Create form
+  ///
+  /// In ro, this message translates to:
+  /// **'Data țintă'**
+  String get vaultsTargetDateLabel;
+
+  /// Create form, no date yet
+  ///
+  /// In ro, this message translates to:
+  /// **'Alege o dată (opțional)'**
+  String get vaultsTargetDateNone;
+
+  /// Create form validation
+  ///
+  /// In ro, this message translates to:
+  /// **'Un seif blocat are nevoie de o dată țintă.'**
+  String get vaultsTargetDateRequired;
+
+  /// Create form segment
+  ///
+  /// In ro, this message translates to:
+  /// **'Flexibil'**
+  String get vaultsTypeFlexible;
+
+  /// Create form segment
+  ///
+  /// In ro, this message translates to:
+  /// **'Blocat'**
+  String get vaultsTypeLocked;
+
+  /// Create form explanation
+  ///
+  /// In ro, this message translates to:
+  /// **'Poți retrage banii oricând.'**
+  String get vaultsTypeFlexibleHint;
+
+  /// Create form explanation
+  ///
+  /// In ro, this message translates to:
+  /// **'Banii rămân în seif până la data țintă.'**
+  String get vaultsTypeLockedHint;
+
+  /// Create form submit
+  ///
+  /// In ro, this message translates to:
+  /// **'Creează seiful'**
+  String get vaultsCreate;
+
+  /// No matching account
+  ///
+  /// In ro, this message translates to:
+  /// **'Ai nevoie de un cont curent în {currency}.'**
+  String vaultsNoAccount(String currency);
+
+  /// Server code VAULT_LOCKED
+  ///
+  /// In ro, this message translates to:
+  /// **'Seiful este blocat până la data țintă.'**
+  String get errorsCodeVaultLocked;
+
+  /// Server code VAULT_NOT_FOUND
+  ///
+  /// In ro, this message translates to:
+  /// **'Seiful nu mai există.'**
+  String get errorsCodeVaultNotFound;
+
+  /// Server code VAULT_INVALID
+  ///
+  /// In ro, this message translates to:
+  /// **'Verifică datele seifului.'**
+  String get errorsCodeVaultInvalid;
+
+  /// Note under an exchange quote
+  ///
+  /// In ro, this message translates to:
+  /// **'Cursul și sumele sunt garantate 60 de secunde.'**
+  String get exchangeQuoteValidity;
+
+  /// Server code QUOTE_EXPIRED
+  ///
+  /// In ro, this message translates to:
+  /// **'Oferta de curs a expirat. Încearcă din nou pentru un curs nou.'**
+  String get errorsCodeQuoteExpired;
+
+  /// Inactivity lock title
+  ///
+  /// In ro, this message translates to:
+  /// **'Sesiune încheiată'**
+  String get sessionLockedTitle;
+
+  /// Inactivity lock text
+  ///
+  /// In ro, this message translates to:
+  /// **'Pentru siguranța banilor tăi, te-am deconectat după câteva minute fără activitate. Introdu PIN-ul ca să continui.'**
+  String get sessionLockedBody;
+
+  /// Inactivity lock button
+  ///
+  /// In ro, this message translates to:
+  /// **'Introdu PIN-ul'**
+  String get sessionLockedAction;
+
+  /// Shown over the app in the app switcher
+  ///
+  /// In ro, this message translates to:
+  /// **'INTBank • Protecția confidențialității'**
+  String get privacyVeilLabel;
+
+  /// Bottom navigation tab
+  ///
+  /// In ro, this message translates to:
+  /// **'Acasă'**
+  String get navHome;
+
+  /// Bottom navigation tab
+  ///
+  /// In ro, this message translates to:
+  /// **'Conturi'**
+  String get navAccounts;
+
+  /// Bottom navigation tab
+  ///
+  /// In ro, this message translates to:
+  /// **'Plăți'**
+  String get navPayments;
+
+  /// Bottom navigation tab
+  ///
+  /// In ro, this message translates to:
+  /// **'Economii'**
+  String get navSavings;
+
+  /// Bottom navigation tab
+  ///
+  /// In ro, this message translates to:
+  /// **'Profil'**
+  String get navProfile;
+
+  /// Accounts tab title
+  ///
+  /// In ro, this message translates to:
+  /// **'Conturile mele'**
+  String get accountsTitle;
+
+  /// Account name
+  ///
+  /// In ro, this message translates to:
+  /// **'Cont curent {currency}'**
+  String accountsCurrentAccount(String currency);
+
+  /// Accounts tab, no accounts
+  ///
+  /// In ro, this message translates to:
+  /// **'Nu ai încă un cont curent.'**
+  String get accountsEmpty;
+
+  /// Accounts failed to load
+  ///
+  /// In ro, this message translates to:
+  /// **'Nu am putut încărca conturile.'**
+  String get accountsLoadError;
+
+  /// Accounts tab button
+  ///
+  /// In ro, this message translates to:
+  /// **'Deschide un cont în valută'**
+  String get accountsOpenCurrency;
+
+  /// Copy button
+  ///
+  /// In ro, this message translates to:
+  /// **'Copiază IBAN-ul'**
+  String get accountsCopyIban;
+
+  /// Snackbar after copying
+  ///
+  /// In ro, this message translates to:
+  /// **'IBAN copiat'**
+  String get accountsIbanCopied;
+
+  /// Payments tab title
+  ///
+  /// In ro, this message translates to:
+  /// **'Plăți'**
+  String get paymentsTitle;
+
+  /// Source account picker label
+  ///
+  /// In ro, this message translates to:
+  /// **'Plătești din'**
+  String get paymentsFrom;
+
+  /// Payments action
+  ///
+  /// In ro, this message translates to:
+  /// **'Transfer către un cont INTBank'**
+  String get paymentsTransferTitle;
+
+  /// Payments action detail
+  ///
+  /// In ro, this message translates to:
+  /// **'Instant, către orice IBAN INTBank.'**
+  String get paymentsTransferBody;
+
+  /// Payments action
+  ///
+  /// In ro, this message translates to:
+  /// **'Schimb valutar'**
+  String get paymentsExchangeTitle;
+
+  /// Payments action detail
+  ///
+  /// In ro, this message translates to:
+  /// **'Între conturile tale, la un curs garantat 60 de secunde.'**
+  String get paymentsExchangeBody;
+
+  /// Payments action
+  ///
+  /// In ro, this message translates to:
+  /// **'Plăți programate'**
+  String get paymentsScheduledTitle;
+
+  /// Payments action detail
+  ///
+  /// In ro, this message translates to:
+  /// **'Transferuri care pleacă automat la datele alese.'**
+  String get paymentsScheduledBody;
+
+  /// Profile tab title
+  ///
+  /// In ro, this message translates to:
+  /// **'Profil'**
+  String get profileTitle;
+
+  /// Profile failed to load
+  ///
+  /// In ro, this message translates to:
+  /// **'Nu am putut încărca datele tale.'**
+  String get profileLoadError;
+
+  /// Profile section
+  ///
+  /// In ro, this message translates to:
+  /// **'Date personale'**
+  String get profilePersonalDetails;
+
+  /// Profile field
+  ///
+  /// In ro, this message translates to:
+  /// **'E-mail'**
+  String get profileEmail;
+
+  /// Profile field
+  ///
+  /// In ro, this message translates to:
+  /// **'Adresă'**
+  String get profileAddress;
+
+  /// Profile field
+  ///
+  /// In ro, this message translates to:
+  /// **'Data nașterii'**
+  String get profileBirthDate;
+
+  /// Profile note
+  ///
+  /// In ro, this message translates to:
+  /// **'Pentru a-ți schimba datele personale, contactează INTBank.'**
+  String get profileDetailsNote;
+
+  /// Settings section
+  ///
+  /// In ro, this message translates to:
+  /// **'Securitate'**
+  String get settingsSecurity;
+
+  /// Settings row
+  ///
+  /// In ro, this message translates to:
+  /// **'Schimbă PIN-ul'**
+  String get settingsChangePin;
+
+  /// Settings row detail
+  ///
+  /// In ro, this message translates to:
+  /// **'PIN-ul cu care intri în aplicație și confirmi plățile.'**
+  String get settingsChangePinBody;
+
+  /// Settings row
+  ///
+  /// In ro, this message translates to:
+  /// **'Blocare automată'**
+  String get settingsAutoLock;
+
+  /// Auto-lock choice
+  ///
+  /// In ro, this message translates to:
+  /// **'{minutes, plural, =1{După 1 minut fără activitate} few{După {minutes} minute fără activitate} other{După {minutes} de minute fără activitate}}'**
+  String settingsAutoLockMinutes(int minutes);
+
+  /// Settings switch
+  ///
+  /// In ro, this message translates to:
+  /// **'Ascunde sumele'**
+  String get settingsHideAmounts;
+
+  /// Settings switch detail
+  ///
+  /// In ro, this message translates to:
+  /// **'Soldurile și sumele apar ca •••• până le afișezi.'**
+  String get settingsHideAmountsBody;
+
+  /// Settings section
+  ///
+  /// In ro, this message translates to:
+  /// **'Preferințe'**
+  String get settingsPreferences;
+
+  /// Settings row
+  ///
+  /// In ro, this message translates to:
+  /// **'Aspect'**
+  String get settingsAppearance;
+
+  /// Theme choice
+  ///
+  /// In ro, this message translates to:
+  /// **'Ca pe telefon'**
+  String get settingsThemeSystem;
+
+  /// Theme choice
+  ///
+  /// In ro, this message translates to:
+  /// **'Luminos'**
+  String get settingsThemeLight;
+
+  /// Theme choice
+  ///
+  /// In ro, this message translates to:
+  /// **'Întunecat'**
+  String get settingsThemeDark;
+
+  /// Settings row
+  ///
+  /// In ro, this message translates to:
+  /// **'Limbă'**
+  String get settingsLanguage;
+
+  /// Language choice
+  ///
+  /// In ro, this message translates to:
+  /// **'Limba telefonului'**
+  String get settingsLanguageSystem;
+
+  /// Settings section
+  ///
+  /// In ro, this message translates to:
+  /// **'Despre'**
+  String get settingsAbout;
+
+  /// Settings row
+  ///
+  /// In ro, this message translates to:
+  /// **'Versiune'**
+  String get settingsVersion;
+
+  /// Settings row
+  ///
+  /// In ro, this message translates to:
+  /// **'Licențe open-source'**
+  String get settingsLicences;
+
+  /// Change PIN step 1
+  ///
+  /// In ro, this message translates to:
+  /// **'Introdu PIN-ul actual'**
+  String get changePinCurrentTitle;
+
+  /// Change PIN step 1 detail
+  ///
+  /// In ro, this message translates to:
+  /// **'Pentru siguranță, confirmă mai întâi că ești tu.'**
+  String get changePinCurrentBody;
+
+  /// Change PIN step 2
+  ///
+  /// In ro, this message translates to:
+  /// **'Alege noul PIN'**
+  String get changePinNewTitle;
+
+  /// Change PIN step 2 detail
+  ///
+  /// In ro, this message translates to:
+  /// **'6 cifre pe care nu le folosești în altă parte.'**
+  String get changePinNewBody;
+
+  /// Change PIN step 3
+  ///
+  /// In ro, this message translates to:
+  /// **'Confirmă noul PIN'**
+  String get changePinConfirmTitle;
+
+  /// Change PIN step 3 detail
+  ///
+  /// In ro, this message translates to:
+  /// **'Introdu din nou noul PIN.'**
+  String get changePinConfirmBody;
+
+  /// Change PIN progress
+  ///
+  /// In ro, this message translates to:
+  /// **'Pasul {step} din 3'**
+  String changePinStep(int step);
+
+  /// Change PIN validation
+  ///
+  /// In ro, this message translates to:
+  /// **'Noul PIN trebuie să fie diferit de cel actual.'**
+  String get changePinSameAsOld;
+
+  /// Change PIN success
+  ///
+  /// In ro, this message translates to:
+  /// **'PIN-ul a fost schimbat.'**
+  String get changePinDone;
+
+  /// Change PIN failure
+  ///
+  /// In ro, this message translates to:
+  /// **'Nu am putut schimba PIN-ul. Încearcă din nou.'**
+  String get changePinFailed;
+
+  /// Day heading in the transaction list
+  ///
+  /// In ro, this message translates to:
+  /// **'Astăzi'**
+  String get dayToday;
+
+  /// Day heading in the transaction list
+  ///
+  /// In ro, this message translates to:
+  /// **'Ieri'**
+  String get dayYesterday;
+
+  /// Home greeting before the name
+  ///
+  /// In ro, this message translates to:
+  /// **'Bună dimineața'**
+  String get homeGreetMorning;
+
+  /// Home greeting before the name
+  ///
+  /// In ro, this message translates to:
+  /// **'Bună ziua'**
+  String get homeGreetAfternoon;
+
+  /// Home greeting before the name
+  ///
+  /// In ro, this message translates to:
+  /// **'Bună seara'**
+  String get homeGreetEvening;
+
+  /// Transfer: saved recipients heading
+  ///
+  /// In ro, this message translates to:
+  /// **'Destinatari salvați'**
+  String get transferSavedRecipients;
+
+  /// Transfer: recent recipient button
+  ///
+  /// In ro, this message translates to:
+  /// **'Transferă către {name}'**
+  String transferToRecipient(String name);
+
+  /// Transaction category
+  ///
+  /// In ro, this message translates to:
+  /// **'Alimente și supermarket'**
+  String get categoryGroceries;
+
+  /// Transaction category
+  ///
+  /// In ro, this message translates to:
+  /// **'Facturi și utilități'**
+  String get categoryBills;
+
+  /// Transaction category
+  ///
+  /// In ro, this message translates to:
+  /// **'Restaurante și cafenele'**
+  String get categoryRestaurants;
+
+  /// Transaction category
+  ///
+  /// In ro, this message translates to:
+  /// **'Transport și combustibil'**
+  String get categoryTransport;
+
+  /// Transaction category
+  ///
+  /// In ro, this message translates to:
+  /// **'Divertisment și abonamente'**
+  String get categoryEntertainment;
+
+  /// Transaction category
+  ///
+  /// In ro, this message translates to:
+  /// **'Transferuri și altele'**
+  String get categoryOther;
+
+  /// Transaction category
+  ///
+  /// In ro, this message translates to:
+  /// **'Bani primiți'**
+  String get categoryIncoming;
+
+  /// Transaction category
+  ///
+  /// In ro, this message translates to:
+  /// **'Între conturile tale'**
+  String get categoryOwnAccounts;
+
+  /// Transaction details row
+  ///
+  /// In ro, this message translates to:
+  /// **'Categorie'**
+  String get txDetailsCategory;
+
+  /// Exchange: source card
+  ///
+  /// In ro, this message translates to:
+  /// **'Vinzi'**
+  String get exchangeSell;
+
+  /// Exchange: destination card
+  ///
+  /// In ro, this message translates to:
+  /// **'Cumperi'**
+  String get exchangeBuy;
+
+  /// Exchange: account balance
+  ///
+  /// In ro, this message translates to:
+  /// **'Sold: {amount}'**
+  String exchangeBalance(String amount);
+
+  /// Exchange: no account in that currency
+  ///
+  /// In ro, this message translates to:
+  /// **'Nu ai cont în {currency}'**
+  String exchangeNoAccount(String currency);
+
+  /// Exchange: use the whole balance
+  ///
+  /// In ro, this message translates to:
+  /// **'Tot soldul'**
+  String get exchangeAll;
+
+  /// Exchange: fee note
+  ///
+  /// In ro, this message translates to:
+  /// **'Fără comision'**
+  String get exchangeNoFee;
+
+  /// Exchange: currency picker title
+  ///
+  /// In ro, this message translates to:
+  /// **'Alege moneda'**
+  String get exchangeChooseCurrency;
+
+  /// Exchange: the shown amount is an estimate
+  ///
+  /// In ro, this message translates to:
+  /// **'Suma exactă o vezi înainte să confirmi.'**
+  String get exchangeEstimateNote;
+
+  /// Exchange success title
+  ///
+  /// In ro, this message translates to:
+  /// **'Schimb realizat'**
+  String get exchangeDone;
+
+  /// Currency name
+  ///
+  /// In ro, this message translates to:
+  /// **'Leu românesc'**
+  String get currencyRon;
+
+  /// Welcome screen headline
+  ///
+  /// In ro, this message translates to:
+  /// **'Banca ta, mereu cu tine'**
+  String get welcomeHeadline;
+
+  /// Welcome screen subtitle
+  ///
+  /// In ro, this message translates to:
+  /// **'Gestionează-ți banii simplu și în siguranță, de oriunde.'**
+  String get welcomeSubtitle;
+
+  /// Welcome feature
+  ///
+  /// In ro, this message translates to:
+  /// **'Transferuri instant'**
+  String get welcomeFeatureTransfers;
+
+  /// Welcome feature detail
+  ///
+  /// In ro, this message translates to:
+  /// **'Între conturile INTBank, la orice oră.'**
+  String get welcomeFeatureTransfersBody;
+
+  /// Welcome feature
+  ///
+  /// In ro, this message translates to:
+  /// **'Seifuri de economii'**
+  String get welcomeFeatureSavings;
+
+  /// Welcome feature detail
+  ///
+  /// In ro, this message translates to:
+  /// **'Pune bani deoparte pentru obiectivele tale.'**
+  String get welcomeFeatureSavingsBody;
+
+  /// Welcome feature
+  ///
+  /// In ro, this message translates to:
+  /// **'Securitate la fiecare pas'**
+  String get welcomeFeatureSecurity;
+
+  /// Welcome feature detail
+  ///
+  /// In ro, this message translates to:
+  /// **'PIN, confirmarea plăților și blocare automată.'**
+  String get welcomeFeatureSecurityBody;
+
+  /// Welcome primary button
+  ///
+  /// In ro, this message translates to:
+  /// **'Deschide un cont'**
+  String get welcomeOpenAccount;
+
+  /// Welcome secondary button
+  ///
+  /// In ro, this message translates to:
+  /// **'Am deja cont'**
+  String get welcomeHaveAccount;
+
+  /// Release build without certificate pins
+  ///
+  /// In ro, this message translates to:
+  /// **'Aplicația nu este configurată'**
+  String get setupErrorTitle;
+
+  /// Release build without certificate pins
+  ///
+  /// In ro, this message translates to:
+  /// **'Această versiune nu are configurată conexiunea securizată cu banca, așa că nu se conectează la server. Instalează o versiune oficială a aplicației.'**
+  String get setupErrorBody;
 }
 
 class _AppLocalizationsDelegate

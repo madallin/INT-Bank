@@ -2,6 +2,7 @@ import '../../../theme/app_tokens.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../../../core/utils/error_messages.dart';
 import 'package:flutter_libphonenumber/flutter_libphonenumber.dart';
 import 'package:dio/dio.dart';
 
@@ -18,8 +19,7 @@ import '../../../widgets/review_item_row.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/selection_dropdown.dart';
 import '../../../widgets/step_indicator.dart';
-import '../../onboarding/screens/approval_screen.dart';
-import '../../onboarding/screens/tos_screen.dart';
+import 'two_factor_screen.dart';
 import '../../../l10n/l10n.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -157,34 +157,23 @@ class _RegisterScreenState extends State<RegisterScreen>
           ? response.data as Map<String, dynamic>
           : jsonDecode(response.data.toString()) as Map<String, dynamic>;
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.statusCode == 200 || response.statusCode == 201 ||
+          (response.statusCode == 409 && data['userId'] != null)) {
+        // New or already registered: prove the phone with the SMS code before any further step.
         final userId = data['userId'];
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (_) => TosScreen(userId: userId),
+              builder: (_) => TwoFactorScreen(phoneNumber: fullPhone, userId: userId),
             ),
             (route) => false,
           );
         }
       } else if (response.statusCode == 409) {
-        final userId = data['userId'];
-        if (userId != null) {
-          if (mounted) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ApprovalScreen(userId: userId),
-              ),
-              (route) => false,
-            );
-          }
-        } else {
-          _showError(data['error'] ?? AppL10n.current.registerContulExistaDeja);
-        }
+        _showError(serverMessage(data, AppL10n.current.registerContulExistaDeja));
       } else {
-        _showError(data['error'] ?? AppL10n.current.registerEroareInregistrare);
+        _showError(serverMessage(data, AppL10n.current.registerEroareInregistrare));
       }
     } catch (e) {
       _showError(AppL10n.current.registerPotiConectaServerVerifica);
@@ -307,7 +296,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: context.colors.brand.withOpacity(0.3),
+            color: context.colors.brand.withValues(alpha: 0.3),
             blurRadius: 25,
             offset: const Offset(0, 10),
           ),
@@ -341,7 +330,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: context.colors.brand.withOpacity(0.1),
+                    color: context.colors.brand.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Center(

@@ -59,7 +59,7 @@ public class TransferNotificationFlowTest
     @BeforeEach
     void setUp()
     {
-        objectMapper = new ObjectMapper();
+        objectMapper = new ObjectMapper().findAndRegisterModules();
         processTransferUseCase = new ProcessTransferUseCase(
                 accountRepository,
                 transferRepository,
@@ -76,22 +76,19 @@ public class TransferNotificationFlowTest
     {
         when(transferRepository.findById("tx-notif-1")).thenReturn(Optional.empty());
 
-        Account sender = new Account("acc-10", new Iban("RO49INTB0000000000000010"), new Money(BigDecimal.valueOf(1000), "RON"), 100L);
-        Account receiver = new Account("acc-20", new Iban("RO49INTB0000000000000020"), new Money(BigDecimal.valueOf(250), "RON"), 200L);
+        AccountRepository.AccountProjection sender = new AccountRepository.AccountProjection("10", 100L, "RO49INTB0000000000000010", "RON", BigDecimal.valueOf(1000));
+        AccountRepository.AccountProjection receiver = new AccountRepository.AccountProjection("20", 200L, "RO49INTB0000000000000020", "RON", BigDecimal.valueOf(250));
 
-        doAnswer(invocation -> {
-            Runnable action = invocation.getArgument(0);
-            action.run();
-            return null;
-        }).when(accountRepository).runInTransaction(any());
+        doAnswer(invocation -> ((java.util.function.Supplier<?>) invocation.getArgument(0)).get())
+                .when(accountRepository).runInTransaction(any());
 
-        when(accountRepository.findByIdWithLock("acc-10")).thenReturn(Optional.of(sender));
-        when(accountRepository.findByIdWithLock("acc-20")).thenReturn(Optional.of(receiver));
+        when(accountRepository.findByIdWithLock("10")).thenReturn(Optional.of(sender));
+        when(accountRepository.findByIdWithLock("20")).thenReturn(Optional.of(receiver));
 
         TransferInitiatedEvent event = new TransferInitiatedEvent(
                 "tx-notif-1",
-                "acc-10",
-                "acc-20",
+                "10",
+                "20",
                 "RO49INTB0000000000000010",
                 "RO49INTB0000000000000020",
                 BigDecimal.valueOf(150),
@@ -103,8 +100,8 @@ public class TransferNotificationFlowTest
         processTransferUseCase.execute(event);
 
         // Verify balances updated
-        verify(accountRepository).updateBalance("acc-10", BigDecimal.valueOf(850).setScale(2));
-        verify(accountRepository).updateBalance("acc-20", BigDecimal.valueOf(400).setScale(2));
+        verify(accountRepository).updateBalance("10", BigDecimal.valueOf(850).setScale(2));
+        verify(accountRepository).updateBalance("20", BigDecimal.valueOf(400).setScale(2));
 
         // Verify notification for receiver (user 200L)
         verify(notificationService).notify(
@@ -132,8 +129,8 @@ public class TransferNotificationFlowTest
 
         TransferInitiatedEvent event = new TransferInitiatedEvent(
                 "tx-fallback-1",
-                "acc-1",
-                "acc-2",
+                "1",
+                "2",
                 "RO49INTB0000000000000001",
                 "RO49INTB0000000000000002",
                 BigDecimal.valueOf(50),
@@ -145,7 +142,7 @@ public class TransferNotificationFlowTest
         OutboxJpaEntity outboxEntity = new OutboxJpaEntity();
         outboxEntity.setId(99L);
         outboxEntity.setTopic(TransferInitiatedEvent.EVENT_NAME);
-        outboxEntity.setPartitionKey("acc-1");
+        outboxEntity.setPartitionKey("1");
         outboxEntity.setPayload(objectMapper.writeValueAsString(event));
         outboxEntity.setStatus("PENDING");
 
@@ -158,17 +155,14 @@ public class TransferNotificationFlowTest
         when(kafkaTemplate.send(anyString(), anyString(), anyString())).thenReturn(failedFuture);
 
         // Mock accounts for local delivery
-        Account sender = new Account("acc-1", new Iban("RO49INTB0000000000000001"), new Money(BigDecimal.valueOf(500), "RON"), 1L);
-        Account receiver = new Account("acc-2", new Iban("RO49INTB0000000000000002"), new Money(BigDecimal.valueOf(100), "RON"), 2L);
+        AccountRepository.AccountProjection sender = new AccountRepository.AccountProjection("1", 1L, "RO49INTB0000000000000001", "RON", BigDecimal.valueOf(500));
+        AccountRepository.AccountProjection receiver = new AccountRepository.AccountProjection("2", 2L, "RO49INTB0000000000000002", "RON", BigDecimal.valueOf(100));
 
-        doAnswer(invocation -> {
-            Runnable action = invocation.getArgument(0);
-            action.run();
-            return null;
-        }).when(accountRepository).runInTransaction(any());
+        doAnswer(invocation -> ((java.util.function.Supplier<?>) invocation.getArgument(0)).get())
+                .when(accountRepository).runInTransaction(any());
 
-        when(accountRepository.findByIdWithLock("acc-1")).thenReturn(Optional.of(sender));
-        when(accountRepository.findByIdWithLock("acc-2")).thenReturn(Optional.of(receiver));
+        when(accountRepository.findByIdWithLock("1")).thenReturn(Optional.of(sender));
+        when(accountRepository.findByIdWithLock("2")).thenReturn(Optional.of(receiver));
 
         outboxService.processOutbox();
 

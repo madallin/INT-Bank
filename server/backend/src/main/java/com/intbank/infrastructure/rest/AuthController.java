@@ -64,7 +64,8 @@ public class AuthController
                 builder.claim("uid", Long.parseLong(userIdRaw));
                 redisTemplate.opsForValue().set("refresh:uid:" + deviceId, userIdRaw, 15, TimeUnit.MINUTES);
             }
-            builder.claim("roles", List.of("ROLE_USER"));
+            // Without a customer the token only identifies the device: it opens no protected route.
+            builder.claim("roles", List.of(userIdRaw != null && !userIdRaw.isBlank() ? "ROLE_USER" : "ROLE_DEVICE"));
             String clientToken = builder.compact();
 
             byte[] refreshBytes = new byte[32];
@@ -97,12 +98,14 @@ public class AuthController
                     .subject(deviceId)
                     .issuedAt(new Date())
                     .expiration(new Date(System.currentTimeMillis() + 300_000))
-                    .signWith(jwtSecret)
-                    .claim("roles", List.of("ROLE_USER"));
+                    .signWith(jwtSecret);
 
             String storedUid = redisTemplate.opsForValue().get("refresh:uid:" + deviceId);
             if (storedUid != null && !storedUid.isBlank()) {
                 builder.claim("uid", Long.parseLong(storedUid));
+                builder.claim("roles", List.of("ROLE_USER"));
+            } else {
+                builder.claim("roles", List.of("ROLE_DEVICE"));
             }
 
             String newToken = builder.compact();

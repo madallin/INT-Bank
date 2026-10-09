@@ -15,7 +15,6 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/users/{userId}/accounts")
@@ -36,6 +35,7 @@ public class AccountController
         this(accountRepo, userRepo, auditLogService, notificationService, null);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public AccountController(AccountJpaRepository accountRepo,
                              UserJpaRepository userRepo,
                              AuditLogService auditLogService,
@@ -56,7 +56,7 @@ public class AccountController
         {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
         }
-        List<AccountJpaEntity> accounts = accountRepo.findByUser_Id(userId);
+        List<AccountJpaEntity> accounts = accountRepo.findByUser_Id(userId).stream().filter(AccountJpaEntity::isCurrent).toList();
         var mapped = accounts.stream().map(this::toMap).toList();
         return ResponseEntity.ok(Map.of("accounts", mapped));
     }
@@ -83,8 +83,7 @@ public class AccountController
         }
         UserJpaEntity user = userOpt.get();
 
-        String suffix = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 8).toUpperCase();
-        String generatedIban = "RO49INTB" + String.format("%04d", userId) + currency + suffix;
+        String generatedIban = com.intbank.core.domain.vo.AccountNumbers.newIban(currency);
 
         AccountJpaEntity account = new AccountJpaEntity();
         account.setUser(user);

@@ -53,7 +53,8 @@ public class BeneficiaryAndScheduledTransferTest
     void setUp()
     {
         beneficiaryController = new BeneficiaryController(beneficiaryRepo, auditLogService);
-        scheduledTransferService = new ScheduledTransferService(scheduledRepo, accountRepo, transferUseCase, auditLogService);
+        scheduledTransferService = new ScheduledTransferService(scheduledRepo, accountRepo, transferUseCase, auditLogService,
+                org.mockito.Mockito.mock(com.intbank.service.NotificationService.class));
     }
 
     @Test

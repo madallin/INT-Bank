@@ -1,5 +1,7 @@
 server:
   port: ${PORT:8443}
+  # Client IP from X-Forwarded-For, but only when the hop is an internal proxy (Tomcat RemoteIpValve).
+  forward-headers-strategy: native
   ssl:
     enabled: false
 
@@ -78,10 +80,6 @@ spring:
       sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="${KAFKA_USERNAME:}" password="${KAFKA_PASSWORD:}";
       ssl.endpoint.identification.algorithm: ${KAFKA_SSL_ENDPOINT_ID:""}
 
-  security:
-    user:
-      name: admin
-      password: ${ADMIN_PASSWORD:admin}
 
 # Feature flags
 app:
@@ -99,15 +97,9 @@ jwt:
   secret: ${JWT_SECRET:}
   expiration-ms: 300000
 
-# Encryption Keys (AES-256-GCM & HMAC)
+# Encryption key for card data at rest (AES-256-GCM). Required: the server will not start without it.
 encryption:
-  aes-key-hex: ${AES_KEY_HEX:}
-  hmac-key-hex: ${HMAC_KEY_HEX:}
   card-encryption-key: ${CARD_ENCRYPTION_KEY:}
-
-# HMAC Guard
-hmac:
-  enabled: ${HMAC_ENABLED:true}
 
 # Geoapify
 geoapify:

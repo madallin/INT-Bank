@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:internet_banking/data/models/transaction_category.dart';
 import 'package:internet_banking/theme/app_tokens.dart';
 
 /// WCAG 2.x contrast ratio between two opaque colours.
@@ -20,6 +21,14 @@ void main() {
   const aa = 4.5; // WCAG AA, normal-size text
 
   for (final (name, c) in [('light', AppColors.light), ('dark', AppColors.dark)]) {
+    test('$name: spending category colours stand out from the card (3:1)', () {
+      final brightness = name == 'dark' ? Brightness.dark : Brightness.light;
+      for (final category in TransactionCategory.values) {
+        final ratio = contrast(category.color(c, brightness), c.surface);
+        expect(ratio, greaterThanOrEqualTo(3.0), reason: '${category.key} on $name surface is ${ratio.toStringAsFixed(2)}:1');
+      }
+    });
+
     group('$name theme', () {
       final backgrounds = {
         'surface': c.surface,

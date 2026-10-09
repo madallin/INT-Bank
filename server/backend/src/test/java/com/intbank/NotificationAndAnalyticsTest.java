@@ -64,14 +64,9 @@ public class NotificationAndAnalyticsTest
     }
 
     @Test
-    void testNotification_SsePushAndDeviceTokenRegistration()
+    void testNotification_SsePush()
     {
         when(notificationRepo.save(any(NotificationJpaEntity.class))).thenAnswer(i -> i.getArgument(0));
-
-        // Test device token registration
-        notificationService.registerDeviceToken(1L, "fcm-token-device-xyz", "android");
-        var tokens = notificationService.getDeviceTokens(1L);
-        assertTrue(tokens.contains("fcm-token-device-xyz"));
 
         // Test SSE emitter registration
         var emitter = notificationService.registerEmitter(1L);
@@ -94,11 +89,30 @@ public class NotificationAndAnalyticsTest
     }
 
     @Test
+    void testAnalytics_CategorizationMatchesWholeWordsWithoutDiacritics()
+    {
+        assertEquals("UTILITATI", AnalyticsService.categorize("Factură Enel octombrie", null));
+        assertEquals("UTILITATI", AnalyticsService.categorize("Întreținere bloc", null));
+        assertEquals("RESTAURANTE", AnalyticsService.categorize("Cafea cu Ana", null));
+        assertEquals("RESTAURANTE", AnalyticsService.categorize("Comanda Bolt Food", null), "not transport");
+        assertEquals("TRANSPORT", AnalyticsService.categorize("Bolt aeroport", null));
+        // Words that merely contain a keyword are not that category.
+        assertEquals("ALTELE", AnalyticsService.categorize("Abonament digital", null));
+        assertEquals("ALTELE", AnalyticsService.categorize("Profit share", null));
+        assertEquals("ALTELE", AnalyticsService.categorize("Cadou Simeon", null));
+        assertEquals("ALTELE", AnalyticsService.categorize("Imobiliare", null));
+        // The IBAN never decides: random letters in it could spell a keyword.
+        assertEquals("ALTELE", AnalyticsService.categorize("Transfer", "RO12BAR0MOL0GAZ"));
+        assertEquals("ALTELE", AnalyticsService.categorize(null, null));
+        assertEquals("ALTELE", AnalyticsService.categorize("   ", null));
+    }
+
+    @Test
     void testAnalytics_MonthlySpendingCalculation()
     {
         AccountJpaEntity account = new AccountJpaEntity();
         account.setId(10L);
-        account.setUserId(1L);
+        account.setUser(userWithId(1L));
         account.setMoneda("RON");
         when(accountRepo.findById(10L)).thenReturn(Optional.of(account));
 
@@ -116,7 +130,7 @@ public class NotificationAndAnalyticsTest
         tx2.setStatus("COMPLETED");
         tx2.setInitiatedAt(Instant.now());
 
-        when(transferRepo.findAll()).thenReturn(List.of(tx1, tx2));
+        when(transferRepo.findByFromAccount_IdOrToAccount_IdOrderByInitiatedAtDesc(anyLong(), anyLong())).thenReturn(List.of(tx1, tx2));
 
         var response = analyticsService.getMonthlySpending(1L, 10L, YearMonth.now());
 
@@ -124,5 +138,12 @@ public class NotificationAndAnalyticsTest
         assertEquals(BigDecimal.valueOf(200.00).setScale(2), response.totalSpent());
         assertEquals(2, response.totalTransactions());
         assertEquals("Alimente & Supermarket", response.topCategory());
+    }
+
+    private static com.intbank.infrastructure.persistence.entity.UserJpaEntity userWithId(Long id)
+    {
+        var user = new com.intbank.infrastructure.persistence.entity.UserJpaEntity();
+        user.setId(id);
+        return user;
     }
 }

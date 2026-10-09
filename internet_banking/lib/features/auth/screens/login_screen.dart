@@ -10,10 +10,9 @@ import '../../../widgets/error_banner.dart';
 import '../../../widgets/phone_input_field.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/simple_app_bar.dart';
-import '../../onboarding/screens/tos_screen.dart';
-import '../../onboarding/screens/approval_screen.dart';
 import 'two_factor_screen.dart';
 import '../../../l10n/l10n.dart';
+import '../../../core/utils/app_log.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -88,40 +87,19 @@ class _LoginScreenState extends State<LoginScreen>
 
         if (data['exists'] == true) {
           final userId = data['userId'];
-          final isApproved = data['approved'] == true;
-          final hasTOS = data['acceptedterms'] == true;
-
-          if (!hasTOS) {
-            if (mounted) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => TosScreen(userId: userId)),
-                (route) => false,
-              );
-            }
-          } else if (isApproved) {
-            if (mounted) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TwoFactorScreen(
-                    phoneNumber: fullPhoneNumber,
-                    userId: userId,
-                  ),
+          // Prove the phone first: terms, approval and PIN steps come after the SMS code,
+          // with the token that verification returns.
+          if (mounted) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TwoFactorScreen(
+                  phoneNumber: fullPhoneNumber,
+                  userId: userId,
                 ),
-                (route) => false,
-              );
-            }
-          } else {
-            if (mounted) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ApprovalScreen(userId: userId),
-                ),
-                (route) => false,
-              );
-            }
+              ),
+              (route) => false,
+            );
           }
         } else {
           if (mounted) {
@@ -145,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen>
               context.l10n.loginPotiConectaServerVerifica,
         );
       }
-      debugPrint('Eroare _attemptLogin: $e');
+      AppLog.debug('Eroare _attemptLogin', e);
     }
   }
 
@@ -283,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen>
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: context.colors.brand.withOpacity(0.1),
+                    color: context.colors.brand.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Center(

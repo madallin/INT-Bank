@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../data/models/transaction_category.dart';
 import '../../../l10n/l10n.dart';
 
 class TransactionDetailsBottomSheet extends StatelessWidget {
@@ -38,6 +39,8 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
     final fromIban = transaction['fromIban'] ?? '-';
     final toIban = transaction['toIban'] ?? transaction['partyIban'] ?? '-';
     final status = transaction['status'] ?? 'COMPLETED';
+    final completed = status == 'COMPLETED';
+    final category = TransactionCategory.fromKey(transaction['category']);
 
     return Container(
       decoration: BoxDecoration(
@@ -78,20 +81,24 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: context.colors.brandSurface,
+                  color: completed ? context.colors.brandSurface : context.colors.surfaceMuted,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle_rounded, size: 14, color: context.colors.positive),
+                    Icon(
+                      completed ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                      size: 14,
+                      color: completed ? context.colors.positive : context.colors.textSecondary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      status == 'COMPLETED' ? context.l10n.txDetailsFinalizata : context.l10n.commonProcesare,
+                      completed ? context.l10n.txDetailsFinalizata : context.l10n.commonProcesare,
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: context.colors.positive,
+                        color: completed ? context.colors.positive : context.colors.textSecondary,
                       ),
                     ),
                   ],
@@ -131,6 +138,7 @@ class TransactionDetailsBottomSheet extends StatelessWidget {
           _buildDetailRow(context, context.l10n.txDetailsDataOra, date),
           _buildDetailRow(context, context.l10n.txDetailsReferintaTranzactie, trackingId.toString(), copyable: true),
           _buildDetailRow(context, context.l10n.txDetailsTipOperatiune, isDebit ? context.l10n.txDetailsPlataTransferTrimis : context.l10n.txDetailsIncasareTransferPrimit),
+          if (category != null) _buildDetailRow(context, context.l10n.txDetailsCategory, category.label(context.l10n)),
           if (fromIban != '-') _buildDetailRow(context, context.l10n.txDetailsContExpeditorIban, fromIban, copyable: true),
           if (toIban != '-') _buildDetailRow(context, context.l10n.txDetailsContBeneficiarIban, toIban, copyable: true),
 

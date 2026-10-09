@@ -51,7 +51,7 @@ public class TransferUseCaseTest
     @Mock
     private com.intbank.service.AuditLogService auditLogService;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     private InitiateTransferUseCase initiateTransferUseCase;
 
     private final String fromIban = "RO49AAAA1B31007593840000";
@@ -60,6 +60,7 @@ public class TransferUseCaseTest
     @BeforeEach
     void setUp()
     {
+        signInAs(1L);
         when(amlVelocityService.evaluateTransfer(anyLong(), any(), any()))
                 .thenReturn(new com.intbank.service.AmlVelocityService.AmlResult(
                         com.intbank.service.AmlVelocityService.RiskAssessment.PASS, false, "OK"));
@@ -74,8 +75,8 @@ public class TransferUseCaseTest
     @Test
     void testInitiateTransfer_Success()
     {
-        Account fromAccount = new Account("acc-1", new Iban(fromIban), new Money(BigDecimal.valueOf(1000), "RON"), 1L);
-        Account toAccount = new Account("acc-2", new Iban(toIban), new Money(BigDecimal.valueOf(500), "RON"), 2L);
+        AccountRepository.AccountProjection fromAccount = new AccountRepository.AccountProjection("acc-1", 1L, fromIban, "RON", BigDecimal.valueOf(1000));
+        AccountRepository.AccountProjection toAccount = new AccountRepository.AccountProjection("acc-2", 2L, toIban, "RON", BigDecimal.valueOf(500));
 
         when(accountRepository.findByIban(fromIban)).thenReturn(Optional.of(fromAccount));
         when(accountRepository.findByIban(toIban)).thenReturn(Optional.of(toAccount));
@@ -100,8 +101,8 @@ public class TransferUseCaseTest
     @Test
     void testInitiateTransfer_ZeroAmount_ThrowsException()
     {
-        Account fromAccount = new Account("acc-1", new Iban(fromIban), new Money(BigDecimal.valueOf(1000), "RON"), 1L);
-        Account toAccount = new Account("acc-2", new Iban(toIban), new Money(BigDecimal.valueOf(500), "RON"), 2L);
+        AccountRepository.AccountProjection fromAccount = new AccountRepository.AccountProjection("acc-1", 1L, fromIban, "RON", BigDecimal.valueOf(1000));
+        AccountRepository.AccountProjection toAccount = new AccountRepository.AccountProjection("acc-2", 2L, toIban, "RON", BigDecimal.valueOf(500));
 
         when(accountRepository.findByIban(fromIban)).thenReturn(Optional.of(fromAccount));
         when(accountRepository.findByIban(toIban)).thenReturn(Optional.of(toAccount));
@@ -128,8 +129,8 @@ public class TransferUseCaseTest
                 amlVelocityService, auditLogService, mockLock
         );
 
-        Account fromAccount = new Account("acc-1", new Iban(fromIban), new Money(BigDecimal.valueOf(1000), "RON"), 1L);
-        Account toAccount = new Account("acc-2", new Iban(toIban), new Money(BigDecimal.valueOf(500), "RON"), 2L);
+        AccountRepository.AccountProjection fromAccount = new AccountRepository.AccountProjection("acc-1", 1L, fromIban, "RON", BigDecimal.valueOf(1000));
+        AccountRepository.AccountProjection toAccount = new AccountRepository.AccountProjection("acc-2", 2L, toIban, "RON", BigDecimal.valueOf(500));
 
         when(accountRepository.findByIban(fromIban)).thenReturn(Optional.of(fromAccount));
         when(accountRepository.findByIban(toIban)).thenReturn(Optional.of(toAccount));
@@ -159,8 +160,8 @@ public class TransferUseCaseTest
                 amlVelocityService, auditLogService, mockLock
         );
 
-        Account fromAccount = new Account("acc-1", new Iban(fromIban), new Money(BigDecimal.valueOf(1000), "RON"), 1L);
-        Account toAccount = new Account("acc-2", new Iban(toIban), new Money(BigDecimal.valueOf(500), "RON"), 2L);
+        AccountRepository.AccountProjection fromAccount = new AccountRepository.AccountProjection("acc-1", 1L, fromIban, "RON", BigDecimal.valueOf(1000));
+        AccountRepository.AccountProjection toAccount = new AccountRepository.AccountProjection("acc-2", 2L, toIban, "RON", BigDecimal.valueOf(500));
 
         when(accountRepository.findByIban(fromIban)).thenReturn(Optional.of(fromAccount));
         when(accountRepository.findByIban(toIban)).thenReturn(Optional.of(toAccount));
@@ -174,5 +175,20 @@ public class TransferUseCaseTest
         assertThrows(IllegalStateException.class, () -> customUseCase.initiate(request));
         verify(mockLock).acquireLock(eq("account:lock:acc-1"), eq(10L));
         verify(mockLock, never()).releaseLock(anyString());
+    }
+
+    /** Signs in as the customer that owns the source account. */
+    private static void signInAs(Long userId)
+    {
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        new com.intbank.infrastructure.security.AuthenticatedClient("test-device", userId, java.util.List.of("ROLE_USER")),
+                        null, java.util.List.of()));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void signOut()
+    {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 }

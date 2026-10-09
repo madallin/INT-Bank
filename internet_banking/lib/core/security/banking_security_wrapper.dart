@@ -1,79 +1,121 @@
 import 'dart:ui';
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../../config/app_config.dart';
+import 'package:flutter/material.dart';
+
+import '../../features/auth/screens/pin_screen.dart';
+import '../../features/welcome/welcome_screen.dart';
+import '../../l10n/l10n.dart';
+import '../../services/jwt_api_service.dart';
+import '../../theme/app_tokens.dart';
+import '../../widgets/app_button.dart';
+import '../storage/secure_session_manager.dart';
 import 'session_timeout_service.dart';
 
-/// Banking Security Wrapper that enforces:
-/// 1. App Switcher Privacy Veil (obfuscates sensitive bank data in OS recent apps).
-/// 2. Inactivity Session Lockout (PSD2 RTS compliance after idle timeout).
-class BankingSecurityWrapper extends StatefulWidget {
+/// App-wide protections:
+/// 1. Privacy veil: hides balances in the app switcher while the app is in the background.
+/// 2. Inactivity lock: after [timeout] without interaction a signed-in session is ended on the
+///    server and the customer must enter their PIN again. Nothing is locked when nobody is
+///    signed in.
+class BankingSecurityWrapper extends StatefulWidget
+{
+  const BankingSecurityWrapper({
+    super.key,
+    required this.child,
+    this.navigatorKey,
+    this.timeout = const Duration(minutes: 5),
+  });
+
   final Widget child;
 
-  const BankingSecurityWrapper({super.key, required this.child});
+  /// The app's navigator, used to open the PIN screen after the lock.
+  final GlobalKey<NavigatorState>? navigatorKey;
+  final Duration timeout;
 
   @override
   State<BankingSecurityWrapper> createState() => _BankingSecurityWrapperState();
 }
 
-class _BankingSecurityWrapperState extends State<BankingSecurityWrapper> with WidgetsBindingObserver {
+class _BankingSecurityWrapperState extends State<BankingSecurityWrapper> with WidgetsBindingObserver
+{
   bool _isVeilActive = false;
   bool _isSessionLocked = false;
 
+  /// Captured when the session is ended, so the PIN screen can sign the customer back in.
+  int? _lockedUserId;
+  String? _lockedPhone;
+
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    SessionTimeoutService.instance.start(
-      timeout: const Duration(minutes: 5),
-      onTimeout: _handleSessionTimeout,
-    );
+    SessionTimeoutService.instance.start(timeout: widget.timeout, onTimeout: _handleSessionTimeout);
   }
 
   @override
-  void dispose() {
+  void didUpdateWidget(BankingSecurityWrapper oldWidget)
+  {
+    super.didUpdateWidget(oldWidget);
+    // The customer changed the auto-lock time on the Profile tab.
+    if(widget.timeout != oldWidget.timeout && !_isSessionLocked)
+    {
+      SessionTimeoutService.instance.start(timeout: widget.timeout, onTimeout: _handleSessionTimeout);
+    }
+  }
+
+  @override
+  void dispose()
+  {
     WidgetsBinding.instance.removeObserver(this);
     SessionTimeoutService.instance.stop();
     super.dispose();
   }
 
-  void _handleSessionTimeout() {
-    if (mounted) {
-      setState(() => _isSessionLocked = true);
+  Future<void> _handleSessionTimeout() async
+  {
+    final token = await SecureSessionManager.getAccessToken();
+    if(token == null || token.isEmpty)
+    {
+      // Nobody is signed in (welcome, sign-in, onboarding): nothing to protect.
+      SessionTimeoutService.instance.unlockSession();
+      return;
     }
+    _lockedUserId = await SecureSessionManager.getUserId();
+    _lockedPhone = await SecureSessionManager.getPhone();
+    if(mounted) setState(() => _isSessionLocked = true);
+    // End the session on the server too: a locked app keeps no usable token.
+    await JwtApiService.logout();
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(AppLifecycleState state)
+  {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.inactive ||
+    final background = state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
-        state == AppLifecycleState.hidden) {
-      if (!_isVeilActive && mounted) {
-        setState(() => _isVeilActive = true);
-      }
-    } else if (state == AppLifecycleState.resumed) {
-      if (_isVeilActive && mounted) {
-        setState(() => _isVeilActive = false);
-      }
-    }
+        state == AppLifecycleState.hidden;
+    if(background != _isVeilActive && mounted) setState(() => _isVeilActive = background);
   }
 
-  void _unlockSession() {
+  void _reauthenticate()
+  {
     SessionTimeoutService.instance.unlockSession();
-    if (mounted) {
-      setState(() => _isSessionLocked = false);
-      // Navigate to welcome/login for security re-auth
-      try {
-        context.go('/welcome');
-      } catch (_) {}
-    }
+    final userId = _lockedUserId;
+    final phone = _lockedPhone;
+    setState(() => _isSessionLocked = false);
+    widget.navigatorKey?.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => userId != null && phone != null && phone.isNotEmpty
+            ? PinScreen(userId: userId, set: false, popOnSuccess: false, useJwtLogin: true, phoneNumber: phone)
+            : const WelcomeScreen(),
+      ),
+      (route) => false,
+    );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => SessionTimeoutService.instance.recordUserActivity(),
@@ -81,144 +123,90 @@ class _BankingSecurityWrapperState extends State<BankingSecurityWrapper> with Wi
         textDirection: TextDirection.ltr,
         children: [
           widget.child,
-
-          // Inactivity Session Lock Screen
-          if (_isSessionLocked)
-            Positioned.fill(
-              child: Material(
-                color: const Color(0xFF0B0F17),
-                child: SafeArea(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: const Color(lightForestGreenColor).withOpacity(0.12),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(lightForestGreenColor).withOpacity(0.3),
-                                width: 2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.lock_clock_rounded,
-                              size: 56,
-                              color: Color(lightForestGreenColor),
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          Text(
-                            'Sesiune Expirată',
-                            style: GoogleFonts.poppins(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Pentru securitatea fondurilor și a datelor tale bancare, sesiunea a fost blocată din cauza inactivității.',
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.white70,
-                              height: 1.5,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 36),
-                          ElevatedButton.icon(
-                            onPressed: _unlockSession,
-                            icon: const Icon(Icons.lock_open_rounded, size: 20),
-                            label: Text(
-                              'Reautentificare',
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(lightForestGreenColor),
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size(double.infinity, 52),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 0,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-          // App Switcher Privacy Veil (draws over content when app is backgrounded)
-          if (_isVeilActive && !_isSessionLocked)
-            Positioned.fill(
-              child: Material(
-                color: const Color(0xFF0B0F17),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(darkForestGreenColor).withOpacity(0.95),
-                          const Color(0xFF0B0F17).withOpacity(0.98),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            'assets/images/logo_full_white.png',
-                            width: 140,
-                            errorBuilder: (context, error, stackTrace) => const Icon(
-                              Icons.account_balance_rounded,
-                              size: 64,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.shield_rounded,
-                                size: 16,
-                                color: Color(lightForestGreenColor),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'INTBank • Protecție Confidențialitate',
-                                style: GoogleFonts.inter(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          if(_isSessionLocked) Positioned.fill(child: _SessionLockedView(onReauthenticate: _reauthenticate)),
+          if(_isVeilActive && !_isSessionLocked) const Positioned.fill(child: _PrivacyVeil()),
         ],
+      ),
+    );
+  }
+}
+
+class _SessionLockedView extends StatelessWidget
+{
+  const _SessionLockedView({required this.onReauthenticate});
+
+  final VoidCallback onReauthenticate;
+
+  @override
+  Widget build(BuildContext context)
+  {
+    final c = context.colors;
+    final l10n = context.l10n;
+    return Material(
+      color: c.background,
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  decoration: BoxDecoration(color: c.brandSurface, shape: BoxShape.circle),
+                  child: Icon(Icons.lock_clock_rounded, size: 56, color: c.brand),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Semantics(
+                  header: true,
+                  child: Text(l10n.sessionLockedTitle, style: context.text.headlineSmall, textAlign: TextAlign.center),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  l10n.sessionLockedBody,
+                  style: context.text.bodyMedium?.copyWith(color: c.textSecondary, height: 1.5),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                AppButton(label: l10n.sessionLockedAction, icon: Icons.lock_open_rounded, onPressed: onReauthenticate),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrivacyVeil extends StatelessWidget
+{
+  const _PrivacyVeil();
+
+  @override
+  Widget build(BuildContext context)
+  {
+    final c = context.colors;
+    return Material(
+      color: c.background,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.account_balance_rounded, size: 64, color: c.brand),
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.shield_rounded, size: 16, color: c.brand),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(context.l10n.privacyVeilLabel, style: context.text.labelMedium?.copyWith(color: c.textSecondary)),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -20,13 +20,28 @@ public class NotificationService
 
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
-    private final NotificationJpaRepository notificationRepo;
-    private final Map<Long, List<SseEmitter>> userEmitters = new ConcurrentHashMap<>();
-    private final Map<Long, Set<String>> userDeviceTokens = new ConcurrentHashMap<>();
+    /** Redis channel every instance listens on, so a notification reaches the customer's
+     *  open stream whichever server instance it is connected to. */
+    public static final String CHANNEL = "intbank:notifications";
 
+    private final NotificationJpaRepository notificationRepo;
+    private final org.springframework.data.redis.core.RedisTemplate<String, String> redis;
+    private final com.fasterxml.jackson.databind.ObjectMapper json = new com.fasterxml.jackson.databind.ObjectMapper();
+    private final Map<Long, List<SseEmitter>> userEmitters = new ConcurrentHashMap<>();
+
+    /** Single-instance delivery (tests, or no Redis). */
     public NotificationService(NotificationJpaRepository notificationRepo)
     {
+        this(notificationRepo, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public NotificationService(NotificationJpaRepository notificationRepo,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false)
+                               org.springframework.data.redis.core.RedisTemplate<String, String> redis)
+    {
         this.notificationRepo = notificationRepo;
+        this.redis = redis;
     }
 
     public SseEmitter registerEmitter(Long userId)
@@ -66,20 +81,6 @@ public class NotificationService
         }
     }
 
-    public void registerDeviceToken(Long userId, String token, String platform)
-    {
-        if (token != null && !token.isBlank())
-        {
-            userDeviceTokens.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(token.trim());
-            log.info("Registered {} device token for user {}: {}", platform, userId, token);
-        }
-    }
-
-    public Set<String> getDeviceTokens(Long userId)
-    {
-        return userDeviceTokens.getOrDefault(userId, Collections.emptySet());
-    }
-
     @Transactional
     public NotificationJpaEntity notify(Long userId, String title, String message, String type)
     {
@@ -101,17 +102,36 @@ public class NotificationService
 
     private void broadcastPushEvent(Long userId, NotificationJpaEntity entity)
     {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", entity.getId());
+        payload.put("userId", entity.getUserId());
+        payload.put("title", entity.getTitle());
+        payload.put("message", entity.getMessage());
+        payload.put("type", entity.getType());
+        payload.put("createdAt", entity.getCreatedAt().toString());
+
+        if (redis != null)
+        {
+            try
+            {
+                // Every instance (this one included) receives it and delivers to its own streams.
+                redis.convertAndSend(CHANNEL, json.writeValueAsString(payload));
+                return;
+            }
+            catch (Exception e)
+            {
+                log.warn("Notification fan-out unavailable ({}); delivering on this instance only", e.getMessage());
+            }
+        }
+        deliverLocal(userId, payload);
+    }
+
+    /** Sends a notification to the customer's streams open on this instance. */
+    public void deliverLocal(Long userId, Map<String, Object> payload)
+    {
         List<SseEmitter> emitters = userEmitters.get(userId);
         if (emitters != null && !emitters.isEmpty())
         {
-            Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("id", entity.getId());
-            payload.put("userId", entity.getUserId());
-            payload.put("title", entity.getTitle());
-            payload.put("message", entity.getMessage());
-            payload.put("type", entity.getType());
-            payload.put("createdAt", entity.getCreatedAt().toString());
-
             for (SseEmitter emitter : emitters)
             {
                 try

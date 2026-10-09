@@ -3,7 +3,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../../config/app_config.dart';
+import '../../services/jwt_api_service.dart';
+import '../network/transport_security.dart';
+import '../storage/secure_session_manager.dart';
 import 'push_notification_service.dart';
+import '../utils/app_log.dart';
 
 class PushNotificationListener {
   static final PushNotificationListener _instance = PushNotificationListener._internal();
@@ -42,20 +46,34 @@ class PushNotificationListener {
 
     try {
       _httpClient?.close(force: true);
-      _httpClient = HttpClient();
+      // Same transport security as the API client (pinned, or nothing in a misconfigured release).
+      _httpClient = TransportPolicy.httpClient(Uri.parse(AppConfig.baseUrl).host);
       _httpClient!.connectionTimeout = const Duration(seconds: 15);
 
       final uri = Uri.parse('${AppConfig.baseUrl}/users/$_currentUserId/notifications/stream');
-      debugPrint('[PushNotificationListener] Connecting to SSE stream: $uri');
+      AppLog.debug('[PushNotificationListener] Connecting to SSE stream', uri);
 
       final request = await _httpClient!.getUrl(uri);
       request.headers.set('Accept', 'text/event-stream');
       request.headers.set('Cache-Control', 'no-cache');
+      // The stream is the customer's own: it needs the session token like every other request.
+      final token = await SecureSessionManager.getAccessToken();
+      if (token != null && token.isNotEmpty) {
+        request.headers.set('Authorization', 'Bearer $token');
+      }
 
       final response = await request.close();
 
+      if (response.statusCode == 401) {
+        // Access tokens live 5 minutes; get a fresh one before trying again.
+        await response.drain<void>();
+        await JwtApiService.tryRefreshSession();
+        _scheduleReconnect();
+        return;
+      }
+
       if (response.statusCode == 200) {
-        debugPrint('[PushNotificationListener] Push notification stream established');
+        AppLog.debug('[PushNotificationListener] Push notification stream established');
 
         _subscription = response
             .transform(utf8.decoder)
@@ -63,21 +81,21 @@ class PushNotificationListener {
             .listen(
               _handleLine,
               onError: (error) {
-                debugPrint('[PushNotificationListener] Stream error: $error');
+                AppLog.debug('[PushNotificationListener] Stream error', error);
                 _scheduleReconnect();
               },
               onDone: () {
-                debugPrint('[PushNotificationListener] Stream completed');
+                AppLog.debug('[PushNotificationListener] Stream completed');
                 _scheduleReconnect();
               },
               cancelOnError: true,
             );
       } else {
-        debugPrint('[PushNotificationListener] Failed to connect: ${response.statusCode}');
+        AppLog.debug('[PushNotificationListener] Failed to connect: ${response.statusCode}');
         _scheduleReconnect();
       }
     } catch (e) {
-      debugPrint('[PushNotificationListener] Connection error: $e');
+      AppLog.debug('[PushNotificationListener] Connection error', e);
       _scheduleReconnect();
     }
   }
@@ -96,7 +114,7 @@ class PushNotificationListener {
         final type = data['type'] as String? ?? 'TRANSFER_RECEIVED';
         final id = data['id'] as int?;
 
-        debugPrint('[PushNotificationListener] PUSH EVENT RECEIVED: $type - $title');
+        AppLog.debug('[PushNotificationListener] Push event received: $type');
 
         PushNotificationService().showPushNotification(
           id: id,
@@ -110,7 +128,7 @@ class PushNotificationListener {
           _onNotificationReceived!();
         }
       } catch (e) {
-        debugPrint('[PushNotificationListener] Error parsing push event data: $e');
+        AppLog.debug('[PushNotificationListener] Error parsing push event data', e);
       }
     }
   }
@@ -121,7 +139,7 @@ class PushNotificationListener {
     _subscription = null;
     Timer(const Duration(seconds: 5), () {
       if (_active) {
-        debugPrint('[PushNotificationListener] Reconnecting to push stream...');
+        AppLog.debug('[PushNotificationListener] Reconnecting to push stream...');
         _connectStream();
       }
     });

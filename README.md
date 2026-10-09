@@ -11,8 +11,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/build-passing-brightgreen?style=flat-square" alt="Build Status" />
-  <img src="https://img.shields.io/badge/coverage-85%25-brightgreen?style=flat-square" alt="Coverage" />
+  <a href="https://github.com/madallin/INTBank/actions/workflows/ci.yml"><img src="https://github.com/madallin/INTBank/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
+  <img src="https://img.shields.io/badge/backend%20coverage%20gate-%E2%89%A565%25-blue?style=flat-square" alt="Backend coverage gate: at least 65% of lines" />
   <img src="https://img.shields.io/badge/license-Proprietary-red?style=flat-square" alt="License" />
   <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/badge/Java-21-orange?style=flat-square" alt="Java" />
@@ -70,7 +70,9 @@
 ### Account Management
 - Multi-currency account balances with Redis-backed cache
 - Exchange rate lookups with configurable refresh intervals
-- Transaction history with filtering and pagination
+- Transaction history with search and filters (each account's transfers are read by index, never the whole table)
+- **Savings vaults:** goals backed by their own savings account; deposits and withdrawals are real moves between your own accounts with ledger entries. Flexible vaults allow withdrawals any time; locked vaults keep the money until the target date. Vaults do not earn interest.
+- Light and dark theme, following the phone's setting; Romanian and English
 
 ### Admin Dashboard
 - Outbox statistics and dead-message reprocessing
@@ -166,7 +168,7 @@ flowchart LR
 | Layer | Technology | Purpose |
 |---|---|---|
 | **Frontend** | Flutter 3.x, Dart SDK ^3.9.2 | Cross-platform mobile & web UI |
-| **State Management** | Riverpod (`flutter_riverpod`) | Reactive, compile-safe state management |
+| **State Management** | `StatefulWidget` + small services | Each screen owns its state; shared HTTP, session and rate services |
 | **Routing** | GoRouter v14 | Declarative, type-safe navigation |
 | **HTTP Client** | Dio v5 + `http` | REST API communication |
 | **Real-Time** | `web_socket_channel` | Live transfer status updates |
@@ -218,7 +220,7 @@ This is the official STRIDE threat matrix for the platform. Every mitigation map
 | **Spoofing** | An attacker impersonates a user or a legitimate service by forging or replaying a token, or by presenting a stolen credential over a MITM proxy. | RSA-2048 RS256 signing keys are exposed to verifiers through the JWKS endpoint `/.well-known/jwks.json` (key id `intbank-rsa-key-1`). `ClientTokenFilter` verifies the RSA signature against the public key and falls back to the HMAC-SHA256 secret. `DynamicLinkingService` binds challenge id, amount, and IBAN with an HMAC-SHA256 signature. Refresh tokens are 32-byte random values rotated in Redis, and `SslPinningService` rejects any certificate whose SHA-256 fingerprint does not match a registered pin. |
 | **Tampering** | An attacker mutates the `amount` or destination `IBAN` in transit, or replays a captured body with altered fields. | Every write is bound to a client `Idempotency-Key` and a SHA-256 canonical request hash (`IdempotencyService.hashRequest` over `fromIban / toIban / amount / currency / reason`). Reusing a key with a different payload is rejected. PSD2 dynamic linking signs `challengeId / amount / toIban` with HMAC-SHA256 and marks mismatches `TAMPERED`. The `audit_logs` table is an append-only SHA-256 hash chain. |
 | **Repudiation** | A user denies having initiated a transfer, or an operator denies an administrative action. | Every request is tagged with an `X-Correlation-ID` by `CorrelationIdFilter` and written to the SLF4J MDC. The `audit_logs` table stores `previous_hash` and `current_hash` for each row; `AuditLogService.verifyAuditIntegrity()` recomputes the entire chain to prove nothing was altered or removed. Ledger entries are immutable DEBIT / CREDIT postings. |
-| **Information Disclosure** | Card data, credentials, or on-screen transaction data leaks through a compromised network, a rooted device, or a screenshot. | `SslPinningService` enforces SHA-256 certificate and public-key pinning with expiring primary and backup pins. `CryptoService` encrypts card data with AES-256-GCM using a fresh random 12-byte IV and a 128-bit authentication tag. The Flutter `ScreenProtectionService` applies the Android `FLAG_SECURE` equivalent for screenshot blocking, and tokens are kept in platform secure storage. |
+| **Information Disclosure** | Card data, credentials, or on-screen transaction data leaks through a compromised network, a rooted device, or a screenshot. | With `CERT_SHA256_PINS` set, the HTTP client and sockets trust no CA and accept only the pinned server certificate (primary and backup pins). `CryptoService` encrypts card data with AES-256-GCM using a fresh random 12-byte IV and a 128-bit authentication tag. Android sets `FLAG_SECURE` (no screenshots or recordings); iOS blurs the app in the switcher and while the screen is recorded; tokens are kept in platform secure storage. |
 | **Denial of Service** | Brute-force login, SMS pumping, or high-volume request floods exhaust the service or the SMS budget. | `TokenBucketRateLimiter` (with an exact-conservation concurrency test) and Bucket4j add per-client and per-endpoint throttling. OTP resend is held to a 60-second cooldown keyed in Redis (`otp:sms:last:*`). Spring Security sets HSTS, frame denial, and a strict CSP. Resilience4j circuit breakers isolate downstream currency, SMS, and geocoding failures, while Kafka consumer lag is absorbed by the outbox poller. |
 | **Elevation of Privilege** | A user performs horizontal or vertical privilege escalation, for example by reading another user's transfer or calling an admin endpoint (BOLA / IDOR). | `SecurityConfig` is stateless with no client-supplied roles: `/admin/**` requires `ROLE_ADMIN`, while `/transfers/**` and `/users/**` require authentication. `ClientTokenFilter` validates JWT claims and derives authorities from the signed `roles` claim only. `InitiateTransferUseCase.verifyOwnership` compares the authenticated `uid` against the source account owner and throws on mismatch, enforcing zero-trust account-level authorization. |
 
@@ -358,8 +360,6 @@ INTBank/
 |   |   |-- core/               # Network, TLS pinning, storage, utilities
 |   |   |-- data/models/        # JSON-serializable models
 |   |   |-- features/           # Feature modules (auth, home, transfers, etc.)
-|   |   |-- providers/          # Riverpod state providers
-|   |   |-- router/             # GoRouter configuration
 |   |   |-- services/           # API, JWT, currency services
 |   |   `-- widgets/            # Reusable UI components
 |   |-- assets/                 # Images, fonts, JSON data
@@ -375,7 +375,7 @@ INTBank/
 |       |-- pom.xml
 |       `-- src/
 |           |-- main/java/com/intbank/
-|           |-- main/resources/db/migration/   # Flyway V1-V6
+|           |-- main/resources/db/migration/   # Flyway V1-V12
 |           `-- test/java/com/intbank/
 |-- k8s/helm/intbank/           # Kubernetes Helm chart
 |-- plans/                      # Architecture and hardening design notes
@@ -434,13 +434,21 @@ KAFKA_BROKERS=localhost:9092
 
 # Card encryption (AES-256-GCM)
 CARD_ENCRYPTION_KEY=your_card_encryption_key
+
+# Grafana admin login (Compose refuses to start without it)
+GRAFANA_PASSWORD=choose_a_password
 ```
+
+The backend refuses to start if `JWT_SECRET` or `CARD_ENCRYPTION_KEY` is missing, shorter than 32 bytes or a placeholder. Generate each with `openssl rand -hex 32`.
 
 #### Flutter: `internet_banking/.env`
 
 ```env
-API_BASE_URL=https://YOUR_LOCAL_IP:8443
-WS_BASE_URL=wss://YOUR_LOCAL_IP:8443/ws
+SERVER_URL=YOUR_LOCAL_IP
+SERVER_PORT=8443
+# Optional certificate pinning: SHA-256 of the server certificate (comma separated, add a backup)
+# openssl x509 -in server.crt -outform der | openssl dgst -sha256
+CERT_SHA256_PINS=
 ```
 
 > **Important:** The Flutter app communicates over HTTPS/TLS. The `API_BASE_URL` should use your machine's **local network IP address** (not `localhost` or `127.0.0.1`) when testing on physical devices or emulators. Example: `https://192.168.1.100:8443`.
@@ -607,13 +615,16 @@ This banking platform implements defense-in-depth security across multiple layer
 - **Two-Factor Authentication (2FA):** SMS-based OTP codes delivered via **Twilio Verify v2**. Enforced cooldown (1 minute) between resend attempts and maximum verification attempts before lockout.
 - **Token Blacklisting:** Compromised or logged-out tokens are immediately blacklisted in Redis with TTL equal to the token's remaining lifetime.
 - **Role-Based Access Control:** `/admin/**` requires `ROLE_ADMIN`; transfer and user endpoints require authentication. Roles come only from the signed token claim, never from the request body.
-- **Account Ownership (BOLA / IDOR):** `InitiateTransferUseCase.verifyOwnership` rejects transfers whose source account is not owned by the authenticated user.
+- **Account Ownership (BOLA / IDOR):** `UserScopeAuthorizationFilter` lets a `/users/{id}/…` request through only for that customer's token (or an admin's); `AuthorizationMatrixTest` checks every such route. `InitiateTransferUseCase.verifyOwnership` also rejects transfers from an account the caller does not own.
+- **Step-up confirmation for large payments:** transfers and standing orders of 1,000 or more need the PIN again, through a single-use challenge bound to the exact amount, currency and both IBANs (`StrongCustomerAuthService`). Wrong PINs count towards the same 3-attempt lockout as sign-in.
+- **Sign-in:** the SMS code proves the phone and returns a 15-minute onboarding token that only opens the terms, approval and first-PIN steps of that customer. Banking needs the phone + PIN session; device tokens open nothing. Logout revokes both the access and the refresh token. Changing an existing PIN requires the current one.
+- **In-bank transfers only:** money moves between INT Bank accounts in the same currency; currency conversion happens only through the exchange flow, which books both legs in the ledger.
 
 ### Transport & Data Protection
 - **TLS 1.2+:** All communication between the Flutter client and Spring Boot backend is encrypted using TLS. Certificates are stored in the `server/certs/` directory.
-- **Certificate Pinning:** `SslPinningService` validates the SHA-256 fingerprint of the presented certificate or public key against expiring primary and backup pins, and raises security alerts on mismatches or bypass attempts.
-- **Card Encryption:** `CryptoService` encrypts card data with AES-256-GCM using a fresh random IV and a 128-bit authentication tag.
-- **Screen Protection:** The Flutter `ScreenProtectionService` blocks screenshots and screen recording (the Android `FLAG_SECURE` equivalent).
+- **Certificate Pinning:** set `CERT_SHA256_PINS` in the app's `.env` (SHA-256 of the server certificate, plus a backup pin). The HTTP client then trusts no CA and completes the TLS handshake only with a pinned certificate, so an intercepted connection fails before any data is sent. Empty means normal certificate validation.
+- **Card Encryption:** `CryptoService` encrypts the card number and expiry with AES-256-GCM using a fresh random IV and a 128-bit authentication tag. The CVV is never generated or stored (migration V9 purged old values).
+- **Screen Protection:** Android sets `FLAG_SECURE` from the first frame (no screenshots, recordings or app-switcher thumbnails). iOS cannot block screenshots; it blurs the app in the app switcher and while the screen is recorded or mirrored.
 - **Flutter Secure Storage:** On-device tokens and sensitive data are stored using platform-native secure storage (Keychain on iOS, EncryptedSharedPreferences on Android).
 
 ### Integrity & Audit

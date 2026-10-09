@@ -87,7 +87,7 @@ class _OpenCurrencyAccountDialogState extends State<OpenCurrencyAccountDialog> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: context.colors.brand.withOpacity(0.1),
+                    color: context.colors.brand.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(Icons.currency_exchange_rounded, color: context.colors.brand, size: 22),

@@ -78,7 +78,7 @@ public class AuthSessionController
         {
             long remainingMinutes = java.time.Duration.between(Instant.now(), user.getPinLockedUntil()).toMinutes() + 1;
             return ResponseEntity.status(HttpStatus.LOCKED)
-                    .body(Map.of("error", "Cont blocat temporar. Incearca peste " + remainingMinutes + " minute."));
+                    .body(Map.of("code", "SCA_LOCKED", "error", "Cont blocat temporar. Incearca peste " + remainingMinutes + " minute."));
         }
 
         if (user.getCodPin() == null || !passwordEncoder.matches(pin, user.getCodPin()))
@@ -92,7 +92,9 @@ public class AuthSessionController
             }
             userRepo.save(user);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "PIN incorect", "remainingAttempts", Math.max(0, 3 - attempts)));
+                    .body(attempts >= 3
+                            ? Map.of("code", "SCA_LOCKED", "error", "PIN blocat temporar. Incearca peste 15 minute.")
+                            : Map.of("code", "SCA_PIN_INVALID", "error", "PIN incorect", "remainingAttempts", Math.max(0, 3 - attempts)));
         }
 
         // Reset failed attempts on success
@@ -148,12 +150,19 @@ public class AuthSessionController
 
     @PostMapping("/logout")
     public ResponseEntity<Map<String, Object>> logout(
-            @RequestHeader(value = "Authorization", required = false) String authHeader)
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody(required = false) Map<String, String> body)
     {
         if (authHeader != null && authHeader.startsWith("Bearer "))
         {
             String token = authHeader.substring(7);
             tokenBlacklistService.blacklist(token, ACCESS_TOKEN_TTL_MS / 1000);
+        }
+        // End the session itself: without this the 30-day refresh token kept minting access tokens.
+        String refreshToken = body != null ? body.get("refreshToken") : null;
+        if (refreshToken != null && !refreshToken.isBlank())
+        {
+            redisTemplate.delete("session:refresh:" + refreshToken);
         }
         return ResponseEntity.ok(Map.of("success", true, "message", "Deconectat cu succes"));
     }

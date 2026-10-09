@@ -16,74 +16,40 @@ class IBANInputFormatter extends TextInputFormatter
   }
 }
 
-class AmountInputFormatter extends TextInputFormatter
-{
-  final int decimalPlaces;
-
-  AmountInputFormatter({this.decimalPlaces = 2});
-
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue)
-  {
-    final cleaned = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
-    if(cleaned.isEmpty) return TextEditingValue.empty;
-
-    final integerPart = cleaned.substring(0, cleaned.length - decimalPlaces);
-    final decimalPart = cleaned.substring(cleaned.length - decimalPlaces);
-
-    final formattedInteger = _formatWithThousandsSeparator(integerPart);
-    final formatted = '$formattedInteger.$decimalPart';
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-
-  String _formatWithThousandsSeparator(String value)
-  {
-    if(value.isEmpty) return '0';
-    final buffer = StringBuffer();
-    for(int i = 0; i < value.length; i++)
-{
-      if(i > 0 && (value.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(value[i]);
-    }
-    return buffer.toString();
-  }
-}
-
-/// Formats a money amount the Romanian way while typing: `1.234,56`.
+/// Formats a money amount while typing, with the active language's separators
+/// (Romanian `1.234,56`, English `1,234.56`; see [numberSeparators]).
 ///
-/// `,` is the decimal separator and `.` groups thousands. Because many numeric
-/// keyboards only offer `.`, an inserted `.` that cannot be a thousands group
-/// (it is followed by at most [decimalPlaces] digits) is read as the decimal
-/// separator, so typing `12.5` or pasting `12.50` both yield `12,50`.
-class RomanianAmountInputFormatter extends TextInputFormatter
+/// Many numeric keyboards offer only one separator key, so an inserted grouping
+/// separator that cannot be a thousands group (it is followed by at most
+/// [decimalPlaces] digits) is read as the decimal point: in Romanian, typing `12.5`
+/// or pasting `12.50` both yield `12,50`.
+class AmountInputFormatter extends TextInputFormatter
 {
   final int decimalPlaces;
   final int maxIntegerDigits;
 
-  RomanianAmountInputFormatter({this.decimalPlaces = 2, this.maxIntegerDigits = 9});
+  AmountInputFormatter({this.decimalPlaces = 2, this.maxIntegerDigits = 9});
 
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue)
   {
+    final sep = numberSeparators;
     var text = newValue.text.replaceAll(RegExp(r'[^\d.,]'), '');
     final isInsertion = newValue.text.length > oldValue.text.length;
 
-    if(isInsertion && !text.contains(','))
+    // The keyboard may offer the other separator: when the last one has no more digits
+    // after it than a decimal part can, it is the decimal point.
+    if(isInsertion && !text.contains(sep.decimal))
     {
-      final lastDot = text.lastIndexOf('.');
-      if(lastDot != -1 && text.length - lastDot - 1 <= decimalPlaces)
+      final lastGroup = text.lastIndexOf(sep.group);
+      if(lastGroup != -1 && text.length - lastGroup - 1 <= decimalPlaces)
       {
-        text = '${text.substring(0, lastDot)},${text.substring(lastDot + 1)}';
+        text = '${text.substring(0, lastGroup)}${sep.decimal}${text.substring(lastGroup + 1)}';
       }
     }
 
-    final commaIndex = text.indexOf(',');
+    final commaIndex = text.indexOf(sep.decimal);
     final hasDecimal = commaIndex != -1 && decimalPlaces > 0;
     var integerDigits = (hasDecimal ? text.substring(0, commaIndex) : text)
         .replaceAll(RegExp(r'\D'), '')
@@ -103,10 +69,10 @@ class RomanianAmountInputFormatter extends TextInputFormatter
     final grouped = StringBuffer();
     for(int i = 0; i < integerDigits.length; i++)
     {
-      if(i > 0 && (integerDigits.length - i) % 3 == 0) grouped.write('.');
+      if(i > 0 && (integerDigits.length - i) % 3 == 0) grouped.write(sep.group);
       grouped.write(integerDigits[i]);
     }
-    final formatted = hasDecimal ? '$grouped,$decimalDigits' : grouped.toString();
+    final formatted = hasDecimal ? '$grouped${sep.decimal}$decimalDigits' : grouped.toString();
 
     return TextEditingValue(
       text: formatted,

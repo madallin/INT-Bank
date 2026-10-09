@@ -69,7 +69,7 @@ class AccountDetailsBottomSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: context.colors.brand.withOpacity(0.1),
+                  color: context.colors.brand.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.account_balance_rounded, size: 22, color: context.colors.brand),

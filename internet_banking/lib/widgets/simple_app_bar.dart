@@ -20,6 +20,8 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    // A tab of the main navigation has nowhere to go back to.
+    final showBack = onBack != null || Navigator.of(context).canPop();
     return SafeArea(
       bottom: false,
       child: Container(
@@ -37,12 +39,15 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         child: Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-              tooltip: context.l10n.commonInapoi,
-              onPressed: onBack ?? () => Navigator.of(context).maybePop(),
-              color: c.textPrimary,
-            ),
+            if (showBack)
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                tooltip: context.l10n.commonInapoi,
+                onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+                color: c.textPrimary,
+              )
+            else
+              const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Semantics(
                 header: true,

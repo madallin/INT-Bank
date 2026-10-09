@@ -14,12 +14,15 @@ import '../../../core/utils/iban_bank_detector.dart';
 import '../../../core/utils/input_formatters.dart';
 import '../../../core/utils/haptic_feedback_helper.dart';
 import '../../../widgets/app_button.dart';
+import '../../../widgets/amount_field.dart';
 import '../../../widgets/form_text_field.dart';
+import '../widgets/saved_recipients.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/simple_app_bar.dart';
 import '../../../theme/app_tokens.dart';
 import '../transfer_form_validator.dart';
 import '../widgets/saved_beneficiaries_bottom_sheet.dart';
+import '../widgets/sca_pin_sheet.dart';
 import '../widgets/transfer_confirmation_bottom_sheet.dart';
 import 'scheduled_transfers_screen.dart';
 import 'transfer_receipt_screen.dart';
@@ -120,7 +123,7 @@ class _TransferScreenState extends State<TransferScreen>
   }
 
   double? get _amount {
-    final parsed = parseRomanianNumber(_amountController.text);
+    final parsed = parseAmount(_amountController.text);
     return parsed == null ? null : (parsed * 100).roundToDouble() / 100;
   }
 
@@ -212,19 +215,35 @@ class _TransferScreenState extends State<TransferScreen>
     try {
       if (_isScheduled) {
         final formattedDate = formatApiDate(_scheduledDate);
-        final resp = await _dioClient.post(
-          '/users/${widget.userId}/scheduled-transfers',
-          data: {
-            'toIban': iban,
-            'beneficiaryName': name.toUpperCase(),
-            'amount': amount,
-            'reason': reason,
-            'frequency': _frequency,
-            'nextRunDate': formattedDate,
-          },
-        );
+        final schedule = <String, Object>{
+          'toIban': iban,
+          if (widget.userIban.isNotEmpty) 'fromIban': widget.userIban,
+          'beneficiaryName': name.toUpperCase(),
+          'amount': amount,
+          'reason': reason,
+          'frequency': _frequency,
+          'nextRunDate': formattedDate,
+        };
+        Future<Map<String, dynamic>> send(Map<String, Object> extra) async {
+          final resp = await _dioClient.post(
+            '/users/${widget.userId}/scheduled-transfers',
+            data: {...schedule, ...extra},
+          );
+          return resp.data is Map<String, dynamic> ? resp.data as Map<String, dynamic> : <String, dynamic>{};
+        }
 
-        if (resp.statusCode == 200 || resp.statusCode == 201) {
+        Map<String, dynamic>? created;
+        try {
+          created = await send(const {});
+        } on DioException catch (e) {
+          // A large standing order is authorized with the PIN when it is set up.
+          final challenge = ScaChallenge.fromResponse(e.response?.data);
+          if (challenge == null) rethrow;
+          created = await _confirmWithPin(challenge, name.toUpperCase(), send);
+          if (created == null) return;
+        }
+
+        if (created['success'] == true) {
           await _showReceipt(TransferReceipt(
             amount: amount,
             currency: widget.currency,
@@ -242,24 +261,29 @@ class _TransferScreenState extends State<TransferScreen>
       } else {
         // Instant standard transfer with unique client-side idempotency key
         final idempotencyKey = 'tx-cli-${widget.userId}-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(999999)}';
-        final response = await _dioClient.post(
-          '/users/${widget.userId}/transfer',
-          options: Options(headers: {
-            'Idempotency-Key': idempotencyKey,
-          }),
-          data: {
-            'iban': iban,
-            if (widget.userIban.isNotEmpty) 'fromIban': widget.userIban,
-            'beneficiaryName': name.toUpperCase(),
-            'amount': amount,
-            'reason': reason[0].toUpperCase() + reason.substring(1),
-          },
-        );
+        final payload = <String, Object>{
+          'iban': iban,
+          if (widget.userIban.isNotEmpty) 'fromIban': widget.userIban,
+          'beneficiaryName': name.toUpperCase(),
+          'amount': amount,
+          'reason': reason[0].toUpperCase() + reason.substring(1),
+        };
 
-        if (response.statusCode == 200) {
-          final data = response.data is Map<String, dynamic>
-              ? response.data as Map<String, dynamic>
-              : jsonDecode(response.data.toString());
+        Future<Map<String, dynamic>> send(Map<String, Object> extra) =>
+            _postTransfer({...payload, ...extra}, idempotencyKey);
+
+        Map<String, dynamic>? data;
+        try {
+          data = await send(const {});
+        } on DioException catch (e) {
+          // Large payments: the bank asks for the PIN, bound to these exact details.
+          final challenge = ScaChallenge.fromResponse(e.response?.data);
+          if (challenge == null) rethrow;
+          data = await _confirmWithPin(challenge, name.toUpperCase(), send);
+          if (data == null) return; // cancelled, or the error was already shown
+        }
+
+        {
           if (data['success'] == true) {
             HapticFeedbackHelper.success();
             if (_saveAsBeneficiary) {
@@ -278,10 +302,8 @@ class _TransferScreenState extends State<TransferScreen>
               status: data['status']?.toString(),
             ));
           } else {
-            _showError(data['error'] ?? AppL10n.current.transferEroareTransfer);
+            _showError(serverMessage(data, AppL10n.current.transferEroareTransfer));
           }
-        } else {
-          _showError(AppL10n.current.transferEroareEfectuareaTransferului);
         }
       }
     } catch (e) {
@@ -289,6 +311,50 @@ class _TransferScreenState extends State<TransferScreen>
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<Map<String, dynamic>> _postTransfer(Map<String, Object> payload, String idempotencyKey) async {
+    final response = await _dioClient.post(
+      '/users/${widget.userId}/transfer',
+      options: Options(headers: {'Idempotency-Key': idempotencyKey}),
+      data: payload,
+    );
+    return response.data is Map<String, dynamic>
+        ? response.data as Map<String, dynamic>
+        : jsonDecode(response.data.toString()) as Map<String, dynamic>;
+  }
+
+  /// Asks for the PIN and resends the request through [send] with the bank's
+  /// challenge. Returns the bank's reply, or null if cancelled or it failed.
+  Future<Map<String, dynamic>?> _confirmWithPin(
+    ScaChallenge challenge,
+    String beneficiaryName,
+    Future<Map<String, dynamic>> Function(Map<String, Object> extra) send,
+  ) async {
+    if (!mounted) return null;
+    Map<String, dynamic>? result;
+    String? finalError;
+    await showScaPinSheet(
+      context,
+      challenge: challenge,
+      beneficiaryName: beneficiaryName,
+      onSubmit: (pin) async {
+        try {
+          result = await send({'scaChallengeId': challenge.challengeId, 'scaPin': pin});
+          return null;
+        } catch (e) {
+          final message = friendlyErrorMessage(e, fallback: AppL10n.current.transferTransferulPututFiEfectuat);
+          final data = e is DioException ? e.response?.data : null;
+          if (data is Map && data['code'] == 'SCA_PIN_INVALID') {
+            return message; // let the customer try again
+          }
+          finalError = message;
+          return null;
+        }
+      },
+    );
+    if (finalError != null) _showError(finalError!);
+    return result;
   }
 
   Future<void> _saveBeneficiary(String name, String iban) async {
@@ -391,11 +457,22 @@ class _TransferScreenState extends State<TransferScreen>
                 ),
                 const SizedBox(height: 8),
 
+                SavedRecipients(
+                  userId: widget.userId,
+                  onSelect: (name, iban) {
+                    _nameController.text = name;
+                    _ibanController.text = formatIban(iban);
+                    _revalidate(iban);
+                    _amountFocus.requestFocus();
+                  },
+                ),
+                const SizedBox(height: 8),
+
                 FormTextField(
                   controller: _ibanController,
                   label: context.l10n.transferIbanDestinatar,
                   icon: Icons.account_balance_outlined,
-                  hint: 'RO49 AAAA 1B31 0075 9384 0000',
+                  hint: 'RO26 INTB RON0 0000 0000 0001',
                   // 34 characters plus the grouping spaces.
                   maxLength: 42,
                   focusNode: _ibanFocus,
@@ -416,9 +493,9 @@ class _TransferScreenState extends State<TransferScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _detectedBank!.primaryColor.withOpacity(0.08),
+                      color: _detectedBank!.primaryColor.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _detectedBank!.primaryColor.withOpacity(0.2)),
+                      border: Border.all(color: _detectedBank!.primaryColor.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -454,29 +531,21 @@ class _TransferScreenState extends State<TransferScreen>
                 ),
                 const SizedBox(height: 16),
 
-                FormTextField(
+                AmountField(
                   controller: _amountController,
                   label: context.l10n.transferSuma(widget.currency),
-                  icon: Icons.payments_outlined,
-                  hint: '100,00',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   focusNode: _amountFocus,
                   errorText: _amountError,
+                  helper: widget.availableBalance == null
+                      ? null
+                      : context.l10n.transferDisponibil(formatMoney(widget.availableBalance!, widget.currency)),
                   onChanged: _revalidate,
                   textInputAction: TextInputAction.next,
                   onSubmitted: (_) => _reasonFocus.requestFocus(),
                   inputFormatters: [
-                    RomanianAmountInputFormatter(),
+                    AmountInputFormatter(),
                   ],
                 ),
-                if (widget.availableBalance != null && _amountError == null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6, top: 6),
-                    child: Text(
-                      context.l10n.transferDisponibil(formatMoney(widget.availableBalance!, widget.currency)),
-                      style: context.text.bodySmall,
-                    ),
-                  ),
                 const SizedBox(height: 16),
 
                 FormTextField(

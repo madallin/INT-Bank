@@ -6,6 +6,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/utils/error_messages.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../widgets/simple_app_bar.dart';
+import '../../../data/models/transaction_category.dart';
 import '../../../l10n/l10n.dart';
 
 class SpendingAnalyticsScreen extends StatefulWidget {
@@ -84,9 +85,17 @@ class _SpendingAnalyticsScreenState extends State<SpendingAnalyticsScreen> {
   Widget build(BuildContext context) {
     final currency = _analyticsData?['currency'] ?? widget.currency;
     final totalSpent = (_analyticsData?['totalSpent'] as num?)?.toDouble() ?? 0.0;
-    final topCategory = _analyticsData?['topCategory'] ?? '-';
     final totalTransactions = _analyticsData?['totalTransactions'] as int? ?? 0;
     final categories = (_analyticsData?['categories'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    // Named in the app's language from the category code; the server's names are Romanian only.
+    String nameOf(Map<String, dynamic> c) =>
+        TransactionCategory.fromKey(c['categoryKey'])?.label(context.l10n) ?? (c['categoryName'] ?? '').toString();
+    Map<String, dynamic>? top;
+    for (final c in categories) {
+      final amount = (c['amount'] as num?)?.toDouble() ?? 0;
+      if (amount > 0 && (top == null || amount > ((top['amount'] as num?)?.toDouble() ?? 0))) top = c;
+    }
+    final topCategory = top == null ? '-' : nameOf(top);
 
     return Scaffold(
       backgroundColor: context.colors.background,
@@ -145,7 +154,7 @@ class _SpendingAnalyticsScreenState extends State<SpendingAnalyticsScreen> {
                     ),
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4)),
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4)),
                     ],
                   ),
                   child: Column(
@@ -162,12 +171,16 @@ class _SpendingAnalyticsScreenState extends State<SpendingAnalyticsScreen> {
                       ),
                       const SizedBox(height: 14),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            context.l10n.analyticsCategorieTop(topCategory),
-                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+                          // Category names can be long (and text large): this side wraps.
+                          Expanded(
+                            child: Text(
+                              context.l10n.analyticsCategorieTop(topCategory),
+                              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+                            ),
                           ),
+                          const SizedBox(width: 12),
                           Text(
                             context.l10n.analyticsPlati(totalTransactions),
                             style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
@@ -201,12 +214,12 @@ class _SpendingAnalyticsScreenState extends State<SpendingAnalyticsScreen> {
                   )
                 else
                   ...categories.where((c) => ((c['amount'] as num?)?.toDouble() ?? 0) > 0).map((c) {
-                    final name = c['categoryName'] ?? '';
-                    final key = c['categoryKey'] ?? '';
+                    final name = nameOf(c);
+                    final category = TransactionCategory.fromKey(c['categoryKey']) ?? TransactionCategory.other;
                     final amt = (c['amount'] as num?)?.toDouble() ?? 0.0;
                     final pct = (c['percentage'] as num?)?.toDouble() ?? 0.0;
                     final count = c['transactionCount'] as int? ?? 0;
-                    final color = _getCategoryColor(key);
+                    final color = category.color(context.colors, Theme.of(context).brightness);
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -215,7 +228,7 @@ class _SpendingAnalyticsScreenState extends State<SpendingAnalyticsScreen> {
                         color: context.colors.surface,
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
                         ],
                       ),
                       child: Column(
@@ -226,10 +239,10 @@ class _SpendingAnalyticsScreenState extends State<SpendingAnalyticsScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: color.withOpacity(0.12),
+                                  color: color.withValues(alpha: 0.12),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(_getCategoryIcon(key), color: color, size: 18),
+                                child: Icon(category == TransactionCategory.other ? Icons.account_balance_wallet_outlined : category.icon, color: color, size: 18),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -274,39 +287,5 @@ class _SpendingAnalyticsScreenState extends State<SpendingAnalyticsScreen> {
         ],
       ),
     );
-  }
-
-  Color _getCategoryColor(String key) {
-    switch (key) {
-      case 'ALIMENTE':
-        return context.colors.positive;
-      case 'UTILITATI':
-        return const Color(0xFFE65100);
-      case 'RESTAURANTE':
-        return const Color(0xFFC2185B);
-      case 'TRANSPORT':
-        return const Color(0xFF1565C0);
-      case 'DIVERTISMENT':
-        return const Color(0xFF7B1FA2);
-      default:
-        return context.colors.brand;
-    }
-  }
-
-  IconData _getCategoryIcon(String key) {
-    switch (key) {
-      case 'ALIMENTE':
-        return Icons.shopping_cart_outlined;
-      case 'UTILITATI':
-        return Icons.bolt_rounded;
-      case 'RESTAURANTE':
-        return Icons.restaurant_rounded;
-      case 'TRANSPORT':
-        return Icons.directions_car_filled_outlined;
-      case 'DIVERTISMENT':
-        return Icons.movie_creation_outlined;
-      default:
-        return Icons.account_balance_wallet_outlined;
-    }
   }
 }

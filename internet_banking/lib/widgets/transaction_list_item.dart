@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../data/models/transaction_category.dart';
 import '../l10n/l10n.dart';
 import '../theme/app_tokens.dart';
 
-/// Compact transaction row: direction icon, title, date and signed amount.
+/// Compact transaction row: category (or direction) icon, title, date and signed amount.
 class TransactionListItem extends StatelessWidget {
   final String beneficiary;
   final String date;
@@ -16,12 +17,17 @@ class TransactionListItem extends StatelessWidget {
     required this.date,
     required this.amount,
     required this.isPositive,
+    this.category,
   });
+
+  /// Icon and colour of what it was for; without it, an arrow for money in or out.
+  final TransactionCategory? category;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final tone = isPositive ? c.positive : c.negative;
+    final iconColor = categoryIconColor(category, isPositive, c, Theme.of(context).brightness);
     return Semantics(
       label: isPositive
           ? context.l10n.commonTxIncomingSemantics(beneficiary, date, amount)
@@ -35,13 +41,13 @@ class TransactionListItem extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: tone.withValues(alpha: 0.1),
+                color: iconColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                isPositive ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                categoryIcon(category, isPositive),
                 size: 20,
-                color: tone,
+                color: iconColor,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -74,4 +80,20 @@ class TransactionListItem extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The icon for a transaction: its category's, or an arrow for money in or out.
+IconData categoryIcon(TransactionCategory? category, bool isIncoming) =>
+    category?.icon ?? (isIncoming ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded);
+
+/// Spending categories have their own colour; money in, money out and moves between
+/// accounts keep the green/red of their direction.
+Color categoryIconColor(TransactionCategory? category, bool isIncoming, AppColors c, Brightness brightness)
+{
+  if(category != null && category.isSpending && category != TransactionCategory.other)
+  {
+    return category.color(c, brightness);
+  }
+  if(category == TransactionCategory.ownAccounts) return c.brand;
+  return isIncoming ? c.positive : c.negative;
 }

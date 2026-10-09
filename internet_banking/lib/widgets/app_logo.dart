@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// INT Bank logo; switches to the all-white artwork on dark backgrounds.
+/// INTBank logo; switches to the all-white artwork on dark backgrounds.
 class AppLogo extends StatelessWidget
 {
   const AppLogo({super.key, required this.height});
@@ -12,7 +12,7 @@ class AppLogo extends StatelessWidget
   {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Semantics(
-      label: 'INT Bank',
+      label: 'INTBank',
       image: true,
       child: Image.asset(
         isDark ? 'assets/images/logo_full_white.png' : 'assets/images/logo.png',

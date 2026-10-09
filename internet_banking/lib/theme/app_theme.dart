@@ -208,6 +208,21 @@ abstract final class AppTheme
         side: BorderSide.none,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadii.md)),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: c.surface,
+        indicatorColor: c.brandSurface,
+        surfaceTintColor: Colors.transparent,
+        height: 68,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => textTheme.labelSmall?.copyWith(
+            letterSpacing: 0,
+            color: states.contains(WidgetState.selected) ? c.brand : c.textSecondary,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(color: states.contains(WidgetState.selected) ? c.brand : c.textSecondary),
+        ),
+      ),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: c.brand),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith(
@@ -215,11 +230,15 @@ abstract final class AppTheme
         ),
       ),
       switchTheme: SwitchThemeData(
+        // The off state uses the muted text colour, so it stays visible on dark surfaces.
         thumbColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected) ? c.onBrand : null,
+          (states) => states.contains(WidgetState.selected) ? c.onBrand : c.textMuted,
         ),
         trackColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected) ? c.brand : null,
+          (states) => states.contains(WidgetState.selected) ? c.brand : c.surfaceMuted,
+        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? Colors.transparent : c.textMuted,
         ),
       ),
     );

@@ -8,6 +8,9 @@ class JwtApiService
 {
   static final DioClient _client = DioClient();
 
+  /// Phone + PIN sign-in. Returns null on a network problem; a refusal (wrong PIN,
+  /// locked PIN) is rethrown as the [DioException] so the caller can show the
+  /// server's reason and remaining attempts.
   static Future<AuthResponse?> login(String phone, String pin) async
   {
     try
@@ -35,8 +38,9 @@ class JwtApiService
       }
       return null;
     }
-    on DioException
+    on DioException catch(e)
     {
+      if(e.response != null) rethrow;
       return null;
     }
   }
@@ -46,11 +50,14 @@ class JwtApiService
     try
     {
       final accessToken = await SecureSessionManager.getAccessToken();
-      if(accessToken != null)
+      final refreshToken = await SecureSessionManager.getRefreshToken();
+      if(accessToken != null || refreshToken != null)
 {
+        // Sending the refresh token lets the server end the session, not just this access token.
         await _client.post(
           '/auth-session/logout',
-          options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+          options: Options(headers: {if(accessToken != null) 'Authorization': 'Bearer $accessToken'}),
+          data: {if(refreshToken != null) 'refreshToken': refreshToken},
         );
       }
     }

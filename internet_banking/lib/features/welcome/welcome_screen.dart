@@ -1,13 +1,14 @@
-import '../../widgets/app_logo.dart';
-import '../../theme/app_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../l10n/l10n.dart';
+import '../../theme/app_tokens.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_logo.dart';
 import '../auth/screens/login_screen.dart';
 import '../auth/screens/register_screen.dart';
-import '../../l10n/l10n.dart';
 
+/// First screen for someone who is not signed in: what INTBank offers, then open an
+/// account or sign in.
 class WelcomeScreen extends StatefulWidget
 {
   const WelcomeScreen({super.key});
@@ -20,175 +21,125 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 {
   bool _loading = false;
 
-  Future<void> conecteazaClient(BuildContext context) async
+  Future<void> _open(Widget screen) async
   {
     setState(() => _loading = true);
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-    );
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
     if(mounted) setState(() => _loading = false);
-  }
-
-  Future<void> inregistreazaClient(BuildContext context) async
-  {
-    setState(() => _loading = true);
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const RegisterScreen()),
-    );
-    if(mounted) setState(() => _loading = false);
-  }
-
-  Widget _buildContent(BuildContext context)
-  {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 24),
-          const Spacer(),
-          const AppLogo(height: 120),
-          const SizedBox(height: 32),
-          const Spacer(flex: 2),
-          Text(
-            context.l10n.welcomeSalutBineVenitInt,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: context.colors.textPrimary,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            width: 300,
-            height: 4,
-            decoration: BoxDecoration(
-              color: context.colors.brand,
-              borderRadius: BorderRadius.circular(50),
-            ),
-          ),
-          const SizedBox(height: 32),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: context.colors.textSecondary,
-                  height: 1.3,
-                ),
-                children: [
-                  TextSpan(text: context.l10n.welcomeEstiDejaClient),
-                  TextSpan(
-                    text: 'INT Bank',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: context.colors.brand,
-                    ),
-                  ),
-                  TextSpan(text: context.l10n.welcomeContinua),
-                  TextSpan(
-                    text: context.l10n.welcomeConecteaza,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: context.colors.brand,
-                    ),
-                  ),
-                  TextSpan(text: context.l10n.welcomeDacaCont),
-                  TextSpan(
-                    text: context.l10n.welcomePotiDeveniClientDirect,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: context.colors.brand,
-                    ),
-                  ),
-                  TextSpan(text: context.l10n.welcomeEste),
-                  TextSpan(
-                    text: context.l10n.welcomeRapidSigur,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: context.colors.brand,
-                    ),
-                  ),
-                  TextSpan(
-                    text:
-                        context.l10n.welcomeIarTuVeiAvea,
-                  ),
-                  TextSpan(
-                    text: context.l10n.welcomeInstantDistanta,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: context.colors.brand,
-                    ),
-                  ),
-                  const TextSpan(text: '.'),
-                ],
-              ),
-            ),
-          ),
-          const Spacer(flex: 3),
-          Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 16, bottom: 8),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 360),
-                  child: AppButton(
-                    label: context.l10n.welcomeInregistreaza,
-                    onPressed: _loading ? null : () => inregistreazaClient(context),
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: _loading ? null : () => conecteazaClient(context),
-                child: RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: context.colors.brand,
-                      letterSpacing: 0.1,
-                    ),
-                    children: [
-                      TextSpan(text: context.l10n.welcomeDejaCont),
-                      TextSpan(
-                        text: context.l10n.welcomeConecteaza,
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          color: context.colors.brand,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context)
   {
+    final c = context.colors;
+    final l10n = context.l10n;
     return Scaffold(
-      backgroundColor: context.colors.surface,
+      backgroundColor: c.surface,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(child: _buildContent(context)),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: AppSpacing.xl),
+                    const Center(child: AppLogo(height: 72)),
+                    const Spacer(),
+                    const SizedBox(height: AppSpacing.xl),
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        l10n.welcomeHeadline,
+                        textAlign: TextAlign.center,
+                        style: context.text.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      l10n.welcomeSubtitle,
+                      textAlign: TextAlign.center,
+                      style: context.text.bodyLarge?.copyWith(color: c.textSecondary),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    _Feature(
+                      icon: Icons.bolt_rounded,
+                      title: l10n.welcomeFeatureTransfers,
+                      body: l10n.welcomeFeatureTransfersBody,
+                    ),
+                    _Feature(
+                      icon: Icons.savings_outlined,
+                      title: l10n.welcomeFeatureSavings,
+                      body: l10n.welcomeFeatureSavingsBody,
+                    ),
+                    _Feature(
+                      icon: Icons.verified_user_outlined,
+                      title: l10n.welcomeFeatureSecurity,
+                      body: l10n.welcomeFeatureSecurityBody,
+                    ),
+                    const Spacer(flex: 2),
+                    const SizedBox(height: AppSpacing.xl),
+                    AppButton(
+                      label: l10n.welcomeOpenAccount,
+                      onPressed: _loading ? null : () => _open(const RegisterScreen()),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    AppButton(
+                      label: l10n.welcomeHaveAccount,
+                      variant: AppButtonVariant.outline,
+                      onPressed: _loading ? null : () => _open(const LoginScreen()),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
+                ),
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Feature extends StatelessWidget
+{
+  const _Feature({required this.icon, required this.title, required this.body});
+
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context)
+  {
+    final c = context.colors;
+    return MergeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        child: Row(
+          children: [
+            ExcludeSemantics(
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(color: c.brandSurface, borderRadius: BorderRadius.circular(AppRadii.md)),
+                child: Icon(icon, color: c.brand),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: context.text.titleSmall),
+                  const SizedBox(height: 2),
+                  Text(body, style: context.text.bodyMedium?.copyWith(color: c.textSecondary)),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

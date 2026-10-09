@@ -45,7 +45,7 @@ public class AuditLogService
             entry.setUserId(userId);
             entry.setAction(action);
             entry.setDetails(details);
-            entry.setIpAddress(ipAddress != null ? ipAddress : "127.0.0.1");
+            entry.setIpAddress(clientAddress(ipAddress));
             entry.setPreviousHash(previousHash);
             entry.setCurrentHash(currentHash);
             entry.setCreatedAt(now);
@@ -57,6 +57,22 @@ public class AuditLogService
         {
             log.error("Failed to write tamper-evident audit log", e);
         }
+    }
+
+    /**
+     * The caller's address for the current HTTP request (Tomcat resolves X-Forwarded-For only
+     * from trusted internal proxies, see server.forward-headers-strategy). Outside a request
+     * (scheduled jobs) the entry is attributed to "system". Callers used to pass a fixed
+     * "127.0.0.1", which is ignored.
+     */
+    static String clientAddress(String passed)
+    {
+        if (org.springframework.web.context.request.RequestContextHolder.getRequestAttributes()
+                instanceof org.springframework.web.context.request.ServletRequestAttributes attributes)
+        {
+            return attributes.getRequest().getRemoteAddr();
+        }
+        return passed == null || passed.isBlank() || "127.0.0.1".equals(passed) ? "system" : passed;
     }
 
     @Transactional(readOnly = true)

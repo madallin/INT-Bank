@@ -1,0 +1,4 @@
+# Vulnerabilities accepted on purpose, read by every Trivy step in .github/workflows/ci.yml.
+# One ID per line, each with a comment saying why it does not apply and when to revisit it.
+# Example:
+#   CVE-2024-00000  # only reachable through the XML parser, which the backend never uses; revisit 2027-01

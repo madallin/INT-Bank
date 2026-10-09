@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../utils/app_log.dart';
 
 class PushNotificationService {
   static final PushNotificationService _instance = PushNotificationService._internal();
@@ -64,7 +65,7 @@ class PushNotificationService {
     }
 
     _isInitialized = true;
-    debugPrint('[PushNotificationService] Initialized native push notification channels');
+    AppLog.debug('[PushNotificationService] Initialized native push notification channels');
   }
 
   Future<bool> requestPermissions() async {
@@ -133,6 +134,6 @@ class PushNotificationService {
       payload: payload,
     );
 
-    debugPrint('[PushNotificationService] Native push notification displayed: $title');
+    AppLog.debug('[PushNotificationService] Native push notification displayed');
   }
 }

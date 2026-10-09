@@ -15,7 +15,7 @@ import '../../../core/utils/helpers.dart';
 import '../../../core/storage/secure_session_manager.dart';
 import '../../../widgets/error_banner.dart';
 import '../../../widgets/simple_app_bar.dart';
-import 'pin_screen.dart';
+import '../onboarding_session.dart';
 import '../../../l10n/l10n.dart';
 
 class TwoFactorScreen extends StatefulWidget {
@@ -43,7 +43,6 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
   bool isVerifying = false;
   String? clientToken;
   String _deviceId = 'dev-device';
-  late int _userId;
 
   int _cooldownSeconds = 0;
   Timer? _cooldownTimer;
@@ -51,7 +50,6 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
   @override
   void initState() {
     super.initState();
-    _userId = widget.userId;
     _initDeviceId().then((_) => _getClientTokenAndSendCode());
   }
 
@@ -156,7 +154,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
         await _startCooldown();
       } else {
         if (mounted) {
-          _showError(data['error'] ?? context.l10n.twoFactorEroareTrimitereaCodului);
+          _showError(serverMessage(data, context.l10n.twoFactorEroareTrimitereaCodului));
         }
       }
     } on DioException catch (e) {
@@ -165,12 +163,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
             AppL10n.current.twoFactorTimpulVerificareExpiratRugam);
         _clearCode();
       } else {
-        final data = e.response?.data;
-        if (data is Map && data['error'] != null) {
-          _showError(data['error'].toString());
-        } else {
-          _showError(friendlyErrorMessage(e));
-        }
+        _showError(friendlyErrorMessage(e));
       }
     } catch (e) {
       if (mounted) _showError(friendlyErrorMessage(e));
@@ -205,42 +198,25 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
         setState(() => isVerifying = true);
         _showSuccess(context.l10n.twoFactorVerificareReusitaVeiFi);
 
-        bool setPin = true;
-        try {
-          final hasPinResponse = await DioClient().get(
-            '/users/$_userId/has-pin',
-            options: Options(headers: {'Authorization': 'Bearer $clientToken'}),
-          );
-
-          if (hasPinResponse.statusCode == 200) {
-            final hasPinData = hasPinResponse.data is Map<String, dynamic>
-                ? hasPinResponse.data as Map<String, dynamic>
-                : jsonDecode(hasPinResponse.data.toString()) as Map<String, dynamic>;
-            setPin = !(hasPinData['hasPin'] ?? false);
-          }
-        } catch (_) {}
-
+        // A verified phone gets the onboarding token; it decides the next step.
+        final session = OnboardingSession.fromVerifyResponse(data, widget.phoneNumber);
+        if (session == null) {
+          _showError(AppL10n.current.loginNumarulTelefonApartineUnui);
+          _clearCode();
+          return;
+        }
         await SecureSessionManager.savePhone(widget.phoneNumber);
 
         Future.delayed(const Duration(seconds: 3), () {
           if (!mounted) return;
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(
-              builder: (_) => PinScreen(
-                userId: _userId,
-                set: setPin,
-                useJwtLogin: true,
-                phoneNumber: widget.phoneNumber,
-              ),
-            ),
+            MaterialPageRoute(builder: (_) => session.nextScreen()),
             (route) => false,
           );
         });
       } else if (mounted) {
-        final serverError = (data['error'] as String?) ??
-            context.l10n.twoFactorCodInvalidDepasitNumarul;
-        _showError(serverError);
+        _showError(serverMessage(data, context.l10n.twoFactorCodInvalidDepasitNumarul));
         _clearCode();
       }
     } on DioException catch (e) {
@@ -250,12 +226,7 @@ class _TwoFactorScreenState extends State<TwoFactorScreen> {
           _clearCode();
         }
       } else {
-        final data = e.response?.data;
-        if (data is Map && data['error'] != null) {
-          _showError(data['error'].toString());
-        } else {
-          _showError(friendlyErrorMessage(e));
-        }
+        _showError(friendlyErrorMessage(e));
         _clearCode();
       }
     } catch (e) {

@@ -64,7 +64,7 @@ public class BankingEndToEndIntegrationTest
     @Mock
     private AccountJpaRepository accountJpaRepo;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     private IdempotencyService idempotencyService;
     private AmlVelocityService amlVelocityService;
     private AuditLogService auditLogService;
@@ -77,6 +77,7 @@ public class BankingEndToEndIntegrationTest
     @BeforeEach
     void setUp()
     {
+        signInAs(100L);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         idempotencyService = new IdempotencyService(idempotencyRepo, redisTemplate, objectMapper);
@@ -95,8 +96,8 @@ public class BankingEndToEndIntegrationTest
     void testCompleteBankingTransferLifecycle_CorrelatedFlow()
     {
         // 1. Setup Alice and Bob Accounts
-        Account alice = new Account("acc-alice", new Iban(aliceIban), new Money(BigDecimal.valueOf(2500), "RON"), 100L);
-        Account bob = new Account("acc-bob", new Iban(bobIban), new Money(BigDecimal.valueOf(100), "RON"), 200L);
+        AccountRepository.AccountProjection alice = new AccountRepository.AccountProjection("acc-alice", 100L, aliceIban, "RON", BigDecimal.valueOf(2500));
+        AccountRepository.AccountProjection bob = new AccountRepository.AccountProjection("acc-bob", 200L, bobIban, "RON", BigDecimal.valueOf(100));
 
         when(accountRepository.findByIban(aliceIban)).thenReturn(Optional.of(alice));
         when(accountRepository.findByIban(bobIban)).thenReturn(Optional.of(bob));
@@ -138,16 +139,17 @@ public class BankingEndToEndIntegrationTest
         // 6. Simulate Double-Entry Ledger Posting for this transaction:
         JournalEntryJpaEntity debitAlice = new JournalEntryJpaEntity();
         debitAlice.setAccountId(1L);
-        debitAlice.setType("DEBIT");
+        debitAlice.setType(JournalEntryJpaEntity.EntryType.DEBIT);
         debitAlice.setAmount(BigDecimal.valueOf(350.00));
+        debitAlice.setCurrency("RON");
 
         JournalEntryJpaEntity creditBob = new JournalEntryJpaEntity();
         creditBob.setAccountId(2L);
-        creditBob.setType("CREDIT");
+        creditBob.setType(JournalEntryJpaEntity.EntryType.CREDIT);
         creditBob.setAmount(BigDecimal.valueOf(350.00));
+        creditBob.setCurrency("RON");
 
-        when(journalRepo.findAll()).thenReturn(List.of(debitAlice, creditBob));
-        when(accountJpaRepo.findAll()).thenReturn(Collections.emptyList());
+        when(journalRepo.totalsByCurrencyAndType()).thenReturn(LedgerRows.of(debitAlice, creditBob));
 
         // 7. Execute General Ledger Balancing Reconciliation
         var reconReport = reconciliationService.reconcileAll();
@@ -156,5 +158,20 @@ public class BankingEndToEndIntegrationTest
         assertEquals(BigDecimal.valueOf(350.00), reconReport.totalDebits());
         assertEquals(BigDecimal.valueOf(350.00), reconReport.totalCredits());
         assertEquals(0, reconReport.accountDiscrepancies());
+    }
+
+    /** Signs in as the customer that owns the source account. */
+    private static void signInAs(Long userId)
+    {
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        new com.intbank.infrastructure.security.AuthenticatedClient("test-device", userId, java.util.List.of("ROLE_USER")),
+                        null, java.util.List.of()));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void signOut()
+    {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 }

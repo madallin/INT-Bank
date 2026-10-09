@@ -55,7 +55,7 @@ public class AnalyticsService
         Instant startInstant = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant endInstant = endDate.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
 
-        List<TransferJpaEntity> allTransfers = transferRepo.findAll();
+        List<TransferJpaEntity> allTransfers = transferRepo.findByFromAccount_IdOrToAccount_IdOrderByInitiatedAtDesc(account.getId(), account.getId());
 
         Map<String, BigDecimal> categorySums = new LinkedHashMap<>();
         Map<String, Integer> categoryCounts = new LinkedHashMap<>();
@@ -128,35 +128,46 @@ public class AnalyticsService
         );
     }
 
+    /** Keywords per category, checked in this order. A keyword matches a whole word of the payment details. */
+    private static final Map<String, List<String>> CATEGORY_WORDS = new LinkedHashMap<>();
+    /** Keywords that also match as the start of a word (e.g. "factur" in "facturi"). */
+    private static final Map<String, List<String>> CATEGORY_PREFIXES = new LinkedHashMap<>();
+
+    static
+    {
+        CATEGORY_WORDS.put("RESTAURANTE", List.of("glovo", "tazz", "bar", "kfc"));
+        CATEGORY_PREFIXES.put("RESTAURANTE", List.of("restaurant", "cafe", "pizz", "burger", "mcdonald"));
+        CATEGORY_WORDS.put("ALIMENTE", List.of("mega", "lidl", "kaufland", "carrefour", "auchan", "profi", "piata", "supermarket"));
+        CATEGORY_PREFIXES.put("ALIMENTE", List.of("aliment", "cumparatur"));
+        CATEGORY_WORDS.put("UTILITATI", List.of("enel", "digi", "orange", "vodafone", "electrica", "gaz", "eon", "chirie", "internet"));
+        CATEGORY_PREFIXES.put("UTILITATI", List.of("factur", "intretiner", "utilitat"));
+        CATEGORY_WORDS.put("TRANSPORT", List.of("uber", "bolt", "omv", "rompetrol", "petrom", "mol", "metrorex", "cfr", "benzina", "taxi"));
+        CATEGORY_PREFIXES.put("TRANSPORT", List.of("parcar", "combustibil"));
+        CATEGORY_WORDS.put("DIVERTISMENT", List.of("netflix", "spotify", "steam", "teatru", "joc", "jocuri"));
+        CATEGORY_PREFIXES.put("DIVERTISMENT", List.of("cinema", "bilet", "concert"));
+    }
+
+    /**
+     * Spending category of an outgoing payment, from the words the customer wrote in its details.
+     * Whole words only, without diacritics: "Factură Enel" is a bill, but "digital" is not Digi and an
+     * IBAN never decides the category.
+     */
     public static String categorize(String reason, String counterpartyIban)
     {
-        if (reason == null) reason = "";
-        String text = (reason + " " + counterpartyIban).toLowerCase();
-
-        if (text.contains("mega") || text.contains("lidl") || text.contains("kaufland") || text.contains("carrefour")
-                || text.contains("auchan") || text.contains("profi") || text.contains("alimente") || text.contains("piata") || text.contains("supermarket"))
+        if (reason == null || reason.isBlank()) return "ALTELE";
+        String plain = java.text.Normalizer.normalize(reason, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT);
+        if (plain.contains("bolt food")) return "RESTAURANTE";
+        List<String> words = Arrays.stream(plain.split("[^\\p{L}\\p{N}]+")).filter(w -> !w.isEmpty()).toList();
+        for (String category : CATEGORY_WORDS.keySet())
         {
-            return "ALIMENTE";
-        }
-        if (text.contains("factur") || text.contains("enel") || text.contains("digi") || text.contains("orange")
-                || text.contains("vodafone") || text.contains("electrica") || text.contains("gaz") || text.contains("eon") || text.contains("intretinere"))
-        {
-            return "UTILITATI";
-        }
-        if (text.contains("glovo") || text.contains("bolt food") || text.contains("tazz") || text.contains("restaurant")
-                || text.contains("cafe") || text.contains("bar") || text.contains("pizza") || text.contains("burger") || text.contains("kfc") || text.contains("mcdonald"))
-        {
-            return "RESTAURANTE";
-        }
-        if (text.contains("uber") || text.contains("bolt") || text.contains("omv") || text.contains("rompetrol")
-                || text.contains("petrom") || text.contains("mol") || text.contains("metrorex") || text.contains("cfr") || text.contains("benzina") || text.contains("parcare"))
-        {
-            return "TRANSPORT";
-        }
-        if (text.contains("netflix") || text.contains("spotify") || text.contains("cinema") || text.contains("steam")
-                || text.contains("teatru") || text.contains("bilete") || text.contains("concert") || text.contains("joc"))
-        {
-            return "DIVERTISMENT";
+            List<String> exact = CATEGORY_WORDS.get(category);
+            List<String> prefixes = CATEGORY_PREFIXES.getOrDefault(category, List.of());
+            for (String word : words)
+            {
+                if (exact.contains(word) || prefixes.stream().anyMatch(word::startsWith)) return category;
+            }
         }
         return "ALTELE";
     }

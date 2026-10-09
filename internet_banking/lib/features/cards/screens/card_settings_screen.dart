@@ -29,8 +29,8 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
   final DioClient _client = DioClient();
   late bool _isBlocked;
   late double _spendingLimit;
-  bool _onlinePayments = true;
-  bool _contactless = true;
+  late bool _onlinePayments;
+  late bool _contactless;
   bool _saving = false;
 
   @override
@@ -38,6 +38,8 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
     super.initState();
     _isBlocked = widget.card.isBlocked;
     _spendingLimit = widget.card.spendingLimit > 0 ? widget.card.spendingLimit : 5000.0;
+    _onlinePayments = widget.card.onlinePayments;
+    _contactless = widget.card.contactless;
   }
 
   Future<void> _toggleFreeze(bool value) async {
@@ -61,7 +63,10 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
         '/users/${widget.userId}/cards/${widget.card.id}/$endpoint',
       );
       if (response.statusCode == 200) {
-        setState(() => _isBlocked = value);
+        // The server reports the card's persisted state; trust it over the request.
+        final data = response.data;
+        final blocked = data is Map && data['isBlocked'] is bool ? data['isBlocked'] as bool : value;
+        setState(() => _isBlocked = blocked);
         if (!mounted) return;
         showSuccessSnackBar(context, value ? context.l10n.cardSettingsCardulFostBlocatTemporar : context.l10n.cardSettingsCardulFostDeblocatSucces);
       }
@@ -102,6 +107,8 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
     HapticFeedbackHelper.selection();
     final newOnline = online ?? _onlinePayments;
     final newContactless = contactless ?? _contactless;
+    final previousOnline = _onlinePayments;
+    final previousContactless = _contactless;
     setState(() {
       _onlinePayments = newOnline;
       _contactless = newContactless;
@@ -121,6 +128,11 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
           tone: SnackBarTone.success, duration: const Duration(seconds: 2));
     } catch (e) {
       if (!mounted) return;
+      // Don't leave a switch showing a setting the bank did not save.
+      setState(() {
+        _onlinePayments = previousOnline;
+        _contactless = previousContactless;
+      });
       showErrorSnackBar(context, friendlyErrorMessage(e, fallback: context.l10n.cardSettingsOptiunileAuPututFi));
     }
   }
@@ -151,7 +163,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                 ),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4)),
                 ],
               ),
               child: Column(
@@ -167,7 +179,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _isBlocked ? context.colors.danger.withOpacity(0.3) : Colors.white.withOpacity(0.2),
+                          color: _isBlocked ? context.colors.danger.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -214,7 +226,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                 color: context.colors.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 2)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 2)),
                 ],
               ),
               child: SwitchListTile(
@@ -225,7 +237,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                 subtitle: Text(context.l10n.cardSettingsDezactiveazaPlatileRetragerileAtm, style: GoogleFonts.inter(fontSize: 12, color: context.colors.textMuted)),
                 secondary: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: context.colors.danger.withOpacity(0.1), shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: context.colors.danger.withValues(alpha: 0.1), shape: BoxShape.circle),
                   child: Icon(Icons.lock_outline_rounded, color: context.colors.danger, size: 20),
                 ),
               ),
@@ -240,7 +252,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                 color: context.colors.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 2)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 2)),
                 ],
               ),
               child: Column(
@@ -292,7 +304,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                 color: context.colors.surface,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 2)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 2)),
                 ],
               ),
               child: Column(
@@ -305,7 +317,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                     subtitle: Text(context.l10n.cardSettingsPermiteTranzactiiSecurizateInternet, style: GoogleFonts.inter(fontSize: 12, color: context.colors.textMuted)),
                     secondary: Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: context.colors.brand.withOpacity(0.1), shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: context.colors.brand.withValues(alpha: 0.1), shape: BoxShape.circle),
                       child: Icon(Icons.language_rounded, color: context.colors.brand, size: 20),
                     ),
                   ),
@@ -318,7 +330,7 @@ class _CardSettingsScreenState extends State<CardSettingsScreen> {
                     subtitle: Text(context.l10n.cardSettingsPlatiRapideFaraContact, style: GoogleFonts.inter(fontSize: 12, color: context.colors.textMuted)),
                     secondary: Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: context.colors.brand.withOpacity(0.1), shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: context.colors.brand.withValues(alpha: 0.1), shape: BoxShape.circle),
                       child: Icon(Icons.contactless_outlined, color: context.colors.brand, size: 20),
                     ),
                   ),

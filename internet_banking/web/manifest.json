@@ -1,6 +1,6 @@
 {
-     "name": "INT Bank",
-     "short_name": "INT Bank",
+     "name": "INTBank",
+     "short_name": "INTBank",
      "start_url": ".",
      "display": "standalone",
      "background_color": "#00695C",

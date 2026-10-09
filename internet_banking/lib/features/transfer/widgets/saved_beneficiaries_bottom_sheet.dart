@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/iban_bank_detector.dart';
 import '../../../l10n/l10n.dart';
+import '../../../core/utils/app_log.dart';
 
 class SavedBeneficiariesBottomSheet extends StatefulWidget {
   final int userId;
@@ -54,7 +55,7 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
   Future<void> _fetchBeneficiaries() async {
     setState(() => _loading = true);
     try {
-      final response = await _client.get('/users//beneficiaries');
+      final response = await _client.get('/users/${widget.userId}/beneficiaries');
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data as Map<String, dynamic>;
         if (data['beneficiaries'] != null) {
@@ -64,7 +65,7 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
         }
       }
     } catch (e) {
-      debugPrint('Error fetching beneficiaries: ');
+      AppLog.debug('Error fetching beneficiaries', e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -112,7 +113,7 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: context.colors.brand.withOpacity(0.08),
+                  color: context.colors.brand.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -172,7 +173,7 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: context.colors.border),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2)),
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 6, offset: const Offset(0, 2)),
                     ],
                   ),
                   child: ListTile(
@@ -184,7 +185,7 @@ class _SavedBeneficiariesBottomSheetState extends State<SavedBeneficiariesBottom
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: (bankInfo?.primaryColor ?? context.colors.brand).withOpacity(0.12),
+                        color: (bankInfo?.primaryColor ?? context.colors.brand).withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
                       child: Center(

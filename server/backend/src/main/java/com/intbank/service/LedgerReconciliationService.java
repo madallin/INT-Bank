@@ -67,53 +67,62 @@ public class LedgerReconciliationService
         return report;
     }
 
+    /**
+     * Checks the journal with aggregates computed by the database (it never loads the entries):
+     * debits equal credits in every currency, and no account is overdrawn.
+     */
     @Transactional(readOnly = true)
     public ReconciliationReport reconcileAll()
     {
-        List<JournalEntryJpaEntity> entries = journalRepo.findAll();
         BigDecimal totalDebits = BigDecimal.ZERO;
         BigDecimal totalCredits = BigDecimal.ZERO;
+        long totalEntries = 0;
+        // Debits minus credits per currency; every currency must net to zero on its own,
+        // otherwise a cross-currency posting could hide behind a matching grand total.
+        Map<String, BigDecimal> netByCurrency = new TreeMap<>();
 
-        Map<Long, BigDecimal> computedAccountBalances = new HashMap<>();
-
-        for (JournalEntryJpaEntity entry : entries)
+        for (Object[] row : journalRepo.totalsByCurrencyAndType())
         {
-            if (JournalEntryJpaEntity.EntryType.DEBIT == entry.getType())
+            String currency = (String) row[0];
+            JournalEntryJpaEntity.EntryType type = (JournalEntryJpaEntity.EntryType) row[1];
+            BigDecimal sum = row[2] != null ? (BigDecimal) row[2] : BigDecimal.ZERO;
+            totalEntries += ((Number) row[3]).longValue();
+            if (type == JournalEntryJpaEntity.EntryType.DEBIT)
             {
-                totalDebits = totalDebits.add(entry.getAmount());
-                computedAccountBalances.merge(entry.getAccountId(), entry.getAmount().negate(), BigDecimal::add);
+                totalDebits = totalDebits.add(sum);
+                netByCurrency.merge(currency, sum, BigDecimal::add);
             }
-            else if (JournalEntryJpaEntity.EntryType.CREDIT == entry.getType())
+            else if (type == JournalEntryJpaEntity.EntryType.CREDIT)
             {
-                totalCredits = totalCredits.add(entry.getAmount());
-                computedAccountBalances.merge(entry.getAccountId(), entry.getAmount(), BigDecimal::add);
+                totalCredits = totalCredits.add(sum);
+                netByCurrency.merge(currency, sum.negate(), BigDecimal::add);
             }
         }
 
-        boolean isBalanced = totalDebits.compareTo(totalCredits) == 0;
-        List<AccountJpaEntity> allAccounts = accountRepo.findAll();
         List<String> discrepancies = new ArrayList<>();
-
-        int discrepancyCount = 0;
-        for (AccountJpaEntity account : allAccounts)
+        boolean isBalanced = totalDebits.compareTo(totalCredits) == 0;
+        for (Map.Entry<String, BigDecimal> currency : netByCurrency.entrySet())
         {
-            BigDecimal netLedger = computedAccountBalances.getOrDefault(account.getId(), BigDecimal.ZERO);
-            // If the account has no opening balance record, check difference
-            // Here net ledger change should be consistent with transactions
-            if (account.getSold().compareTo(BigDecimal.ZERO) < 0)
+            if (currency.getValue().signum() != 0)
             {
-                discrepancies.add("Account " + account.getIBAN() + " has negative balance: " + account.getSold());
-                discrepancyCount++;
+                isBalanced = false;
+                discrepancies.add("Currency " + currency.getKey() + " is unbalanced: debits - credits = " + currency.getValue());
             }
+        }
+
+        List<AccountJpaEntity> overdrawn = accountRepo.findBySoldLessThan(BigDecimal.ZERO);
+        for (AccountJpaEntity account : overdrawn)
+        {
+            discrepancies.add("Account " + account.getIBAN() + " has negative balance: " + account.getSold());
         }
 
         return new ReconciliationReport(
                 isBalanced,
                 totalDebits,
                 totalCredits,
-                entries.size(),
-                allAccounts.size(),
-                discrepancyCount,
+                (int) Math.min(Integer.MAX_VALUE, totalEntries),
+                (int) Math.min(Integer.MAX_VALUE, accountRepo.count()),
+                overdrawn.size(),
                 discrepancies
         );
     }

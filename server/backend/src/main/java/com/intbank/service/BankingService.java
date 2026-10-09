@@ -1,5 +1,6 @@
 package com.intbank.service;
 
+import com.intbank.core.domain.vo.AccountNumbers;
 import com.intbank.infrastructure.persistence.entity.AccountJpaEntity;
 import com.intbank.infrastructure.persistence.entity.CardJpaEntity;
 import com.intbank.infrastructure.persistence.entity.UserJpaEntity;
@@ -15,20 +16,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Map;
-import java.util.Random;
 
 @Service
 public class BankingService
 {
 
     private static final Logger log = LoggerFactory.getLogger(BankingService.class);
-    private static final String BANK_CODE = "INTB";
-    private static final int IBAN_ACCOUNT_LENGTH = 16;
-    private static final String CARD_BIN = "499999";
-    private static final int CARD_LENGTH = 16;
     private static final int DEFAULT_CARD_LIFETIME_YEARS = 3;
     private static final int MAX_RETRIES = 7;
-    private static final Random RANDOM = new Random();
 
     private final AccountJpaRepository accountRepo;
     private final CardJpaRepository cardRepo;
@@ -51,7 +46,7 @@ public class BankingService
     @Transactional
     public Map<String, Object> createAccountAndCard(long userId, String currency, String countryCode)
     {
-        String iban = generateIBAN(currency, countryCode);
+        String iban = AccountNumbers.newIban(currency.toUpperCase());
 
         UserJpaEntity user = userRepo.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
@@ -64,22 +59,20 @@ public class BankingService
         account = accountRepo.save(account);
 
         Long accountId = account.getId();
-        String cardNumber = CARD_BIN + generateRandomDigits(CARD_LENGTH - CARD_BIN.length());
-        String cvv = generateRandomDigits(3);
+        String cardNumber = AccountNumbers.newCardNumber();
+        // No CVV is generated or kept: card security codes must never be stored (PCI DSS v4.0 req. 3.3.1.2).
 
         YearMonth expiry = YearMonth.now().plusYears(DEFAULT_CARD_LIFETIME_YEARS);
         String expiryMMYY = String.format("%02d/%02d", expiry.getMonthValue(), expiry.getYear() % 100);
 
         String encryptedCard = cryptoService.encryptAESGCM(cardNumber);
-        String encryptedCVV = cryptoService.encryptAESGCM(cvv);
         String encryptedExpiry = cryptoService.encryptAESGCM(expiryMMYY);
-        String token = "tok_" + generateRandomDigits(16);
+        String token = "tok_" + java.util.UUID.randomUUID().toString().replace("-", "");
 
         CardJpaEntity card = new CardJpaEntity();
         card.setUser(user);
         card.setAccount(account);
         card.setNumarCard(encryptedCard);
-        card.setCvv(encryptedCVV);
         card.setDataExpirare(encryptedExpiry);
         card.setDetinator(user.getNume() + " " + user.getPrenume());
         card.setToken(token);
@@ -114,43 +107,5 @@ public class BankingService
             }
         }
         throw new RuntimeException("Failed to generate unique IBAN after " + MAX_RETRIES + " attempts");
-    }
-
-    private String generateIBAN(String currency, String countryCode)
-    {
-        String country = countryCode.toUpperCase().substring(0, 2);
-        String bban = BANK_CODE + generateRandomDigits(4) + (currency.equals("RON") ? "RON" : generateRandomDigits(3))
-                + generateRandomDigits(IBAN_ACCOUNT_LENGTH - BANK_CODE.length() - 4 - 3);
-        String checksum = computeIBANChecksum(bban);
-        return country + checksum + bban;
-    }
-
-    private String computeIBANChecksum(String bban)
-    {
-        StringBuilder numeric = new StringBuilder();
-        for (char c : (bban + "RO00").toCharArray())
-        {
-            if (c >= 'A' && c <= 'Z')
-            {
-                numeric.append(c - 'A' + 10);
-            }
-            else
-            {
-                numeric.append(c);
-            }
-        }
-        java.math.BigInteger mod = new java.math.BigInteger(numeric.toString()).mod(java.math.BigInteger.valueOf(97));
-        long checksum = 98 - mod.longValue();
-        return String.format("%02d", checksum);
-    }
-
-    private String generateRandomDigits(int length)
-    {
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++)
-        {
-            sb.append(RANDOM.nextInt(10));
-        }
-        return sb.toString();
     }
 }

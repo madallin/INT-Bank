@@ -12,6 +12,9 @@ class SplashScreen extends StatefulWidget
 {
   const SplashScreen({super.key});
 
+  /// The logo stays up at least this long, so a fast start does not flash.
+  static const minimumShown = Duration(milliseconds: 600);
+
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -31,23 +34,23 @@ class _SplashScreenState extends State<SplashScreen>
     {
       final response = await DioClient().get(
         '/health',
-        options: Options(receiveTimeout: const Duration(seconds: 8)),
+        options: Options(receiveTimeout: const Duration(seconds: 5)),
       );
       return response.statusCode == 200;
     }
-    catch (e)
+    catch (_)
     {
-      debugPrint('Server connection error: $e');
       return false;
     }
   }
 
   Future<void> _checkSessionAndNavigate() async
   {
-    await Future.delayed(const Duration(seconds: 4));
-    if(!mounted) return;
-
+    // The checks run while the logo shows; the splash lasts only as long as they need.
+    final minimum = Future<void>.delayed(SplashScreen.minimumShown);
     final serverAvailable = await _checkServerConnection();
+    final userId = serverAvailable ? await JwtApiService.tryRefreshSession() : null;
+    await minimum;
     if(!mounted) return;
 
     if(!serverAvailable)
@@ -70,9 +73,6 @@ class _SplashScreenState extends State<SplashScreen>
       );
       return;
     }
-
-    final userId = await JwtApiService.tryRefreshSession();
-    if(!mounted) return;
 
     if(userId != null)
 {

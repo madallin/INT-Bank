@@ -34,6 +34,12 @@ public class DynamicChallengeJpaEntity
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
+    @Column(name = "from_iban", length = 34)
+    private String fromIban;
+
+    @Column(length = 3)
+    private String currency;
+
     public String getChallengeId()
     {
         return challengeId;
@@ -112,5 +118,25 @@ public class DynamicChallengeJpaEntity
     public void setExpiresAt(Instant expiresAt)
     {
         this.expiresAt = expiresAt;
+    }
+
+    public String getFromIban()
+    {
+        return fromIban;
+    }
+
+    public void setFromIban(String fromIban)
+    {
+        this.fromIban = fromIban;
+    }
+
+    public String getCurrency()
+    {
+        return currency;
+    }
+
+    public void setCurrency(String currency)
+    {
+        this.currency = currency;
     }
 }

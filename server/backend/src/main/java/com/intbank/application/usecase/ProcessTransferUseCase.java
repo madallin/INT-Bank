@@ -125,6 +125,13 @@ public class ProcessTransferUseCase
                                 "Sender currency mismatch: account is " + sender.moneda() + ", transfer is " + currency);
                     }
 
+                    // Never credit a different currency 1:1 (would create money).
+                    if (!receiver.moneda().equals(currency))
+                    {
+                        throw new IllegalStateException(
+                                "Receiver currency mismatch: account is " + receiver.moneda() + ", transfer is " + currency);
+                    }
+
                     if (sender.sold().compareTo(amount) < 0)
                     {
                         throw new IllegalStateException(

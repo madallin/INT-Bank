@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../l10n/l10n.dart';
+import '../../../core/utils/app_log.dart';
 
 class NotificationCenterBottomSheet extends StatefulWidget {
   final int userId;
@@ -53,7 +54,7 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
         }
       }
     } catch (e) {
-      debugPrint('Error fetching notifications: $e');
+      AppLog.debug('Error fetching notifications', e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -69,7 +70,7 @@ class _NotificationCenterBottomSheetState extends State<NotificationCenterBottom
         }
       });
     } catch (e) {
-      debugPrint('Error marking all as read: $e');
+      AppLog.debug('Error marking all as read', e);
     }
   }
 

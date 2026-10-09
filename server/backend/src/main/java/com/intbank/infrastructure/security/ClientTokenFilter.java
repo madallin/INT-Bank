@@ -51,9 +51,9 @@ public class ClientTokenFilter extends OncePerRequestFilter
                 || path.startsWith("/actuator/")
                 || path.startsWith("/auth/")
                 || path.startsWith("/auth-session/")
-                || path.startsWith("/currency/")
+                || path.equals("/currency/api/v1/exchange-rates")
+                || path.equals("/currency/api/v1/convert")
                 || path.startsWith("/.well-known/")
-                || path.startsWith("/ws")
                 || path.equals("/login")
                 || path.equals("/register")
                 || path.startsWith("/2fa/")
@@ -106,9 +106,9 @@ public class ClientTokenFilter extends OncePerRequestFilter
             String deviceId = claims.getSubject();
             Long userId = claims.get("uid", Long.class);
             List<String> roles = claims.get("roles", List.class);
-            if (roles == null || roles.isEmpty())
+            if (roles == null)
             {
-                roles = new ArrayList<>(List.of("ROLE_USER"));
+                roles = new ArrayList<>(); // no implicit role: such a token opens nothing
             }
 
             List<SimpleGrantedAuthority> authorities = roles.stream()

@@ -1,6 +1,9 @@
 package com.intbank.infrastructure.rest;
 
+import com.intbank.core.domain.exception.BusinessRuleException;
 import com.intbank.core.port.in.TransferUseCase;
+import com.intbank.service.DynamicLinkingService;
+import com.intbank.service.StrongCustomerAuthService;
 import com.intbank.infrastructure.persistence.entity.AccountJpaEntity;
 import com.intbank.infrastructure.persistence.entity.TransferJpaEntity;
 import com.intbank.infrastructure.persistence.repository.AccountJpaRepository;
@@ -24,31 +27,20 @@ public class TransactionController
     private final AccountJpaRepository accountRepo;
     private final TransferJpaRepository transferRepo;
     private final com.intbank.service.OutboxProcessorService outboxProcessorService;
+    private final StrongCustomerAuthService strongCustomerAuth;
 
-    public TransactionController(TransferUseCase transferUseCase,
-                                 AccountJpaRepository accountRepo,
-                                 TransferJpaRepository transferRepo)
-    {
-        this(transferUseCase, accountRepo, transferRepo, null, null);
-    }
-
+    @org.springframework.beans.factory.annotation.Autowired
     public TransactionController(TransferUseCase transferUseCase,
                                  AccountJpaRepository accountRepo,
                                  TransferJpaRepository transferRepo,
-                                 @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.service.OutboxProcessorService outboxProcessorService)
-    {
-        this(transferUseCase, accountRepo, transferRepo, outboxProcessorService, null);
-    }
-
-    public TransactionController(TransferUseCase transferUseCase,
-                                 AccountJpaRepository accountRepo,
-                                 TransferJpaRepository transferRepo,
+                                 StrongCustomerAuthService strongCustomerAuth,
                                  @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.service.OutboxProcessorService outboxProcessorService,
                                  @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.infrastructure.security.SecurityGuard securityGuard)
     {
         this.transferUseCase = transferUseCase;
         this.accountRepo = accountRepo;
         this.transferRepo = transferRepo;
+        this.strongCustomerAuth = strongCustomerAuth;
         this.outboxProcessorService = outboxProcessorService;
         this.securityGuard = securityGuard;
     }
@@ -71,7 +63,7 @@ public class TransactionController
         }
 
         AccountJpaEntity account = accountOpt.get();
-        List<TransferJpaEntity> allTransfers = transferRepo.findAll();
+        List<TransferJpaEntity> allTransfers = transferRepo.findByFromAccount_IdOrToAccount_IdOrderByInitiatedAtDesc(accountId, accountId);
 
         List<Map<String, Object>> list = allTransfers.stream()
                 .filter(t -> (t.getFromAccount() != null && t.getFromAccount().getId().equals(accountId))
@@ -91,11 +83,25 @@ public class TransactionController
                     map.put("date", t.getInitiatedAt().toString());
                     map.put("fromIban", t.getFromAccount() != null ? t.getFromAccount().getIBAN() : "");
                     map.put("toIban", t.getToAccount() != null ? t.getToAccount().getIBAN() : "");
+                    map.put("category", category(t, isDebit));
                     return map;
                 })
                 .toList();
 
         return ResponseEntity.ok(Map.of("transactions", list));
+    }
+
+    /**
+     * What the app shows as the transaction's icon: a move between the customer's own accounts,
+     * money received, or the spending category of a payment.
+     */
+    static String category(TransferJpaEntity t, boolean isDebit)
+    {
+        Long fromUser = t.getFromAccount() != null ? t.getFromAccount().getUserId() : null;
+        Long toUser = t.getToAccount() != null ? t.getToAccount().getUserId() : null;
+        if (fromUser != null && fromUser.equals(toUser)) return "OWN_ACCOUNTS";
+        if (!isDebit) return "INCOMING";
+        return com.intbank.service.AnalyticsService.categorize(t.getReason(), null);
     }
 
     @PostMapping("/users/{userId}/transfer")
@@ -108,7 +114,8 @@ public class TransactionController
         {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
         }
-        String toIban = (String) body.get("iban");
+        String rawToIban = (String) body.get("iban");
+        String toIban = rawToIban == null ? null : rawToIban.replaceAll("\\s+", "").toUpperCase();
         String beneficiaryName = (String) body.get("beneficiaryName");
         String reason = (String) body.get("reason");
         Number amountNum = (Number) body.get("amount");
@@ -118,7 +125,7 @@ public class TransactionController
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Parametri lipsa"));
         }
 
-        List<AccountJpaEntity> accounts = accountRepo.findByUser_Id(userId);
+        List<AccountJpaEntity> accounts = accountRepo.findByUser_Id(userId).stream().filter(AccountJpaEntity::isCurrent).toList();
         if (accounts.isEmpty())
         {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Utilizatorul nu are niciun cont"));
@@ -128,13 +135,37 @@ public class TransactionController
         String fromIban = (String) body.get("fromIban");
         if (fromIban != null && !fromIban.isBlank())
         {
-            sourceAccount = accounts.stream()
+            var selected = accounts.stream()
                     .filter(a -> fromIban.trim().equalsIgnoreCase(a.getIBAN()))
-                    .findFirst()
-                    .orElse(sourceAccount);
+                    .findFirst();
+            if (selected.isEmpty())
+            {
+                // Never fall back to another account: it may hold a different currency.
+                return ResponseEntity.badRequest().body(Map.of("success", false,
+                        "code", BusinessRuleException.ACCOUNT_NOT_OWNED,
+                        "error", "Contul sursă nu îți aparține"));
+            }
+            sourceAccount = selected.get();
         }
 
-        BigDecimal amount = BigDecimal.valueOf(amountNum.doubleValue());
+        BigDecimal amount = new BigDecimal(amountNum.toString());
+
+        // Large payments need the PIN again, bound to exactly these details.
+        try
+        {
+            strongCustomerAuth.authorize(
+                    new DynamicLinkingService.Payment(userId, sourceAccount.getIBAN(), toIban, amount, sourceAccount.getMoneda()),
+                    stringOrNull(body.get("scaChallengeId")), stringOrNull(body.get("scaPin")));
+        }
+        catch (StrongCustomerAuthService.ScaRequiredException required)
+        {
+            return ResponseEntity.status(HttpStatus.PRECONDITION_REQUIRED).body(required.toBody());
+        }
+        catch (BusinessRuleException rejected)
+        {
+            HttpStatus status = BusinessRuleException.SCA_LOCKED.equals(rejected.code()) ? HttpStatus.LOCKED : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status).body(rejected.toBody());
+        }
 
         String key = (idempotencyKeyHeader != null && !idempotencyKeyHeader.isBlank())
                 ? idempotencyKeyHeader.trim()
@@ -176,7 +207,16 @@ public class TransactionController
         catch (Exception e)
         {
             log.error("Transfer error for user {}: {}", userId, e.getMessage());
+            if (e instanceof BusinessRuleException rule)
+            {
+                return ResponseEntity.badRequest().body(rule.toBody());
+            }
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
         }
+    }
+
+    private static String stringOrNull(Object value)
+    {
+        return value instanceof String text && !text.isBlank() ? text : null;
     }
 }

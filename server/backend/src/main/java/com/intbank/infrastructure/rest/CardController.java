@@ -8,6 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +19,8 @@ import java.util.Map;
 @RequestMapping("/users/{userId}/cards")
 public class CardController
 {
+
+    static final BigDecimal MAX_SPENDING_LIMIT = new BigDecimal("100000.00");
 
     private final CardJpaRepository cardRepo;
     private final CryptoService cryptoService;
@@ -28,6 +33,7 @@ public class CardController
         this(cardRepo, cryptoService, auditLogService, notificationService, null);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public CardController(CardJpaRepository cardRepo, CryptoService cryptoService, AuditLogService auditLogService, com.intbank.service.NotificationService notificationService,
                           @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.infrastructure.security.SecurityGuard securityGuard)
     {
@@ -70,24 +76,18 @@ public class CardController
             @PathVariable("userId") Long userId,
             @PathVariable("cardId") Long cardId)
     {
-        if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
-        {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Acces interzis"));
-        }
-        var cardOpt = cardRepo.findById(cardId).filter(c -> c.getUserId() != null && c.getUserId().equals(userId));
-        if (cardOpt.isEmpty())
-        {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Card inexistent"));
-        }
-        auditLogService.log(userId, "CARD_FROZEN", "Card ID " + cardId + " frozen by user", "127.0.0.1");
-        notificationService.notify(userId, "Alertă de securitate: Card blocat", "Cardul tău INTBank a fost blocat temporar din aplicație.", "SECURITY_ALERT");
-        return ResponseEntity.ok(Map.of("success", true, "cardId", cardId, "isBlocked", true, "status", "frozen"));
+        return setFrozen(userId, cardId, true);
     }
 
     @PutMapping("/{cardId}/unfreeze")
     public ResponseEntity<Map<String, Object>> unfreezeCard(
             @PathVariable("userId") Long userId,
             @PathVariable("cardId") Long cardId)
+    {
+        return setFrozen(userId, cardId, false);
+    }
+
+    private ResponseEntity<Map<String, Object>> setFrozen(Long userId, Long cardId, boolean frozen)
     {
         if (securityGuard != null && !securityGuard.isSelfOrAdmin(userId))
         {
@@ -98,9 +98,28 @@ public class CardController
         {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Card inexistent"));
         }
-        auditLogService.log(userId, "CARD_UNFROZEN", "Card ID " + cardId + " unfrozen by user", "127.0.0.1");
-        notificationService.notify(userId, "Card deblocat cu succes", "Cardul tău INTBank este acum activ pentru plăți.", "SECURITY_ALERT");
-        return ResponseEntity.ok(Map.of("success", true, "cardId", cardId, "isBlocked", false, "status", "active"));
+        CardJpaEntity card = cardOpt.get();
+        String target = frozen ? CardJpaEntity.STATUS_FROZEN : CardJpaEntity.STATUS_ACTIVE;
+        if (!target.equals(card.getStatus()))
+        {
+            card.setStatus(target);
+            card.setStatusChangedAt(Instant.now());
+            cardRepo.save(card);
+            if (frozen)
+            {
+                auditLogService.log(userId, "CARD_FROZEN", "Card ID " + cardId + " frozen by user", "127.0.0.1");
+                notificationService.notify(userId, "Alertă de securitate: Card blocat", "Cardul tău INTBank a fost blocat temporar din aplicație.", "SECURITY_ALERT");
+            }
+            else
+            {
+                auditLogService.log(userId, "CARD_UNFROZEN", "Card ID " + cardId + " unfrozen by user", "127.0.0.1");
+                notificationService.notify(userId, "Card deblocat cu succes", "Cardul tău INTBank este acum activ pentru plăți.", "SECURITY_ALERT");
+            }
+        }
+        Map<String, Object> body = new LinkedHashMap<>(toMap(card));
+        body.put("success", true);
+        body.put("cardId", cardId);
+        return ResponseEntity.ok(body);
     }
 
     @PutMapping("/{cardId}/limits")
@@ -118,18 +137,47 @@ public class CardController
         {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Card inexistent"));
         }
-        Number newLimit = (Number) body.getOrDefault("spendingLimit", 5000.0);
-        Boolean onlinePayments = body.containsKey("onlinePayments") ? (Boolean) body.get("onlinePayments") : true;
-        Boolean contactless = body.containsKey("contactless") ? (Boolean) body.get("contactless") : true;
-        auditLogService.log(userId, "CARD_LIMIT_CHANGED", "Card ID " + cardId + " new limit: " + newLimit + ", online: " + onlinePayments + ", contactless: " + contactless, "127.0.0.1");
+        CardJpaEntity card = cardOpt.get();
+
+        Object rawLimit = body.get("spendingLimit");
+        Object rawOnline = body.get("onlinePayments");
+        Object rawContactless = body.get("contactless");
+        if ((rawOnline != null && !(rawOnline instanceof Boolean))
+                || (rawContactless != null && !(rawContactless instanceof Boolean)))
+        {
+            return ResponseEntity.badRequest().body(Map.of("error", "Opțiuni de plată invalide"));
+        }
+        BigDecimal newLimit = card.getSpendingLimit();
+        if (rawLimit != null)
+        {
+            try
+            {
+                newLimit = new BigDecimal(rawLimit.toString()).setScale(2, RoundingMode.HALF_EVEN);
+            }
+            catch (NumberFormatException e)
+            {
+                newLimit = null;
+            }
+            if (newLimit == null || newLimit.signum() <= 0 || newLimit.compareTo(MAX_SPENDING_LIMIT) > 0)
+            {
+                return ResponseEntity.badRequest().body(Map.of("error",
+                        "Limita trebuie să fie între 1 și " + MAX_SPENDING_LIMIT.toPlainString()));
+            }
+        }
+
+        card.setSpendingLimit(newLimit);
+        if (rawOnline != null) card.setOnlinePaymentsEnabled((Boolean) rawOnline);
+        if (rawContactless != null) card.setContactlessEnabled((Boolean) rawContactless);
+        cardRepo.save(card);
+
+        auditLogService.log(userId, "CARD_LIMIT_CHANGED", "Card ID " + cardId + " new limit: " + card.getSpendingLimit()
+                + ", online: " + card.isOnlinePaymentsEnabled() + ", contactless: " + card.isContactlessEnabled(), "127.0.0.1");
         notificationService.notify(userId, "Setări card actualizate", "Setările și limitele cardului au fost actualizate.", "SECURITY_ALERT");
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "cardId", cardId,
-                "spendingLimit", newLimit.doubleValue(),
-                "onlinePayments", onlinePayments,
-                "contactless", contactless
-        ));
+
+        Map<String, Object> response = new LinkedHashMap<>(toMap(card));
+        response.put("success", true);
+        response.put("cardId", cardId);
+        return ResponseEntity.ok(response);
     }
 
     private Map<String, Object> toMap(CardJpaEntity c)
@@ -174,9 +222,11 @@ public class CardController
         map.put("cvv", "***"); // Masked for PCI-DSS compliance
         map.put("cardType", "Visa Classic");
         map.put("token", c.getToken());
-        map.put("status", "active");
-        map.put("isBlocked", false);
-        map.put("spendingLimit", 5000.0);
+        map.put("status", c.isFrozen() ? "frozen" : "active");
+        map.put("isBlocked", c.isFrozen());
+        map.put("spendingLimit", c.getSpendingLimit());
+        map.put("onlinePayments", c.isOnlinePaymentsEnabled());
+        map.put("contactless", c.isContactlessEnabled());
         return map;
     }
 }

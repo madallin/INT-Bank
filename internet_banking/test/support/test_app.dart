@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -59,4 +60,25 @@ void usePhoneViewport(WidgetTester tester, {Size size = const Size(360, 780)})
   tester.view.physicalSize = size * 2;
   tester.view.devicePixelRatio = 2;
   addTearDown(tester.view.reset);
+}
+
+/// The phone-number library asks a native plugin for regions; tests answer for Romania.
+void fakePhonePlugin() {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+    const MethodChannel('com.bottlepay/flutter_libphonenumber'),
+    (call) async => switch (call.method) {
+      'get_all_supported_regions' => {
+          'RO': {
+            'countryName': 'Romania',
+            'phoneCode': '40',
+            'exampleNumberMobileNational': '0712 034 567',
+            'exampleNumberMobileInternational': '+40 712 034 567',
+            'phoneMaskMobileNational': '0000 000 000',
+            'phoneMaskMobileInternational': '+00 000 000 000',
+          },
+        },
+      'format' => {'formatted': (call.arguments as Map)['phone']},
+      _ => <String, dynamic>{},
+    },
+  );
 }

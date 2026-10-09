@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import com.intbank.service.PreAuthTokenService;
+
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -20,15 +23,18 @@ public class TwoFAController
     private static final Logger log = LoggerFactory.getLogger(TwoFAController.class);
     private final RedisTemplate<String, String> redisTemplate;
     private final String twilioServiceSid;
+    private final PreAuthTokenService preAuthTokens;
 
     public TwoFAController(
         RedisTemplate<String, String> redisTemplate,
+        PreAuthTokenService preAuthTokens,
         @Value("${twilio.account-sid}") String twilioAccountSid,
         @Value("${twilio.auth-token}") String twilioAuthToken,
         @Value("${twilio.service-sid}") String twilioServiceSid
     )
     {
         this.redisTemplate = redisTemplate;
+        this.preAuthTokens = preAuthTokens;
         this.twilioServiceSid = twilioServiceSid;
         Twilio.init(twilioAccountSid, twilioAuthToken);
     }
@@ -69,7 +75,12 @@ public class TwoFAController
         try {
             VerificationCheck check = VerificationCheck.creator(twilioServiceSid).setTo(phone).setCode(code).create();
             if ("approved".equals(check.getStatus())) {
-                return Map.of("success", true, "status", check.getStatus());
+                // The phone is proven: hand out the onboarding-only token for this customer.
+                Map<String, Object> result = new LinkedHashMap<>();
+                result.put("success", true);
+                result.put("status", check.getStatus());
+                preAuthTokens.issueForVerifiedPhone(phone).ifPresent(result::putAll);
+                return result;
             } else {
                 return Map.of("statusCode", 400, "success", false, "status", check.getStatus());
             }

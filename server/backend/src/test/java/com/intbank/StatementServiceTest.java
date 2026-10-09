@@ -56,7 +56,7 @@ public class StatementServiceTest
 
         AccountJpaEntity account = new AccountJpaEntity();
         account.setId(10L);
-        account.setUserId(1L);
+        account.setUser(userWithId(1L));
         account.setIBAN("RO49AAAA1B31007593840001");
         account.setMoneda("RON");
         account.setSold(BigDecimal.valueOf(1000.00));
@@ -81,7 +81,7 @@ public class StatementServiceTest
         creditTx.setStatus("COMPLETED");
         creditTx.setInitiatedAt(Instant.now().minus(4, ChronoUnit.DAYS));
 
-        when(transferRepo.findAll()).thenReturn(List.of(debitTx, creditTx));
+        when(transferRepo.findByFromAccount_IdOrToAccount_IdOrderByInitiatedAtDesc(anyLong(), anyLong())).thenReturn(List.of(debitTx, creditTx));
 
         LocalDate toDate = LocalDate.now();
         LocalDate fromDate = toDate.minusDays(7);
@@ -106,7 +106,7 @@ public class StatementServiceTest
 
         AccountJpaEntity account = new AccountJpaEntity();
         account.setId(10L);
-        account.setUserId(1L);
+        account.setUser(userWithId(1L));
         account.setUser(user);
 
         when(accountRepo.findById(10L)).thenReturn(Optional.of(account));
@@ -129,14 +129,14 @@ public class StatementServiceTest
 
         AccountJpaEntity account = new AccountJpaEntity();
         account.setId(10L);
-        account.setUserId(1L);
+        account.setUser(userWithId(1L));
         account.setIBAN("RO49AAAA1B31007593840001");
         account.setMoneda("RON");
         account.setSold(BigDecimal.valueOf(1500.00));
         account.setUser(user);
 
         when(accountRepo.findById(10L)).thenReturn(Optional.of(account));
-        when(transferRepo.findAll()).thenReturn(List.of());
+        when(transferRepo.findByFromAccount_IdOrToAccount_IdOrderByInitiatedAtDesc(anyLong(), anyLong())).thenReturn(List.of());
 
         byte[] pdfBytes = statementService.generateStatementPdf(1L, 10L, LocalDate.now().minusDays(30), LocalDate.now());
 
@@ -147,5 +147,12 @@ public class StatementServiceTest
         assertEquals('P', (char) pdfBytes[1]);
         assertEquals('D', (char) pdfBytes[2]);
         assertEquals('F', (char) pdfBytes[3]);
+    }
+
+    private static com.intbank.infrastructure.persistence.entity.UserJpaEntity userWithId(Long id)
+    {
+        var user = new com.intbank.infrastructure.persistence.entity.UserJpaEntity();
+        user.setId(id);
+        return user;
     }
 }

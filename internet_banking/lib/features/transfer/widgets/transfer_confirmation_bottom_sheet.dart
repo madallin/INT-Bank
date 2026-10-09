@@ -79,7 +79,7 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: context.colors.brand.withOpacity(0.12),
+                  color: context.colors.brand.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
@@ -126,7 +126,7 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: context.colors.brand.withOpacity(0.2),
+                color: context.colors.brand.withValues(alpha: 0.2),
               ),
             ),
             child: Column(
@@ -173,7 +173,7 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: context.colors.brand.withOpacity(0.15),
+                    color: context.colors.brand.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -324,7 +324,7 @@ class TransferConfirmationBottomSheet extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 6),
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: context.colors.brand.withOpacity(0.15),
+                    color: context.colors.brand.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(

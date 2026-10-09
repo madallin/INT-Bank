@@ -58,7 +58,7 @@ public class RedlockDistributedLockServiceTest
     private NotificationService notificationService;
 
     private RedlockDistributedLockService lockService;
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @BeforeEach
     void setUp()
@@ -136,14 +136,11 @@ public class RedlockDistributedLockServiceTest
 
         when(transferRepository.findById("tx-123")).thenReturn(Optional.empty());
 
-        Account sender = new Account("acc-1", new Iban("RO49AAAA1B31007593840001"), new Money(BigDecimal.valueOf(1000), "RON"), 1L);
-        Account receiver = new Account("acc-2", new Iban("RO49BBBB1B31007593840002"), new Money(BigDecimal.valueOf(500), "RON"), 2L);
+        AccountRepository.AccountProjection sender = new AccountRepository.AccountProjection("acc-1", 1L, "RO49AAAA1B31007593840001", "RON", BigDecimal.valueOf(1000));
+        AccountRepository.AccountProjection receiver = new AccountRepository.AccountProjection("acc-2", 2L, "RO49BBBB1B31007593840002", "RON", BigDecimal.valueOf(500));
 
-        doAnswer(invocation -> {
-            Runnable action = invocation.getArgument(0);
-            action.run();
-            return null;
-        }).when(accountRepository).runInTransaction(any());
+        doAnswer(invocation -> ((java.util.function.Supplier<?>) invocation.getArgument(0)).get())
+                .when(accountRepository).runInTransaction(any());
 
         when(accountRepository.findByIdWithLock("acc-1")).thenReturn(Optional.of(sender));
         when(accountRepository.findByIdWithLock("acc-2")).thenReturn(Optional.of(receiver));

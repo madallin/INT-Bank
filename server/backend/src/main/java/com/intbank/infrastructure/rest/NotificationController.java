@@ -45,17 +45,6 @@ public class NotificationController
         return notificationService.registerEmitter(userId);
     }
 
-    @PostMapping("/device-token")
-    public ResponseEntity<?> registerDeviceToken(
-            @PathVariable("userId") Long userId,
-            @RequestBody Map<String, String> body)
-    {
-        String token = body.get("token");
-        String platform = body.getOrDefault("platform", "android");
-        notificationService.registerDeviceToken(userId, token, platform);
-        return ResponseEntity.ok(Map.of("success", true, "registered", token != null));
-    }
-
     @PutMapping("/read-all")
     public ResponseEntity<?> markAllAsRead(@PathVariable("userId") Long userId)
     {

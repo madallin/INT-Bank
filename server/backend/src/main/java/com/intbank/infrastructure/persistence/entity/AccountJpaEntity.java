@@ -31,6 +31,29 @@ public class AccountJpaEntity
     @Column(name = "created_at")
     private Instant createdAt;
 
+    /** CURRENT for everyday accounts, SAVINGS for the account behind a vault. */
+    @Column(nullable = false, length = 16)
+    private String type = TYPE_CURRENT;
+
+    public static final String TYPE_CURRENT = "CURRENT";
+    public static final String TYPE_SAVINGS = "SAVINGS";
+
+    public String getType()
+    {
+        return type;
+    }
+
+    public void setType(String type)
+    {
+        this.type = type;
+    }
+
+    /** Savings (vault) accounts are not shown, cannot pay or be paid, and cannot be exchanged. */
+    public boolean isCurrent()
+    {
+        return type == null || TYPE_CURRENT.equals(type);
+    }
+
     @Column(name = "updated_at")
     private Instant updatedAt;
 

@@ -59,16 +59,17 @@ public class AuditLogAndReconciliationTest
 
         JournalEntryJpaEntity debit = new JournalEntryJpaEntity();
         debit.setAccountId(1L);
-        debit.setType("DEBIT");
+        debit.setType(JournalEntryJpaEntity.EntryType.DEBIT);
         debit.setAmount(BigDecimal.valueOf(250));
+        debit.setCurrency("RON");
 
         JournalEntryJpaEntity credit = new JournalEntryJpaEntity();
         credit.setAccountId(2L);
-        credit.setType("CREDIT");
+        credit.setType(JournalEntryJpaEntity.EntryType.CREDIT);
         credit.setAmount(BigDecimal.valueOf(250));
+        credit.setCurrency("RON");
 
-        when(journalRepo.findAll()).thenReturn(List.of(debit, credit));
-        when(accountRepo.findAll()).thenReturn(Collections.emptyList());
+        when(journalRepo.totalsByCurrencyAndType()).thenReturn(LedgerRows.of(debit, credit));
 
         var report = reconciliationService.reconcileAll();
 

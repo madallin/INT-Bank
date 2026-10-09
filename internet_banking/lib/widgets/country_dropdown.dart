@@ -62,8 +62,14 @@ class CountryDropdown extends StatelessWidget {
                     Text(countryCodeToEmoji(country.countryCode),
                         style: const TextStyle(fontSize: 20)),
                     const SizedBox(width: 6),
-                    Text('+${country.phoneCode}',
-                        style: const TextStyle(fontSize: 14)),
+                    // Long codes (+373, +1 684) and large text shrink instead of overflowing.
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text('+${country.phoneCode}', style: const TextStyle(fontSize: 14)),
+                      ),
+                    ),
                   ],
                 ),
               );

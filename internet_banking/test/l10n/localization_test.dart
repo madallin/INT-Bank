@@ -93,6 +93,7 @@ void main() {
     testWidgets('transfer form and its validation are in English', (
       tester,
     ) async {
+      demoCustomerApi().install();
       usePhoneViewport(tester, size: const Size(360, 1400));
       await tester.pumpWidget(
         testApp(
@@ -114,6 +115,7 @@ void main() {
         TransferFormValidator.amount(0),
         'Enter an amount greater than 0.',
       );
+      await settle(tester); // the recent-recipients request finishes
     });
 
     testWidgets('home is in English', (tester) async {

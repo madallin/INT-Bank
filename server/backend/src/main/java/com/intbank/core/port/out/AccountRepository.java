@@ -15,8 +15,19 @@ public interface AccountRepository
 
     <T> T runInTransaction(Supplier<T> block);
 
-    record AccountProjection(String id, Long userId, String iban, String moneda, BigDecimal sold)
+    record AccountProjection(String id, Long userId, String iban, String moneda, BigDecimal sold, String type)
     {
+        public AccountProjection(String id, Long userId, String iban, String moneda, BigDecimal sold)
+        {
+            this(id, userId, iban, moneda, sold, "CURRENT");
+        }
+
+        /** Only current accounts take part in transfers; savings belong to vaults. */
+        public boolean isCurrent()
+        {
+            return type == null || "CURRENT".equals(type);
+        }
+
         public boolean hasSufficientFunds(BigDecimal amount)
         {
             return moneda != null && sold != null && sold.compareTo(amount) >= 0;

@@ -23,6 +23,7 @@ public class StatementController
         this(statementService, null);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public StatementController(StatementService statementService,
                                @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.infrastructure.security.SecurityGuard securityGuard)
     {

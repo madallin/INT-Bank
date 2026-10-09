@@ -27,23 +27,28 @@ public class UserController
     private final BankingService bankingService;
     private final PasswordEncoder passwordEncoder;
     private final com.intbank.infrastructure.security.SecurityGuard securityGuard;
+    private final com.intbank.service.PinVerificationService pinVerification;
 
     public UserController(UserJpaRepository userRepo,
                           BankingService bankingService,
                           PasswordEncoder passwordEncoder)
     {
-        this(userRepo, bankingService, passwordEncoder, null);
+        this(userRepo, bankingService, passwordEncoder, null,
+                new com.intbank.service.PinVerificationService(userRepo, passwordEncoder));
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public UserController(UserJpaRepository userRepo,
                           BankingService bankingService,
                           PasswordEncoder passwordEncoder,
-                          @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.infrastructure.security.SecurityGuard securityGuard)
+                          @org.springframework.beans.factory.annotation.Autowired(required = false) com.intbank.infrastructure.security.SecurityGuard securityGuard,
+                          com.intbank.service.PinVerificationService pinVerification)
     {
         this.userRepo = userRepo;
         this.bankingService = bankingService;
         this.passwordEncoder = passwordEncoder;
         this.securityGuard = securityGuard;
+        this.pinVerification = pinVerification;
     }
 
     @GetMapping("/{id}")
@@ -150,8 +155,8 @@ public class UserController
             }
         }
 
-        // Broadcast approval via WebSocket to notify client in real time
-        ApprovalWebSocketHandler.broadcast("{\"type\":\"contAprobat\",\"id\":" + id + ",\"status\":\"approved\"}");
+        // Tell this customer's waiting app (and nobody else) that the account is approved.
+        ApprovalWebSocketHandler.notifyApproved(id);
 
         return ResponseEntity.ok(Map.of("success", true, "contAprobat", true));
     }
@@ -193,6 +198,29 @@ public class UserController
         }
 
         UserJpaEntity user = userOpt.get();
+        if (user.getCodPin() != null && !user.getCodPin().isBlank())
+        {
+            // Replacing a PIN: never with only the SMS-based onboarding token, and only with the current PIN.
+            if (securityGuard != null && securityGuard.isOnboardingOnly())
+            {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("code", "PIN_ALREADY_SET",
+                        "error", "PIN-ul este deja setat. Autentifică-te cu PIN-ul pentru a-l schimba."));
+            }
+            var check = pinVerification.verify(id, body.get("currentPin"));
+            switch (check.outcome())
+            {
+                case OK -> { }
+                case LOCKED -> {
+                    return ResponseEntity.status(HttpStatus.LOCKED).body(Map.of("code", "SCA_LOCKED",
+                            "error", "PIN blocat temporar. Reîncearcă peste " + check.lockedMinutes() + " minute."));
+                }
+                default -> {
+                    return ResponseEntity.badRequest().body(Map.of("code", "SCA_PIN_INVALID",
+                            "error", "PIN-ul actual este incorect.", "remainingAttempts", check.remainingAttempts()));
+                }
+            }
+            user = userRepo.findById(id).orElse(user); // re-read after the attempt counters were updated
+        }
         user.setCodPin(passwordEncoder.encode(pin));
         user.setPinFailedAttempts(0);
         user.setPinLockedUntil(null);

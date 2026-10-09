@@ -80,7 +80,7 @@ public class StatementService
         Instant startInstant = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant endInstant = toDate.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
 
-        List<TransferJpaEntity> allTransfers = transferRepo.findAll();
+        List<TransferJpaEntity> allTransfers = transferRepo.findByFromAccount_IdOrToAccount_IdOrderByInitiatedAtDesc(account.getId(), account.getId());
 
         List<TransferJpaEntity> periodTransfers = new ArrayList<>();
         BigDecimal netChangeAfterPeriod = BigDecimal.ZERO;

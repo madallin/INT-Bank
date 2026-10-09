@@ -14,7 +14,13 @@ public class AmlVelocityService
 
     private static final Logger log = LoggerFactory.getLogger(AmlVelocityService.class);
     private static final int MAX_TRANSFERS_5_MIN = 5;
-    private static final BigDecimal DAILY_LIMIT = BigDecimal.valueOf(50000.00);
+    /** Daily outgoing limit per currency (rolling 24 hours). Unknown currencies get the strictest. */
+    static final java.util.Map<String, BigDecimal> DAILY_LIMITS = java.util.Map.of(
+            "RON", new BigDecimal("50000.00"),
+            "EUR", new BigDecimal("10000.00"),
+            "USD", new BigDecimal("11000.00"),
+            "GBP", new BigDecimal("8500.00"));
+    private static final BigDecimal STRICTEST_DAILY_LIMIT = new BigDecimal("8500.00");
     private static final BigDecimal HIGH_VALUE_THRESHOLD = BigDecimal.valueOf(1000.00);
 
     private final RedisTemplate<String, String> redisTemplate;
@@ -57,21 +63,24 @@ public class AmlVelocityService
                     "Limita de viteza depasita. Maxim 5 transferuri la fiecare 5 minute.");
         }
 
-        // 2. Daily Limit Check: max 50,000 RON / 24h
-        String dailyKey = "aml:daily:" + userId;
-        String currentDailyStr = redisTemplate.opsForValue().get(dailyKey);
-        BigDecimal currentDaily = currentDailyStr != null ? new BigDecimal(currentDailyStr) : BigDecimal.ZERO;
-        BigDecimal newDaily = currentDaily.add(amount);
-
-        if (newDaily.compareTo(DAILY_LIMIT) > 0)
+        // 2. Daily limit per currency. INCRBY is atomic, so parallel transfers cannot both slip
+        //    under the limit (the old read-then-write could); an over-limit attempt is rolled back.
+        BigDecimal dailyLimit = DAILY_LIMITS.getOrDefault(currency, STRICTEST_DAILY_LIMIT);
+        String dailyKey = "aml:daily:" + userId + ":" + currency;
+        long cents = amount.movePointRight(2).setScale(0, java.math.RoundingMode.UP).longValueExact();
+        Long totalCents = redisTemplate.opsForValue().increment(dailyKey, cents);
+        Long ttl = redisTemplate.getExpire(dailyKey);
+        if (ttl != null && ttl < 0)
         {
-            log.warn("AML Alert: User {} exceeded daily transfer limit ({} > {})", userId, newDaily, DAILY_LIMIT);
-            return new AmlResult(RiskAssessment.DAILY_LIMIT_EXCEEDED, false,
-                    "Limita zilnica de " + DAILY_LIMIT + " " + currency + " a fost depasita.");
+            redisTemplate.expire(dailyKey, Duration.ofHours(24));
         }
-
-        // Record daily spending with 24h TTL
-        redisTemplate.opsForValue().set(dailyKey, newDaily.toPlainString(), Duration.ofHours(24));
+        if (totalCents != null && BigDecimal.valueOf(totalCents, 2).compareTo(dailyLimit) > 0)
+        {
+            redisTemplate.opsForValue().decrement(dailyKey, cents);
+            log.warn("AML Alert: User {} exceeded daily {} limit ({} > {})", userId, currency, BigDecimal.valueOf(totalCents, 2), dailyLimit);
+            return new AmlResult(RiskAssessment.DAILY_LIMIT_EXCEEDED, false,
+                    "Limita zilnica de " + dailyLimit.toPlainString() + " " + currency + " a fost depasita.");
+        }
 
         // 3. Step-up SCA dynamic linking requirement for high-value transactions
         boolean requiresStepUp = amount.compareTo(HIGH_VALUE_THRESHOLD) > 0;

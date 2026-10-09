@@ -1,21 +1,29 @@
 import '../../../theme/app_tokens.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show HttpClient, WebSocket;
+import 'dart:io' show WebSocket;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../config/app_config.dart';
+import '../../../core/network/transport_security.dart';
+import '../../../core/network/dio_client.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../welcome/welcome_screen.dart';
 import '../../../l10n/l10n.dart';
+import '../../../core/utils/app_log.dart';
 
 class ApprovalScreen extends StatefulWidget
 {
   final int userId;
 
-  const ApprovalScreen({super.key, required this.userId});
+  /// Onboarding token from the SMS step; lets the screen ask the server about approval.
+  /// Without it (or once it expires) the screen relies on the approval broadcast.
+  final String? preAuthToken;
+
+  const ApprovalScreen({super.key, required this.userId, this.preAuthToken});
 
   @override
   State<ApprovalScreen> createState() => _ApprovalScreenState();
@@ -59,29 +67,20 @@ class _ApprovalScreenState extends State<ApprovalScreen>
   {
     try
     {
-      final client = HttpClient();
+      // The socket only serves a customer with a token; without one, the screen
+      // falls back to asking again later (sign in once more).
+      final token = widget.preAuthToken;
+      if(token == null) return;
+      final client = TransportPolicy.httpClient(Uri.parse(AppConfig.wsUrl).host);
 
       final uri = AppConfig.wsUrl;
-      debugPrint('Incerc conexiune WS la: $uri');
-
-      _ws = await WebSocket.connect(uri, customClient: client);
-      debugPrint('WebSocket conectat!');
-
-      final registerMsg = jsonEncode({'userId': widget.userId});
-      try
-      {
-        _ws!.add(registerMsg);
-        debugPrint('Trimis userId la server: ${widget.userId}');
-      }
-      catch (e)
-{
-        debugPrint('Eroare la trimiterea userId: $e');
-      }
+      _ws = await WebSocket.connect(uri, headers: {'Authorization': 'Bearer $token'}, customClient: client);
+      AppLog.debug('WebSocket conectat!');
 
       _ws!.listen(
         (message)
         {
-          debugPrint('WS message: $message');
+          AppLog.debug('WebSocket message received');
           dynamic data;
           try
           {
@@ -89,7 +88,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
           }
           catch (e)
 {
-            debugPrint('Nu s-a putut decoda JSON: $e');
+            AppLog.debug('Nu s-a putut decoda JSON', e);
             return;
           }
 
@@ -102,24 +101,24 @@ class _ApprovalScreenState extends State<ApprovalScreen>
           if((messageType == 'contAprobat' || messageType == null) &&
               incomingIdInt == widget.userId)
 {
-            debugPrint('Approval matched for user ${widget.userId}');
+            AppLog.debug('Approval matched for user ${widget.userId}');
             _onApprovalReceived();
           }
         },
         onDone: ()
         {
-          debugPrint('WebSocket inchis');
+          AppLog.debug('WebSocket inchis');
         },
         onError: (err)
         {
-          debugPrint('Eroare WebSocket: $err');
+          AppLog.debug('Eroare WebSocket', err);
         },
         cancelOnError: true,
       );
     }
-    catch (e, st)
+    catch (e)
 {
-      debugPrint('Eroare la conectarea WebSocket: $e\n$st');
+      AppLog.debug('Eroare la conectarea WebSocket', e);
     }
   }
 
@@ -132,25 +131,33 @@ class _ApprovalScreenState extends State<ApprovalScreen>
         _pollTimer?.cancel();
         return;
       }
+      final token = widget.preAuthToken;
+      if(token == null)
+      {
+        _pollTimer?.cancel(); // no way to ask the server; wait for the broadcast instead
+        return;
+      }
       try
       {
-        final client = HttpClient();
-        final request = await client.getUrl(
-          Uri.parse('${AppConfig.baseUrl}/users/${widget.userId}/has-approved'),
+        final response = await DioClient().get(
+          '/users/${widget.userId}/has-approved',
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
         );
-        final response = await request.close();
-        final body = await response.transform(utf8.decoder).join();
-        final data = jsonDecode(body);
-        final isApproved = data['contaprobat'] ?? false;
-        if(isApproved)
-{
-          debugPrint('Polling: cont aprobat pentru user ${widget.userId}');
+        final data = response.data;
+        if(data is Map && data['contaprobat'] == true)
+        {
+          AppLog.debug('Polling: cont aprobat pentru user ${widget.userId}');
           _onApprovalReceived();
         }
       }
+      on DioException catch (e)
+      {
+        // 401/403: the onboarding token expired; keep listening for the broadcast only.
+        if(e.response?.statusCode == 401 || e.response?.statusCode == 403) _pollTimer?.cancel();
+      }
       catch (e)
 {
-        debugPrint('Polling error: $e');
+        AppLog.debug('Polling error', e);
       }
     });
   }
@@ -277,7 +284,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: context.colors.brand.withOpacity(0.4),
+              color: context.colors.brand.withValues(alpha: 0.4),
               blurRadius: 30,
               offset: const Offset(0, 15),
             ),
@@ -292,7 +299,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: context.colors.brand.withOpacity(0.3),
+                  color: context.colors.brand.withValues(alpha: 0.3),
                   width: 4,
                 ),
               ),
@@ -324,7 +331,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: context.colors.brand.withOpacity(0.4),
+              color: context.colors.brand.withValues(alpha: 0.4),
               blurRadius: 30,
               offset: const Offset(0, 15),
             ),
@@ -339,7 +346,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: context.colors.brand.withOpacity(0.3),
+                  color: context.colors.brand.withValues(alpha: 0.3),
                   width: 4,
                 ),
               ),
@@ -390,7 +397,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: context.colors.brand.withOpacity(0.3),
+                color: context.colors.brand.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -464,7 +471,7 @@ class _ApprovalScreenState extends State<ApprovalScreen>
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: context.colors.brand.withOpacity(0.3),
+                  color: context.colors.brand.withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),

@@ -1,14 +1,11 @@
 import '../../../widgets/app_logo.dart';
 import '../../../theme/app_tokens.dart';
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/error_messages.dart';
@@ -17,15 +14,19 @@ import '../../../core/storage/secure_session_manager.dart';
 import '../../../widgets/error_banner.dart';
 import '../../../widgets/pin_pad.dart';
 import '../../../widgets/pin_dot_indicator.dart';
-import '../../home/screens/home_screen.dart';
+import '../../shell/app_shell.dart';
 import '../../../l10n/l10n.dart';
 
 class PinScreen extends StatefulWidget {
   final int userId;
   final bool set;
   final bool popOnSuccess;
+  /// Kept for existing routes; the PIN is always checked through phone + PIN sign-in.
   final bool useJwtLogin;
   final String? phoneNumber;
+
+  /// Onboarding token from the SMS step; required to choose the first PIN ([set]).
+  final String? preAuthToken;
 
   const PinScreen({
     super.key,
@@ -34,6 +35,7 @@ class PinScreen extends StatefulWidget {
     this.popOnSuccess = true,
     this.useJwtLogin = false,
     this.phoneNumber,
+    this.preAuthToken,
   });
 
   @override
@@ -47,8 +49,6 @@ class _PinScreenState extends State<PinScreen>
   bool isConfirming = false;
   String textEroare = '';
   bool isVerifying = false;
-  String? clientToken;
-  String _deviceId = 'dev-device';
 
   AnimationController? _shakeController;
 
@@ -59,7 +59,6 @@ class _PinScreenState extends State<PinScreen>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _initDeviceId().then((_) => _getClientToken());
   }
 
   @override
@@ -80,38 +79,6 @@ class _PinScreenState extends State<PinScreen>
       _shakeController?.stop();
       _shakeController?.reset();
     });
-  }
-
-  Future<void> _initDeviceId() async {
-    final deviceInfo = DeviceInfoPlugin();
-    try {
-      if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        _deviceId = androidInfo.id;
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
-      }
-    } catch (_) {
-      _deviceId = 'dev-device';
-    }
-  }
-
-  Future<void> _getClientToken() async {
-    try {
-      final response = await DioClient().post(
-        '/auth/get-client-token',
-        data: {'deviceId': _deviceId},
-      );
-      if (response.statusCode == 200) {
-        final data = response.data is Map<String, dynamic>
-            ? response.data as Map<String, dynamic>
-            : jsonDecode(response.data.toString()) as Map<String, dynamic>;
-        clientToken = data['client_token'];
-      }
-    } catch (e) {
-      _showError(friendlyErrorMessage(e));
-    }
   }
 
   void _onNumberPress(String number) {
@@ -154,165 +121,90 @@ class _PinScreenState extends State<PinScreen>
     }
   }
 
+  /// Phone for sign-in: from the SMS step, or the one remembered on this device.
+  Future<String?> _phone() async {
+    final phone = widget.phoneNumber;
+    if (phone != null && phone.isNotEmpty) return phone;
+    return SecureSessionManager.getPhone();
+  }
+
+  /// Signs in with phone + PIN (the server checks the PIN and its lockout) and opens
+  /// the app. Returns false, after showing why, when the bank refuses.
+  Future<bool> _signInAndOpenHome(String pinCode) async {
+    final phone = await _phone();
+    if (phone == null || phone.isEmpty) {
+      _showError(AppL10n.current.pinEroareAutentificareIncearcaNou);
+      return false;
+    }
+    int userId = widget.userId;
+    try {
+      final session = await JwtApiService.login(phone, pinCode);
+      if (session == null) {
+        _showError(AppL10n.current.pinEroarePotiConectaServer);
+        return false;
+      }
+      userId = session.userId ?? userId;
+    } on DioException catch (e) {
+      _showError(friendlyErrorMessage(e, fallback: AppL10n.current.pinPinIncorect));
+      return false;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('loggedUserId', userId);
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => AppShell(userId: userId)),
+        (route) => false,
+      );
+    }
+    return true;
+  }
+
   Future<void> _verifyExistingPin() async {
     if (isVerifying) return;
     setState(() => isVerifying = true);
-
     try {
-      if (!await _ensureClientToken()) {
-        setState(() => pin = '');
-        return;
-      }
-      final response = await DioClient().post(
-        '/users/${widget.userId}/verify-pin',
-        options: Options(headers: {'Authorization': 'Bearer $clientToken'}),
-        data: {'pin': pin},
-      );
-
-      final data = response.data is Map<String, dynamic>
-          ? response.data as Map<String, dynamic>
-          : jsonDecode(response.data.toString()) as Map<String, dynamic>;
-
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (widget.useJwtLogin) {
-          final success = await _performJwtLogin();
-          if (!success) {
-            _showError(AppL10n.current.pinEroareAutentificareIncearcaNou);
-            setState(() => pin = '');
-            return;
-          }
-        }
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('loggedUserId', widget.userId);
-        if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => HomeScreen(userId: widget.userId),
-            ),
-            (route) => false,
-          );
-        }
-      } else {
-        _showError(data['error'] ?? AppL10n.current.pinPinIncorect);
-        setState(() => pin = '');
-      }
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      if (data is Map && data['error'] != null) {
-        _showError(data['error'].toString());
-      } else {
-        _showError(AppL10n.current.pinEroarePotiConectaServer);
-      }
-      setState(() => pin = '');
-    } catch (e) {
-      _showError(AppL10n.current.pinEroarePotiConectaServer);
-      setState(() => pin = '');
+      if (!await _signInAndOpenHome(pin) && mounted) setState(() => pin = '');
     } finally {
       if (mounted) setState(() => isVerifying = false);
     }
   }
 
-  Future<bool> _ensureClientToken() async {
-    if (clientToken == null) await _getClientToken();
-    if (clientToken == null && textEroare.isEmpty) {
-      _showError(AppL10n.current.pinPotiConectaServerIncearca);
-    }
-    return clientToken != null;
-  }
-
-  Future<bool> _performJwtLogin() async {
-    try {
-      String? phone = widget.phoneNumber;
-      if (phone == null || phone.isEmpty) {
-        phone = await SecureSessionManager.getPhone();
-      }
-      if (phone == null || phone.isEmpty) {
-        return true;
-      }
-
-      final result = await JwtApiService.login(phone, pin);
-      return result != null;
-    } catch (_) {
-      return false;
-    }
+  void _restartPinEntry() {
+    if (!mounted) return;
+    setState(() {
+      pin = '';
+      confirmPin = '';
+      isConfirming = false;
+    });
   }
 
   Future<void> _setNewPin() async {
     if (pin != confirmPin) {
       _showError(context.l10n.pinPinUrileCoincid);
-      setState(() {
-        pin = '';
-        confirmPin = '';
-        isConfirming = false;
-      });
+      _restartPinEntry();
+      return;
+    }
+    // Choosing the first PIN needs the onboarding token from the SMS step.
+    final token = widget.preAuthToken;
+    if (token == null || token.isEmpty) {
+      _showError(AppL10n.current.pinEroareAutentificareIncearcaNou);
+      _restartPinEntry();
       return;
     }
 
     setState(() => isVerifying = true);
     try {
-      if (!await _ensureClientToken()) {
-        setState(() {
-          pin = '';
-          confirmPin = '';
-          isConfirming = false;
-        });
-        return;
-      }
-      final response = await DioClient().put(
+      await DioClient().put(
         '/users/${widget.userId}/set-pin',
-        options: Options(headers: {'Authorization': 'Bearer $clientToken'}),
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
         data: {'codPin': pin},
       );
-
-      final data = response.data is Map<String, dynamic>
-          ? response.data as Map<String, dynamic>
-          : jsonDecode(response.data.toString()) as Map<String, dynamic>;
-
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (widget.useJwtLogin) {
-          await _performJwtLogin();
-        }
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('loggedUserId', widget.userId);
-        if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => HomeScreen(userId: widget.userId),
-            ),
-            (route) => false,
-          );
-        }
-      } else {
-        _showError(data['error'] ?? AppL10n.current.pinEroareSetareaPinUlui);
-        setState(() {
-          pin = '';
-          confirmPin = '';
-          isConfirming = false;
-        });
-      }
+      if (!await _signInAndOpenHome(pin)) _restartPinEntry();
     } on DioException catch (e) {
-      final data = e.response?.data;
-      if (data is Map && data['error'] != null) {
-        _showError(data['error'].toString());
-      } else {
-        _showError(AppL10n.current.pinEroarePotiConectaServer);
-      }
-      setState(() {
-        pin = '';
-        confirmPin = '';
-        isConfirming = false;
-      });
-    } catch (e) {
-      _showError(AppL10n.current.pinEroarePotiConectaServer);
-      setState(() {
-        pin = '';
-        confirmPin = '';
-        isConfirming = false;
-      });
+      _showError(friendlyErrorMessage(e, fallback: AppL10n.current.pinEroareSetareaPinUlui));
+      _restartPinEntry();
     } finally {
       if (mounted) setState(() => isVerifying = false);
     }

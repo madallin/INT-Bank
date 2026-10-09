@@ -17,6 +17,8 @@ class CardModel with _$CardModel
     @Default(0) double spendingLimit,
     @Default(false) bool isBlocked,
     @Default('active') String status,
+    @Default(true) bool onlinePayments,
+    @Default(true) bool contactless,
     String? pin,
   }) = _CardModel;
 

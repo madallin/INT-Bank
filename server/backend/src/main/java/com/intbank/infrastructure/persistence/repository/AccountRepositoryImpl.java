@@ -61,7 +61,8 @@ public class AccountRepositoryImpl implements AccountRepository
                 entity.getUserId(),
                 entity.getIBAN(),
                 entity.getMoneda(),
-                entity.getSold() != null ? entity.getSold() : BigDecimal.ZERO
+                entity.getSold() != null ? entity.getSold() : BigDecimal.ZERO,
+                entity.getType()
         );
     }
 }

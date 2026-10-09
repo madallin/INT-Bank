@@ -21,6 +21,9 @@ public interface AccountJpaRepository extends JpaRepository<AccountJpaEntity, Lo
 
     List<AccountJpaEntity> findByUser_Id(Long userId);
 
+    /** Accounts below the given balance (reconciliation looks for overdrawn ones). */
+    List<AccountJpaEntity> findBySoldLessThan(java.math.BigDecimal balance);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM AccountJpaEntity a WHERE a.id = :id")
     Optional<AccountJpaEntity> findByIdWithLock(@Param("id") Long id);

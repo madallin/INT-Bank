@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../widgets/error_retry_view.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../data/models/transaction_entry.dart';
+import '../../../core/utils/day_groups.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/error_messages.dart';
@@ -14,9 +15,11 @@ import '../../../core/utils/haptic_feedback_helper.dart';
 import '../../../core/services/privacy_mode_service.dart';
 import '../../../widgets/empty_state_placeholder.dart';
 import '../../../widgets/simple_app_bar.dart';
+import '../../../widgets/transaction_list_item.dart';
 import '../../../widgets/shimmer_loading.dart';
 import '../widgets/transaction_details_bottom_sheet.dart';
 import '../../../l10n/l10n.dart';
+import '../../../core/utils/app_log.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   final int userId;
@@ -117,7 +120,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
         error = _loadErrorFallback;
       }
     } catch (e) {
-      debugPrint('Error fetching transactions: $e');
+      AppLog.debug('Error fetching transactions', e);
       error = friendlyErrorMessage(e, fallback: _loadErrorFallback);
     } finally {
       if (mounted) {
@@ -321,16 +324,17 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                                     onRefresh: () =>
                                         _fetchTransactions(silent: true),
                                     color: context.colors.brand,
-                                    child: ListView.builder(
+                                    child: ListView(
                                       physics:
                                           const AlwaysScrollableScrollPhysics(),
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 8),
-                                      itemCount: filtered.length,
-                                      itemBuilder: (context, index) {
-                                        return _buildTransactionCard(
-                                            filtered[index]);
-                                      },
+                                      children: [
+                                        for (final group in groupByDay<Map<String, dynamic>>(
+                                            filtered,
+                                            (t) => TransactionEntry.fromJson(t).date))
+                                          ..._buildDayGroup(group),
+                                      ],
                                     ),
                                   ),
                           ),
@@ -344,10 +348,45 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
     );
   }
 
+  /// A day heading ("Today", "Yesterday", a date) followed by that day's transactions.
+  List<Widget> _buildDayGroup(DayGroup<Map<String, dynamic>> group) {
+    return [
+      if (group.day != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    dayLabel(group.day!),
+                    style: context.text.labelMedium,
+                  ),
+                ),
+              ),
+              // The day's net movement, like a bank statement's daily line.
+              Text(
+                PrivacyModeService().isPrivacyModeEnabled.value
+                    ? maskedFigure
+                    : formatAmount(
+                        group.items.fold<double>(0, (sum, t) => sum + TransactionEntry.fromJson(t).signedAmount),
+                        showSign: true,
+                      ),
+                style: context.text.labelMedium,
+              ),
+            ],
+          ),
+        ),
+      for (final transaction in group.items) _buildTransactionCard(transaction),
+    ];
+  }
+
   Widget _buildTransactionCard(Map<String, dynamic> transaction) {
     final entry = TransactionEntry.fromJson(transaction);
     final isPositive = entry.isIncoming;
     final amountStr = _formatAmount(entry);
+    final iconColor = categoryIconColor(entry.category, isPositive, context.colors, Theme.of(context).brightness);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -364,7 +403,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
             border: Border.all(color: context.colors.border, width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -375,18 +414,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isPositive
-                      ? context.colors.brandSurface
-                      : context.colors.dangerSurface,
+                  color: iconColor.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isPositive
-                      ? Icons.arrow_downward_rounded
-                      : Icons.arrow_upward_rounded,
-                  color: isPositive
-                      ? context.colors.positive
-                      : context.colors.danger,
+                  categoryIcon(entry.category, isPositive),
+                  color: iconColor,
                   size: 18,
                 ),
               ),
@@ -407,7 +440,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      entry.date == null ? '' : formatDateTime(entry.date!),
+                      entry.date == null ? '' : formatTime(entry.date!),
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: context.colors.textMuted,

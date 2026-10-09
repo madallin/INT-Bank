@@ -1,6 +1,6 @@
 {
   "@@locale": "ro",
-  "appTitle": "INT Bank",
+  "appTitle": "INTBank",
   "@appTitle": {
     "description": "Application name"
   },
@@ -570,10 +570,6 @@
   "@commonAnuleaza": {
     "description": "Used in exchange_screen.dart, open_currency_account_dialog.dart, scheduled_transfers_screen.dart"
   },
-  "exchangeSchimbValutarRealizatSucces": "Schimb valutar realizat cu succes!",
-  "@exchangeSchimbValutarRealizatSucces": {
-    "description": "Used in exchange_screen.dart"
-  },
   "exchangeSchimbulValutarPututFi": "Schimbul valutar nu a putut fi efectuat.",
   "@exchangeSchimbulValutarPututFi": {
     "description": "Used in exchange_screen.dart"
@@ -582,20 +578,8 @@
   "@exchangeSchimbValutar": {
     "description": "Used in exchange_screen.dart"
   },
-  "exchangeSchimbaIntreDiferiteValute": "Schimbă între diferite valute la cursul zilei",
-  "@exchangeSchimbaIntreDiferiteValute": {
-    "description": "Used in exchange_screen.dart"
-  },
-  "exchangeValuta": "Din valuta",
-  "@exchangeValuta": {
-    "description": "Used in exchange_screen.dart"
-  },
   "exchangeInverseazaValutele": "Inversează valutele",
   "@exchangeInverseazaValutele": {
-    "description": "Used in exchange_screen.dart"
-  },
-  "exchangeValuta2": "În valuta",
-  "@exchangeValuta2": {
     "description": "Used in exchange_screen.dart"
   },
   "exchangeCursulValutarEsteDisponibil": "Cursul valutar nu este disponibil",
@@ -774,7 +758,7 @@
   "@homeStatistici": {
     "description": "Used in home_screen.dart"
   },
-  "homeSeifuriRoundUp": "Seifuri & Round-Up",
+  "homeSeifuriRoundUp": "Seifuri de economii",
   "@homeSeifuriRoundUp": {
     "description": "Used in home_screen.dart"
   },
@@ -782,7 +766,7 @@
   "@homeNou": {
     "description": "Used in home_screen.dart"
   },
-  "homeEconomisesteAutomatMaruntisulTranzactiilor": "Economisește automat din mărunțișul tranzacțiilor.",
+  "homeEconomisesteAutomatMaruntisulTranzactiilor": "Pune bani deoparte pentru obiectivele tale.",
   "@homeEconomisesteAutomatMaruntisulTranzactiilor": {
     "description": "Used in home_screen.dart"
   },
@@ -1014,11 +998,11 @@
   "@tosSePoateConectaServer": {
     "description": "Used in tos_screen.dart"
   },
-  "tosToateConturileDeschiseInt": "Toate conturile deschise la INT Bank trebuie să fie înregistrate cu date reale și corecte.",
+  "tosToateConturileDeschiseInt": "Toate conturile deschise la INTBank trebuie să fie înregistrate cu date reale și corecte.",
   "@tosToateConturileDeschiseInt": {
     "description": "Used in tos_screen.dart"
   },
-  "tosFiecareClientPoateDetine": "Fiecare client poate deține un singur cont personal la INT Bank.",
+  "tosFiecareClientPoateDetine": "Fiecare client poate deține un singur cont personal la INTBank.",
   "@tosFiecareClientPoateDetine": {
     "description": "Used in tos_screen.dart"
   },
@@ -1034,7 +1018,7 @@
   "@tosClientulTrebuieSaProtejeze": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateSolicita": "INT Bank poate solicita documente suplimentare pentru verificare.",
+  "tosIntBankPoateSolicita": "INTBank poate solicita documente suplimentare pentru verificare.",
   "@tosIntBankPoateSolicita": {
     "description": "Used in tos_screen.dart"
   },
@@ -1050,7 +1034,7 @@
   "@tosClientulTrebuieSaAccepte": {
     "description": "Used in tos_screen.dart"
   },
-  "tosConturileNeregulatePotFi": "Conturile neregulate pot fi închise de INT Bank fără notificare prealabilă.",
+  "tosConturileNeregulatePotFi": "Conturile neregulate pot fi închise de INTBank fără notificare prealabilă.",
   "@tosConturileNeregulatePotFi": {
     "description": "Used in tos_screen.dart"
   },
@@ -1058,7 +1042,7 @@
   "@tosClientulTrebuieSaRespecte": {
     "description": "Used in tos_screen.dart"
   },
-  "tosModificareaDatelorPersonaleTrebuie": "Modificarea datelor personale trebuie raportată imediat la INT Bank.",
+  "tosModificareaDatelorPersonaleTrebuie": "Modificarea datelor personale trebuie raportată imediat la INTBank.",
   "@tosModificareaDatelorPersonaleTrebuie": {
     "description": "Used in tos_screen.dart"
   },
@@ -1070,7 +1054,7 @@
   "@tosUtilizareaContuluiActivitatiIlegale": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankRaspundePierderi": "INT Bank nu răspunde pentru pierderi cauzate de neglijența clientului.",
+  "tosIntBankRaspundePierderi": "INTBank nu răspunde pentru pierderi cauzate de neglijența clientului.",
   "@tosIntBankRaspundePierderi": {
     "description": "Used in tos_screen.dart"
   },
@@ -1086,11 +1070,11 @@
   "@tosClientiiTrebuieSaPastreze": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankVaSolicita": "INT Bank nu va solicita niciodată parole prin email sau telefon.",
+  "tosIntBankVaSolicita": "INTBank nu va solicita niciodată parole prin email sau telefon.",
   "@tosIntBankVaSolicita": {
     "description": "Used in tos_screen.dart"
   },
-  "tosRaportatiImediatOriceActivitate": "Raportați imediat orice activitate suspectă la INT Bank.",
+  "tosRaportatiImediatOriceActivitate": "Raportați imediat orice activitate suspectă la INTBank.",
   "@tosRaportatiImediatOriceActivitate": {
     "description": "Used in tos_screen.dart"
   },
@@ -1102,7 +1086,7 @@
   "@tosAutentificareaDoiFactori2fa": {
     "description": "Used in tos_screen.dart"
   },
-  "tosDatelePersonaleSuntProcesate": "Datele personale sunt procesate conform politicii de confidențialitate INT Bank.",
+  "tosDatelePersonaleSuntProcesate": "Datele personale sunt procesate conform politicii de confidențialitate INTBank.",
   "@tosDatelePersonaleSuntProcesate": {
     "description": "Used in tos_screen.dart"
   },
@@ -1110,7 +1094,7 @@
   "@tosEsteInterzisaDistribuireaMalware": {
     "description": "Used in tos_screen.dart"
   },
-  "tosClientiiTrebuieSaFoloseasca": "Clienții trebuie să folosească doar canalele oficiale INT Bank.",
+  "tosClientiiTrebuieSaFoloseasca": "Clienții trebuie să folosească doar canalele oficiale INTBank.",
   "@tosClientiiTrebuieSaFoloseasca": {
     "description": "Used in tos_screen.dart"
   },
@@ -1118,7 +1102,7 @@
   "@tosMonitorizareaActivitatiiContuluiSe": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateIntroduce": "INT Bank poate introduce autentificări suplimentare pentru protecție.",
+  "tosIntBankPoateIntroduce": "INTBank poate introduce autentificări suplimentare pentru protecție.",
   "@tosIntBankPoateIntroduce": {
     "description": "Used in tos_screen.dart"
   },
@@ -1142,11 +1126,11 @@
   "@tosRaportareaPierderiiDispozitivuluiPrevine": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateAudita": "INT Bank poate audita securitatea conturilor pentru prevenirea fraudei.",
+  "tosIntBankPoateAudita": "INTBank poate audita securitatea conturilor pentru prevenirea fraudei.",
   "@tosIntBankPoateAudita": {
     "description": "Used in tos_screen.dart"
   },
-  "tosPlatileEfectuatePrinInt": "Plățile efectuate prin INT Bank sunt finale și ireversibile fără acordul băncii.",
+  "tosPlatileEfectuatePrinInt": "Plățile efectuate prin INTBank sunt finale și ireversibile fără acordul băncii.",
   "@tosPlatileEfectuatePrinInt": {
     "description": "Used in tos_screen.dart"
   },
@@ -1158,7 +1142,7 @@
   "@tosTranzactiileInternationaleSuntSupuse": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateRefuza": "INT Bank poate refuza tranzacții suspecte fără notificare.",
+  "tosIntBankPoateRefuza": "INTBank poate refuza tranzacții suspecte fără notificare.",
   "@tosIntBankPoateRefuza": {
     "description": "Used in tos_screen.dart"
   },
@@ -1178,7 +1162,7 @@
   "@tosTranzactiileSumeMariPot": {
     "description": "Used in tos_screen.dart"
   },
-  "tosPlatileAutomateTrebuieConfigurate": "Plățile automate trebuie configurate corect conform instrucțiunilor INT Bank.",
+  "tosPlatileAutomateTrebuieConfigurate": "Plățile automate trebuie configurate corect conform instrucțiunilor INTBank.",
   "@tosPlatileAutomateTrebuieConfigurate": {
     "description": "Used in tos_screen.dart"
   },
@@ -1198,7 +1182,7 @@
   "@tosOriceEroareTranzactiePoate": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateSuspenda": "INT Bank poate suspenda tranzacțiile dacă sunt detectate nereguli.",
+  "tosIntBankPoateSuspenda": "INTBank poate suspenda tranzacțiile dacă sunt detectate nereguli.",
   "@tosIntBankPoateSuspenda": {
     "description": "Used in tos_screen.dart"
   },
@@ -1206,7 +1190,7 @@
   "@tosModificareaDatelorBancareTrebuie": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateModifica": "INT Bank poate modifica termenii și condițiile în orice moment.",
+  "tosIntBankPoateModifica": "INTBank poate modifica termenii și condițiile în orice moment.",
   "@tosIntBankPoateModifica": {
     "description": "Used in tos_screen.dart"
   },
@@ -1238,7 +1222,7 @@
   "@tosAccesulAnumiteFunctionalitatiPoate": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateSchimba": "INT Bank poate schimba taxele și comisioanele percepute.",
+  "tosIntBankPoateSchimba": "INTBank poate schimba taxele și comisioanele percepute.",
   "@tosIntBankPoateSchimba": {
     "description": "Used in tos_screen.dart"
   },
@@ -1294,7 +1278,7 @@
   "@tosClientiiSuntResponsabiliToate": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankGaranteazaDisponibilitatea": "INT Bank nu garantează disponibilitatea neîntreruptă a serviciilor.",
+  "tosIntBankGaranteazaDisponibilitatea": "INTBank nu garantează disponibilitatea neîntreruptă a serviciilor.",
   "@tosIntBankGaranteazaDisponibilitatea": {
     "description": "Used in tos_screen.dart"
   },
@@ -1306,7 +1290,7 @@
   "@tosVerificareaPeriodicaExtraselorCont": {
     "description": "Used in tos_screen.dart"
   },
-  "tosRespectareaLimitelorRetragereTransfer": "Respectarea limitelor de retragere și transfer impuse de INT Bank este obligatorie.",
+  "tosRespectareaLimitelorRetragereTransfer": "Respectarea limitelor de retragere și transfer impuse de INTBank este obligatorie.",
   "@tosRespectareaLimitelorRetragereTransfer": {
     "description": "Used in tos_screen.dart"
   },
@@ -1314,7 +1298,7 @@
   "@tosVerificareaCorectitudiniiDatelorAplicatie": {
     "description": "Used in tos_screen.dart"
   },
-  "tosProtejareaDispozitivelorAplicatieiInt": "Protejarea dispozitivelor și a aplicației INT Bank este obligatorie.",
+  "tosProtejareaDispozitivelorAplicatieiInt": "Protejarea dispozitivelor și a aplicației INTBank este obligatorie.",
   "@tosProtejareaDispozitivelorAplicatieiInt": {
     "description": "Used in tos_screen.dart"
   },
@@ -1326,11 +1310,11 @@
   "@tosRespectareaTermenelorPlataServiciile": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankColecteazaProceseaza": "INT Bank colectează și procesează date personale conform legislației.",
+  "tosIntBankColecteazaProceseaza": "INTBank colectează și procesează date personale conform legislației.",
   "@tosIntBankColecteazaProceseaza": {
     "description": "Used in tos_screen.dart"
   },
-  "tosClientulTrebuieSaAccepte2": "Clientul trebuie să accepte politica de confidențialitate INT Bank.",
+  "tosClientulTrebuieSaAccepte2": "Clientul trebuie să accepte politica de confidențialitate INTBank.",
   "@tosClientulTrebuieSaAccepte2": {
     "description": "Used in tos_screen.dart"
   },
@@ -1354,7 +1338,7 @@
   "@tosClientiiTrebuieSaRaporteze2": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateProcesa": "INT Bank poate procesa date anonimizate pentru statistici interne.",
+  "tosIntBankPoateProcesa": "INTBank poate procesa date anonimizate pentru statistici interne.",
   "@tosIntBankPoateProcesa": {
     "description": "Used in tos_screen.dart"
   },
@@ -1378,7 +1362,7 @@
   "@tosDateleColectateSuntFolosite": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateBloca": "INT Bank poate bloca contul în caz de încălcare a politicii de date.",
+  "tosIntBankPoateBloca": "INTBank poate bloca contul în caz de încălcare a politicii de date.",
   "@tosIntBankPoateBloca": {
     "description": "Used in tos_screen.dart"
   },
@@ -1386,7 +1370,7 @@
   "@tosClientiiTrebuieSaMentina": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankEsteResponsabila": "INT Bank nu este responsabilă pentru pierderi cauzate de erori ale clienților.",
+  "tosIntBankEsteResponsabila": "INTBank nu este responsabilă pentru pierderi cauzate de erori ale clienților.",
   "@tosIntBankEsteResponsabila": {
     "description": "Used in tos_screen.dart"
   },
@@ -1394,7 +1378,7 @@
   "@tosSeGaranteazaDisponibilitateaNeintrerupta": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankRaspundeIntarzieri": "INT Bank nu răspunde pentru întârzieri cauzate de terți.",
+  "tosIntBankRaspundeIntarzieri": "INTBank nu răspunde pentru întârzieri cauzate de terți.",
   "@tosIntBankRaspundeIntarzieri": {
     "description": "Used in tos_screen.dart"
   },
@@ -1410,7 +1394,7 @@
   "@tosRespectareaInstructiunilorUtilizareEste": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankRaspundePierderi2": "INT Bank nu răspunde pentru pierderi cauzate de fraude externe.",
+  "tosIntBankRaspundePierderi2": "INTBank nu răspunde pentru pierderi cauzate de fraude externe.",
   "@tosIntBankRaspundePierderi2": {
     "description": "Used in tos_screen.dart"
   },
@@ -1418,7 +1402,7 @@
   "@tosServiciileSuntFurnizateAsa": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankGaranteazaExactitatea": "INT Bank nu garantează exactitatea informațiilor terților.",
+  "tosIntBankGaranteazaExactitatea": "INTBank nu garantează exactitatea informațiilor terților.",
   "@tosIntBankGaranteazaExactitatea": {
     "description": "Used in tos_screen.dart"
   },
@@ -1434,7 +1418,7 @@
   "@tosClientiiSuntResponsabiliFolosirea": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateAjusta": "INT Bank poate ajusta termenii de responsabilitate prin notificare.",
+  "tosIntBankPoateAjusta": "INTBank poate ajusta termenii de responsabilitate prin notificare.",
   "@tosIntBankPoateAjusta": {
     "description": "Used in tos_screen.dart"
   },
@@ -1442,7 +1426,7 @@
   "@tosClientiiTrebuieSaAccepte3": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateSuspenda2": "INT Bank poate suspenda sau restricționa conturile care încalcă termenii.",
+  "tosIntBankPoateSuspenda2": "INTBank poate suspenda sau restricționa conturile care încalcă termenii.",
   "@tosIntBankPoateSuspenda2": {
     "description": "Used in tos_screen.dart"
   },
@@ -1450,11 +1434,11 @@
   "@tosConturileTrebuieSaRespecte": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankEsteResponsabil": "INT Bank nu este responsabil pentru pierderile cauzate de terți.",
+  "tosIntBankEsteResponsabil": "INTBank nu este responsabil pentru pierderile cauzate de terți.",
   "@tosIntBankEsteResponsabil": {
     "description": "Used in tos_screen.dart"
   },
-  "tosClientiiTrebuieSaUtilizeze": "Clienții trebuie să utilizeze doar canalele oficiale INT Bank.",
+  "tosClientiiTrebuieSaUtilizeze": "Clienții trebuie să utilizeze doar canalele oficiale INTBank.",
   "@tosClientiiTrebuieSaUtilizeze": {
     "description": "Used in tos_screen.dart"
   },
@@ -1470,11 +1454,11 @@
   "@tosConturileInactiveNedeclaratePot": {
     "description": "Used in tos_screen.dart"
   },
-  "tosFolosireaAplicatieiImplicaAcordul": "Folosirea aplicației implică acordul față de toate regulile INT Bank.",
+  "tosFolosireaAplicatieiImplicaAcordul": "Folosirea aplicației implică acordul față de toate regulile INTBank.",
   "@tosFolosireaAplicatieiImplicaAcordul": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateIntroduce2": "INT Bank poate introduce noi funcționalități și servicii.",
+  "tosIntBankPoateIntroduce2": "INTBank poate introduce noi funcționalități și servicii.",
   "@tosIntBankPoateIntroduce2": {
     "description": "Used in tos_screen.dart"
   },
@@ -1482,7 +1466,7 @@
   "@tosNerespectareaTermenilorPoateDuce": {
     "description": "Used in tos_screen.dart"
   },
-  "tosClientiiTrebuieSaRespecte4": "Clienții trebuie să respecte toate notificările INT Bank.",
+  "tosClientiiTrebuieSaRespecte4": "Clienții trebuie să respecte toate notificările INTBank.",
   "@tosClientiiTrebuieSaRespecte4": {
     "description": "Used in tos_screen.dart"
   },
@@ -1494,7 +1478,7 @@
   "@tosClientulTrebuieSaConsulte": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateModifica2": "INT Bank poate modifica termenii pentru a proteja clienții.",
+  "tosIntBankPoateModifica2": "INTBank poate modifica termenii pentru a proteja clienții.",
   "@tosIntBankPoateModifica2": {
     "description": "Used in tos_screen.dart"
   },
@@ -1506,7 +1490,7 @@
   "@tosToateTaxeleAplicateContului": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateModifica3": "INT Bank poate modifica comisioanele prin notificare prealabilă.",
+  "tosIntBankPoateModifica3": "INTBank poate modifica comisioanele prin notificare prealabilă.",
   "@tosIntBankPoateModifica3": {
     "description": "Used in tos_screen.dart"
   },
@@ -1522,7 +1506,7 @@
   "@tosTaxelePotFiPercepute": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateSuspenda3": "INT Bank poate suspenda contul pentru neplata taxelor aplicabile.",
+  "tosIntBankPoateSuspenda3": "INTBank poate suspenda contul pentru neplata taxelor aplicabile.",
   "@tosIntBankPoateSuspenda3": {
     "description": "Used in tos_screen.dart"
   },
@@ -1530,7 +1514,7 @@
   "@tosClientiiTrebuieSaConsulte": {
     "description": "Used in tos_screen.dart"
   },
-  "tosReduceriPromotiiPotFi": "Reduceri și promoții pot fi aplicate doar conform regulilor INT Bank.",
+  "tosReduceriPromotiiPotFi": "Reduceri și promoții pot fi aplicate doar conform regulilor INTBank.",
   "@tosReduceriPromotiiPotFi": {
     "description": "Used in tos_screen.dart"
   },
@@ -1546,7 +1530,7 @@
   "@tosComisioaneleServiciiSpecialeSunt": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateAjusta2": "INT Bank poate ajusta limitele taxelor în funcție de cont.",
+  "tosIntBankPoateAjusta2": "INTBank poate ajusta limitele taxelor în funcție de cont.",
   "@tosIntBankPoateAjusta2": {
     "description": "Used in tos_screen.dart"
   },
@@ -1562,7 +1546,7 @@
   "@tosNeplataTaxelorPoateDuce": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateRezilia": "INT Bank poate rezilia contul în caz de încălcare a termenilor.",
+  "tosIntBankPoateRezilia": "INTBank poate rezilia contul în caz de încălcare a termenilor.",
   "@tosIntBankPoateRezilia": {
     "description": "Used in tos_screen.dart"
   },
@@ -1578,7 +1562,7 @@
   "@tosReziliereaContuluiElibereazaClientul": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateInchide": "INT Bank poate închide contul pentru activități ilegale.",
+  "tosIntBankPoateInchide": "INTBank poate închide contul pentru activități ilegale.",
   "@tosIntBankPoateInchide": {
     "description": "Used in tos_screen.dart"
   },
@@ -1598,7 +1582,7 @@
   "@tosClientiiTrebuieSaCoopereze": {
     "description": "Used in tos_screen.dart"
   },
-  "tosIntBankPoateSuspenda4": "INT Bank poate suspenda serviciile în caz de risc de securitate.",
+  "tosIntBankPoateSuspenda4": "INTBank poate suspenda serviciile în caz de risc de securitate.",
   "@tosIntBankPoateSuspenda4": {
     "description": "Used in tos_screen.dart"
   },
@@ -1959,7 +1943,7 @@
   "@receiptFinalizat": {
     "description": "Used in transfer_receipt_screen.dart"
   },
-  "receiptIntBank": "INT Bank - {title}",
+  "receiptIntBank": "INTBank - {title}",
   "@receiptIntBank": {
     "description": "Used in transfer_receipt_screen.dart",
     "placeholders": {
@@ -2360,54 +2344,6 @@
   "@transferConfirmModificaDetaliile": {
     "description": "Used in transfer_confirmation_bottom_sheet.dart"
   },
-  "welcomeSalutBineVenitInt": "Salut și bine ai venit în INT Bank!",
-  "@welcomeSalutBineVenitInt": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomeEstiDejaClient": "Ești deja client ",
-  "@welcomeEstiDejaClient": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomeContinua": "? Continuă cu ",
-  "@welcomeContinua": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomeConecteaza": "Conectează-te",
-  "@welcomeConecteaza": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomeDacaCont": ".\n\nDacă nu ai cont, ",
-  "@welcomeDacaCont": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomePotiDeveniClientDirect": "poți deveni client direct din INT Bank",
-  "@welcomePotiDeveniClientDirect": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomeEste": ".\n\nEste ",
-  "@welcomeEste": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomeRapidSigur": "rapid și sigur",
-  "@welcomeRapidSigur": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomeIarTuVeiAvea": ", iar tu vei avea acces la toate funcționalitățile contului tău bancar ",
-  "@welcomeIarTuVeiAvea": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomeInstantDistanta": "instant și de la distanță",
-  "@welcomeInstantDistanta": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomeInregistreaza": "Înregistrează-te",
-  "@welcomeInregistreaza": {
-    "description": "Used in welcome_screen.dart"
-  },
-  "welcomeDejaCont": "Ai deja un cont? ",
-  "@welcomeDejaCont": {
-    "description": "Used in welcome_screen.dart"
-  },
   "routerPaginaSolicitataFostGasita": "Pagina solicitată nu a fost găsită. Te redirecționăm către ecranul principal...",
   "@routerPaginaSolicitataFostGasita": {
     "description": "Used in app_router.dart"
@@ -2602,5 +2538,806 @@
         "type": "String"
       }
     }
+  },
+  "errorsCodeCurrencyMismatch": "Contul destinatarului are altă monedă. Folosește schimbul valutar sau un cont în aceeași monedă.",
+  "@errorsCodeCurrencyMismatch": {
+    "description": "Server code CURRENCY_MISMATCH: transfer between accounts in different currencies"
+  },
+  "errorsCodeInsufficientFunds": "Fonduri insuficiente în contul sursă.",
+  "@errorsCodeInsufficientFunds": {
+    "description": "Server code INSUFFICIENT_FUNDS"
+  },
+  "errorsCodeAccountNotOwned": "Contul ales nu îți aparține.",
+  "@errorsCodeAccountNotOwned": {
+    "description": "Server code ACCOUNT_NOT_OWNED"
+  },
+  "errorsCodeSameAccount": "Alege două conturi diferite.",
+  "@errorsCodeSameAccount": {
+    "description": "Server code SAME_ACCOUNT"
+  },
+  "errorsCodeUnsupportedPair": "Schimbul între aceste monede nu este disponibil.",
+  "@errorsCodeUnsupportedPair": {
+    "description": "Server code UNSUPPORTED_CURRENCY_PAIR"
+  },
+  "errorsCodeInvalidAmount": "Suma nu este validă sau este prea mică.",
+  "@errorsCodeInvalidAmount": {
+    "description": "Server code INVALID_AMOUNT"
+  },
+  "scaTitle": "Confirmă plata",
+  "@scaTitle": {
+    "description": "Title of the PIN sheet that authorizes a large payment"
+  },
+  "scaSubtitle": "Pentru plăți de valoare mare, introdu PIN-ul ca să autorizezi exact această plată.",
+  "@scaSubtitle": {
+    "description": "Explains why the PIN is asked again"
+  },
+  "scaCancel": "Anulează",
+  "@scaCancel": {
+    "description": "Closes the PIN confirmation without paying"
+  },
+  "scaPinProgress": "{entered} din {total} cifre introduse",
+  "@scaPinProgress": {
+    "description": "Screen-reader progress of PIN entry",
+    "placeholders": {
+      "entered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "errorsCodeScaPinInvalid": "{count, plural, =1{PIN incorect. Mai ai o încercare.} few{PIN incorect. Mai ai {count} încercări.} other{PIN incorect. Mai ai {count} de încercări.}}",
+  "@errorsCodeScaPinInvalid": {
+    "description": "Server code SCA_PIN_INVALID with remaining attempts",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "errorsCodeScaLocked": "PIN-ul este blocat temporar după prea multe încercări. Reîncearcă peste 15 minute.",
+  "@errorsCodeScaLocked": {
+    "description": "Server code SCA_LOCKED"
+  },
+  "errorsCodeScaChallengeInvalid": "Confirmarea a expirat sau plata s-a schimbat. Trimite plata din nou.",
+  "@errorsCodeScaChallengeInvalid": {
+    "description": "Server code SCA_CHALLENGE_INVALID"
+  },
+  "transferValidationOnlyIntBank": "Poți trimite bani doar către conturi INTBank (IBAN-uri cu codul INTB).",
+  "@transferValidationOnlyIntBank": {
+    "description": "A valid IBAN of another bank: transfers stay inside INTBank"
+  },
+  "errorsCodeDestinationNotFound": "Nu există niciun cont INTBank cu acest IBAN. Verifică IBAN-ul destinatarului.",
+  "@errorsCodeDestinationNotFound": {
+    "description": "Server code DESTINATION_NOT_FOUND"
+  },
+  "scheduledStatusFailed": "Neefectuată",
+  "@scheduledStatusFailed": {
+    "description": "Status chip: a one-off scheduled payment could not be made"
+  },
+  "scheduledStatusPaused": "Suspendată",
+  "@scheduledStatusPaused": {
+    "description": "Status chip: a recurring payment paused after repeated failures"
+  },
+  "scheduledStatusCompleted": "Efectuată",
+  "@scheduledStatusCompleted": {
+    "description": "Status chip: a one-off scheduled payment was made"
+  },
+  "scheduledLastError": "Ultima încercare: {reason}",
+  "@scheduledLastError": {
+    "description": "Why the last scheduled run failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsTitle": "Seifuri de economii",
+  "@vaultsTitle": {
+    "description": "Vaults screen title"
+  },
+  "vaultsTotalSaved": "Total economisit",
+  "@vaultsTotalSaved": {
+    "description": "Summary label above the saved amounts"
+  },
+  "vaultsNoInterestNote": "Banii din seifuri rămân ai tăi; seifurile nu sunt purtătoare de dobândă.",
+  "@vaultsNoInterestNote": {
+    "description": "Honest note under the summary"
+  },
+  "vaultsEmptyTitle": "Niciun seif încă",
+  "@vaultsEmptyTitle": {
+    "description": "Empty state title"
+  },
+  "vaultsEmptyBody": "Pune deoparte bani pentru un obiectiv. Dintr-un seif flexibil îi poți retrage oricând.",
+  "@vaultsEmptyBody": {
+    "description": "Empty state text"
+  },
+  "vaultsNew": "Seif nou",
+  "@vaultsNew": {
+    "description": "Button that opens the create-vault form"
+  },
+  "vaultsLoadError": "Seifurile nu au putut fi încărcate.",
+  "@vaultsLoadError": {
+    "description": "Load error"
+  },
+  "vaultsProgress": "{saved} din {target}",
+  "@vaultsProgress": {
+    "description": "Saved amount out of the target",
+    "placeholders": {
+      "saved": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsFlexible": "Flexibil",
+  "@vaultsFlexible": {
+    "description": "Badge: money can be withdrawn any time"
+  },
+  "vaultsLockedUntil": "Blocat până la {date}",
+  "@vaultsLockedUntil": {
+    "description": "Badge: locked vault",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsTargetBy": "Țintă: {date}",
+  "@vaultsTargetBy": {
+    "description": "Target date line",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsGoalReached": "Obiectiv atins",
+  "@vaultsGoalReached": {
+    "description": "Shown when the balance reached the target"
+  },
+  "vaultsDeposit": "Depune",
+  "@vaultsDeposit": {
+    "description": "Deposit button"
+  },
+  "vaultsWithdraw": "Retrage",
+  "@vaultsWithdraw": {
+    "description": "Withdraw button"
+  },
+  "vaultsMoreActions": "Mai multe acțiuni pentru „{name}”",
+  "@vaultsMoreActions": {
+    "description": "Tooltip of the vault menu",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsClose": "Închide seiful",
+  "@vaultsClose": {
+    "description": "Menu item"
+  },
+  "vaultsCloseTitle": "Închizi seiful „{name}”?",
+  "@vaultsCloseTitle": {
+    "description": "Close confirmation title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsCloseMessage": "{amount} se mută în contul tău {account}. Seiful dispare din listă.",
+  "@vaultsCloseMessage": {
+    "description": "Close confirmation text",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsDepositTitle": "Depune în „{name}”",
+  "@vaultsDepositTitle": {
+    "description": "Deposit sheet title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsWithdrawTitle": "Retrage din „{name}”",
+  "@vaultsWithdrawTitle": {
+    "description": "Withdraw sheet title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsFromAccount": "Din contul",
+  "@vaultsFromAccount": {
+    "description": "Account picker label for deposits"
+  },
+  "vaultsToAccount": "În contul",
+  "@vaultsToAccount": {
+    "description": "Account picker label for withdrawals"
+  },
+  "vaultsAvailable": "Disponibil: {amount}",
+  "@vaultsAvailable": {
+    "description": "Balance that can be moved",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsAmount": "Suma ({currency})",
+  "@vaultsAmount": {
+    "description": "Amount field label",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsAmountInvalid": "Introdu o sumă mai mare de 0.",
+  "@vaultsAmountInvalid": {
+    "description": "Amount validation"
+  },
+  "vaultsAmountTooHigh": "Suma depășește {amount}.",
+  "@vaultsAmountTooHigh": {
+    "description": "Amount validation",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsConfirm": "Confirmă",
+  "@vaultsConfirm": {
+    "description": "Confirm button in sheets"
+  },
+  "vaultsDeposited": "Ai depus {amount} în „{name}”.",
+  "@vaultsDeposited": {
+    "description": "Success message",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsWithdrawn": "Ai retras {amount} din „{name}”.",
+  "@vaultsWithdrawn": {
+    "description": "Success message",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsClosed": "Seiful „{name}” a fost închis.",
+  "@vaultsClosed": {
+    "description": "Success message",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsCreated": "Seiful „{name}” a fost creat.",
+  "@vaultsCreated": {
+    "description": "Success message",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsNameLabel": "Numele seifului",
+  "@vaultsNameLabel": {
+    "description": "Create form"
+  },
+  "vaultsNameHint": "ex. Vacanță",
+  "@vaultsNameHint": {
+    "description": "Create form hint"
+  },
+  "vaultsNameInvalid": "Introdu un nume de cel mult 60 de caractere.",
+  "@vaultsNameInvalid": {
+    "description": "Create form validation"
+  },
+  "vaultsTargetLabel": "Suma țintă ({currency})",
+  "@vaultsTargetLabel": {
+    "description": "Create form",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "vaultsTargetDateLabel": "Data țintă",
+  "@vaultsTargetDateLabel": {
+    "description": "Create form"
+  },
+  "vaultsTargetDateNone": "Alege o dată (opțional)",
+  "@vaultsTargetDateNone": {
+    "description": "Create form, no date yet"
+  },
+  "vaultsTargetDateRequired": "Un seif blocat are nevoie de o dată țintă.",
+  "@vaultsTargetDateRequired": {
+    "description": "Create form validation"
+  },
+  "vaultsTypeFlexible": "Flexibil",
+  "@vaultsTypeFlexible": {
+    "description": "Create form segment"
+  },
+  "vaultsTypeLocked": "Blocat",
+  "@vaultsTypeLocked": {
+    "description": "Create form segment"
+  },
+  "vaultsTypeFlexibleHint": "Poți retrage banii oricând.",
+  "@vaultsTypeFlexibleHint": {
+    "description": "Create form explanation"
+  },
+  "vaultsTypeLockedHint": "Banii rămân în seif până la data țintă.",
+  "@vaultsTypeLockedHint": {
+    "description": "Create form explanation"
+  },
+  "vaultsCreate": "Creează seiful",
+  "@vaultsCreate": {
+    "description": "Create form submit"
+  },
+  "vaultsNoAccount": "Ai nevoie de un cont curent în {currency}.",
+  "@vaultsNoAccount": {
+    "description": "No matching account",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "errorsCodeVaultLocked": "Seiful este blocat până la data țintă.",
+  "@errorsCodeVaultLocked": {
+    "description": "Server code VAULT_LOCKED"
+  },
+  "errorsCodeVaultNotFound": "Seiful nu mai există.",
+  "@errorsCodeVaultNotFound": {
+    "description": "Server code VAULT_NOT_FOUND"
+  },
+  "errorsCodeVaultInvalid": "Verifică datele seifului.",
+  "@errorsCodeVaultInvalid": {
+    "description": "Server code VAULT_INVALID"
+  },
+  "exchangeQuoteValidity": "Cursul și sumele sunt garantate 60 de secunde.",
+  "@exchangeQuoteValidity": {
+    "description": "Note under an exchange quote"
+  },
+  "errorsCodeQuoteExpired": "Oferta de curs a expirat. Încearcă din nou pentru un curs nou.",
+  "@errorsCodeQuoteExpired": {
+    "description": "Server code QUOTE_EXPIRED"
+  },
+  "sessionLockedTitle": "Sesiune încheiată",
+  "@sessionLockedTitle": {
+    "description": "Inactivity lock title"
+  },
+  "sessionLockedBody": "Pentru siguranța banilor tăi, te-am deconectat după câteva minute fără activitate. Introdu PIN-ul ca să continui.",
+  "@sessionLockedBody": {
+    "description": "Inactivity lock text"
+  },
+  "sessionLockedAction": "Introdu PIN-ul",
+  "@sessionLockedAction": {
+    "description": "Inactivity lock button"
+  },
+  "privacyVeilLabel": "INTBank • Protecția confidențialității",
+  "@privacyVeilLabel": {
+    "description": "Shown over the app in the app switcher"
+  },
+  "navHome": "Acasă",
+  "@navHome": {
+    "description": "Bottom navigation tab"
+  },
+  "navAccounts": "Conturi",
+  "@navAccounts": {
+    "description": "Bottom navigation tab"
+  },
+  "navPayments": "Plăți",
+  "@navPayments": {
+    "description": "Bottom navigation tab"
+  },
+  "navSavings": "Economii",
+  "@navSavings": {
+    "description": "Bottom navigation tab"
+  },
+  "navProfile": "Profil",
+  "@navProfile": {
+    "description": "Bottom navigation tab"
+  },
+  "accountsTitle": "Conturile mele",
+  "@accountsTitle": {
+    "description": "Accounts tab title"
+  },
+  "accountsCurrentAccount": "Cont curent {currency}",
+  "@accountsCurrentAccount": {
+    "description": "Account name",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsEmpty": "Nu ai încă un cont curent.",
+  "@accountsEmpty": {
+    "description": "Accounts tab, no accounts"
+  },
+  "accountsLoadError": "Nu am putut încărca conturile.",
+  "@accountsLoadError": {
+    "description": "Accounts failed to load"
+  },
+  "accountsOpenCurrency": "Deschide un cont în valută",
+  "@accountsOpenCurrency": {
+    "description": "Accounts tab button"
+  },
+  "accountsCopyIban": "Copiază IBAN-ul",
+  "@accountsCopyIban": {
+    "description": "Copy button"
+  },
+  "accountsIbanCopied": "IBAN copiat",
+  "@accountsIbanCopied": {
+    "description": "Snackbar after copying"
+  },
+  "paymentsTitle": "Plăți",
+  "@paymentsTitle": {
+    "description": "Payments tab title"
+  },
+  "paymentsFrom": "Plătești din",
+  "@paymentsFrom": {
+    "description": "Source account picker label"
+  },
+  "paymentsTransferTitle": "Transfer către un cont INTBank",
+  "@paymentsTransferTitle": {
+    "description": "Payments action"
+  },
+  "paymentsTransferBody": "Instant, către orice IBAN INTBank.",
+  "@paymentsTransferBody": {
+    "description": "Payments action detail"
+  },
+  "paymentsExchangeTitle": "Schimb valutar",
+  "@paymentsExchangeTitle": {
+    "description": "Payments action"
+  },
+  "paymentsExchangeBody": "Între conturile tale, la un curs garantat 60 de secunde.",
+  "@paymentsExchangeBody": {
+    "description": "Payments action detail"
+  },
+  "paymentsScheduledTitle": "Plăți programate",
+  "@paymentsScheduledTitle": {
+    "description": "Payments action"
+  },
+  "paymentsScheduledBody": "Transferuri care pleacă automat la datele alese.",
+  "@paymentsScheduledBody": {
+    "description": "Payments action detail"
+  },
+  "profileTitle": "Profil",
+  "@profileTitle": {
+    "description": "Profile tab title"
+  },
+  "profileLoadError": "Nu am putut încărca datele tale.",
+  "@profileLoadError": {
+    "description": "Profile failed to load"
+  },
+  "profilePersonalDetails": "Date personale",
+  "@profilePersonalDetails": {
+    "description": "Profile section"
+  },
+  "profileEmail": "E-mail",
+  "@profileEmail": {
+    "description": "Profile field"
+  },
+  "profileAddress": "Adresă",
+  "@profileAddress": {
+    "description": "Profile field"
+  },
+  "profileBirthDate": "Data nașterii",
+  "@profileBirthDate": {
+    "description": "Profile field"
+  },
+  "profileDetailsNote": "Pentru a-ți schimba datele personale, contactează INTBank.",
+  "@profileDetailsNote": {
+    "description": "Profile note"
+  },
+  "settingsSecurity": "Securitate",
+  "@settingsSecurity": {
+    "description": "Settings section"
+  },
+  "settingsChangePin": "Schimbă PIN-ul",
+  "@settingsChangePin": {
+    "description": "Settings row"
+  },
+  "settingsChangePinBody": "PIN-ul cu care intri în aplicație și confirmi plățile.",
+  "@settingsChangePinBody": {
+    "description": "Settings row detail"
+  },
+  "settingsAutoLock": "Blocare automată",
+  "@settingsAutoLock": {
+    "description": "Settings row"
+  },
+  "settingsAutoLockMinutes": "{minutes, plural, =1{După 1 minut fără activitate} few{După {minutes} minute fără activitate} other{După {minutes} de minute fără activitate}}",
+  "@settingsAutoLockMinutes": {
+    "description": "Auto-lock choice",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHideAmounts": "Ascunde sumele",
+  "@settingsHideAmounts": {
+    "description": "Settings switch"
+  },
+  "settingsHideAmountsBody": "Soldurile și sumele apar ca •••• până le afișezi.",
+  "@settingsHideAmountsBody": {
+    "description": "Settings switch detail"
+  },
+  "settingsPreferences": "Preferințe",
+  "@settingsPreferences": {
+    "description": "Settings section"
+  },
+  "settingsAppearance": "Aspect",
+  "@settingsAppearance": {
+    "description": "Settings row"
+  },
+  "settingsThemeSystem": "Ca pe telefon",
+  "@settingsThemeSystem": {
+    "description": "Theme choice"
+  },
+  "settingsThemeLight": "Luminos",
+  "@settingsThemeLight": {
+    "description": "Theme choice"
+  },
+  "settingsThemeDark": "Întunecat",
+  "@settingsThemeDark": {
+    "description": "Theme choice"
+  },
+  "settingsLanguage": "Limbă",
+  "@settingsLanguage": {
+    "description": "Settings row"
+  },
+  "settingsLanguageSystem": "Limba telefonului",
+  "@settingsLanguageSystem": {
+    "description": "Language choice"
+  },
+  "settingsAbout": "Despre",
+  "@settingsAbout": {
+    "description": "Settings section"
+  },
+  "settingsVersion": "Versiune",
+  "@settingsVersion": {
+    "description": "Settings row"
+  },
+  "settingsLicences": "Licențe open-source",
+  "@settingsLicences": {
+    "description": "Settings row"
+  },
+  "changePinCurrentTitle": "Introdu PIN-ul actual",
+  "@changePinCurrentTitle": {
+    "description": "Change PIN step 1"
+  },
+  "changePinCurrentBody": "Pentru siguranță, confirmă mai întâi că ești tu.",
+  "@changePinCurrentBody": {
+    "description": "Change PIN step 1 detail"
+  },
+  "changePinNewTitle": "Alege noul PIN",
+  "@changePinNewTitle": {
+    "description": "Change PIN step 2"
+  },
+  "changePinNewBody": "6 cifre pe care nu le folosești în altă parte.",
+  "@changePinNewBody": {
+    "description": "Change PIN step 2 detail"
+  },
+  "changePinConfirmTitle": "Confirmă noul PIN",
+  "@changePinConfirmTitle": {
+    "description": "Change PIN step 3"
+  },
+  "changePinConfirmBody": "Introdu din nou noul PIN.",
+  "@changePinConfirmBody": {
+    "description": "Change PIN step 3 detail"
+  },
+  "changePinStep": "Pasul {step} din 3",
+  "@changePinStep": {
+    "description": "Change PIN progress",
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "changePinSameAsOld": "Noul PIN trebuie să fie diferit de cel actual.",
+  "@changePinSameAsOld": {
+    "description": "Change PIN validation"
+  },
+  "changePinDone": "PIN-ul a fost schimbat.",
+  "@changePinDone": {
+    "description": "Change PIN success"
+  },
+  "changePinFailed": "Nu am putut schimba PIN-ul. Încearcă din nou.",
+  "@changePinFailed": {
+    "description": "Change PIN failure"
+  },
+  "dayToday": "Astăzi",
+  "@dayToday": {
+    "description": "Day heading in the transaction list"
+  },
+  "dayYesterday": "Ieri",
+  "@dayYesterday": {
+    "description": "Day heading in the transaction list"
+  },
+  "homeGreetMorning": "Bună dimineața",
+  "@homeGreetMorning": {
+    "description": "Home greeting before the name"
+  },
+  "homeGreetAfternoon": "Bună ziua",
+  "@homeGreetAfternoon": {
+    "description": "Home greeting before the name"
+  },
+  "homeGreetEvening": "Bună seara",
+  "@homeGreetEvening": {
+    "description": "Home greeting before the name"
+  },
+  "transferSavedRecipients": "Destinatari salvați",
+  "@transferSavedRecipients": {
+    "description": "Transfer: saved recipients heading"
+  },
+  "transferToRecipient": "Transferă către {name}",
+  "@transferToRecipient": {
+    "description": "Transfer: recent recipient button",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryGroceries": "Alimente și supermarket",
+  "@categoryGroceries": {
+    "description": "Transaction category"
+  },
+  "categoryBills": "Facturi și utilități",
+  "@categoryBills": {
+    "description": "Transaction category"
+  },
+  "categoryRestaurants": "Restaurante și cafenele",
+  "@categoryRestaurants": {
+    "description": "Transaction category"
+  },
+  "categoryTransport": "Transport și combustibil",
+  "@categoryTransport": {
+    "description": "Transaction category"
+  },
+  "categoryEntertainment": "Divertisment și abonamente",
+  "@categoryEntertainment": {
+    "description": "Transaction category"
+  },
+  "categoryOther": "Transferuri și altele",
+  "@categoryOther": {
+    "description": "Transaction category"
+  },
+  "categoryIncoming": "Bani primiți",
+  "@categoryIncoming": {
+    "description": "Transaction category"
+  },
+  "categoryOwnAccounts": "Între conturile tale",
+  "@categoryOwnAccounts": {
+    "description": "Transaction category"
+  },
+  "txDetailsCategory": "Categorie",
+  "@txDetailsCategory": {
+    "description": "Transaction details row"
+  },
+  "exchangeSell": "Vinzi",
+  "@exchangeSell": {
+    "description": "Exchange: source card"
+  },
+  "exchangeBuy": "Cumperi",
+  "@exchangeBuy": {
+    "description": "Exchange: destination card"
+  },
+  "exchangeBalance": "Sold: {amount}",
+  "@exchangeBalance": {
+    "description": "Exchange: account balance",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "exchangeNoAccount": "Nu ai cont în {currency}",
+  "@exchangeNoAccount": {
+    "description": "Exchange: no account in that currency",
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "exchangeAll": "Tot soldul",
+  "@exchangeAll": {
+    "description": "Exchange: use the whole balance"
+  },
+  "exchangeNoFee": "Fără comision",
+  "@exchangeNoFee": {
+    "description": "Exchange: fee note"
+  },
+  "exchangeChooseCurrency": "Alege moneda",
+  "@exchangeChooseCurrency": {
+    "description": "Exchange: currency picker title"
+  },
+  "exchangeEstimateNote": "Suma exactă o vezi înainte să confirmi.",
+  "@exchangeEstimateNote": {
+    "description": "Exchange: the shown amount is an estimate"
+  },
+  "exchangeDone": "Schimb realizat",
+  "@exchangeDone": {
+    "description": "Exchange success title"
+  },
+  "currencyRon": "Leu românesc",
+  "@currencyRon": {
+    "description": "Currency name"
+  },
+  "welcomeHeadline": "Banca ta, mereu cu tine",
+  "@welcomeHeadline": {
+    "description": "Welcome screen headline"
+  },
+  "welcomeSubtitle": "Gestionează-ți banii simplu și în siguranță, de oriunde.",
+  "@welcomeSubtitle": {
+    "description": "Welcome screen subtitle"
+  },
+  "welcomeFeatureTransfers": "Transferuri instant",
+  "@welcomeFeatureTransfers": {
+    "description": "Welcome feature"
+  },
+  "welcomeFeatureTransfersBody": "Între conturile INTBank, la orice oră.",
+  "@welcomeFeatureTransfersBody": {
+    "description": "Welcome feature detail"
+  },
+  "welcomeFeatureSavings": "Seifuri de economii",
+  "@welcomeFeatureSavings": {
+    "description": "Welcome feature"
+  },
+  "welcomeFeatureSavingsBody": "Pune bani deoparte pentru obiectivele tale.",
+  "@welcomeFeatureSavingsBody": {
+    "description": "Welcome feature detail"
+  },
+  "welcomeFeatureSecurity": "Securitate la fiecare pas",
+  "@welcomeFeatureSecurity": {
+    "description": "Welcome feature"
+  },
+  "welcomeFeatureSecurityBody": "PIN, confirmarea plăților și blocare automată.",
+  "@welcomeFeatureSecurityBody": {
+    "description": "Welcome feature detail"
+  },
+  "welcomeOpenAccount": "Deschide un cont",
+  "@welcomeOpenAccount": {
+    "description": "Welcome primary button"
+  },
+  "welcomeHaveAccount": "Am deja cont",
+  "@welcomeHaveAccount": {
+    "description": "Welcome secondary button"
+  },
+  "setupErrorTitle": "Aplicația nu este configurată",
+  "@setupErrorTitle": {
+    "description": "Release build without certificate pins"
+  },
+  "setupErrorBody": "Această versiune nu are configurată conexiunea securizată cu banca, așa că nu se conectează la server. Instalează o versiune oficială a aplicației.",
+  "@setupErrorBody": {
+    "description": "Release build without certificate pins"
   }
 }

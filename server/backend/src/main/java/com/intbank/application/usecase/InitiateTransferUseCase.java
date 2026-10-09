@@ -1,5 +1,6 @@
 package com.intbank.application.usecase;
 
+import com.intbank.core.domain.exception.BusinessRuleException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.intbank.core.domain.event.TransferInitiatedEvent;
 import com.intbank.core.domain.vo.TransferStatus;
@@ -78,9 +79,31 @@ public class InitiateTransferUseCase implements TransferUseCase
                 .orElseThrow(() -> new IllegalArgumentException("Source account " + request.fromIban() + " not found"));
 
         var destAccount = accountRepository.findByIban(request.toIban())
-                .orElseThrow(() -> new IllegalArgumentException("Destination account " + request.toIban() + " not found"));
+                .orElseThrow(() -> new BusinessRuleException(BusinessRuleException.DESTINATION_NOT_FOUND,
+                        "Nu există niciun cont INTBank cu IBAN-ul " + request.toIban()
+                                + ". Transferurile se pot face doar între conturi INTBank."));
 
         verifyOwnership(sourceAccount.userId(), request.fromIban());
+
+        // Vault savings accounts move money only through the vault itself.
+        if (!destAccount.isCurrent())
+        {
+            throw new BusinessRuleException(BusinessRuleException.DESTINATION_NOT_FOUND,
+                    "Nu există niciun cont INTBank cu IBAN-ul " + request.toIban() + ".");
+        }
+        if (!sourceAccount.isCurrent())
+        {
+            throw new BusinessRuleException(BusinessRuleException.ACCOUNT_NOT_OWNED,
+                    "Plățile se fac doar din conturile curente.");
+        }
+
+        // Transfers move money 1:1; currency conversion only happens through the exchange flow.
+        if (!sourceAccount.moneda().equals(request.currency()) || !destAccount.moneda().equals(request.currency()))
+        {
+            throw new BusinessRuleException(BusinessRuleException.CURRENCY_MISMATCH,
+                    "Contul destinatarului este în " + destAccount.moneda() + ", iar transferul este în "
+                            + request.currency() + ". Folosește schimbul valutar sau un cont în aceeași monedă.");
+        }
 
         // AML Velocity & Fraud Evaluation
         var amlResult = amlVelocityService.evaluateTransfer(sourceAccount.userId(), request.amount(), request.currency());

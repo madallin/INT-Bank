@@ -47,6 +47,15 @@ public class ScheduledTransferJpaEntity
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
+    @Column(name = "last_run_at")
+    private Instant lastRunAt;
+
+    @Column(name = "last_error", length = 255)
+    private String lastError;
+
+    @Column(name = "consecutive_failures", nullable = false)
+    private int consecutiveFailures = 0;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -82,4 +91,34 @@ public class ScheduledTransferJpaEntity
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+    public Instant getLastRunAt()
+    {
+        return lastRunAt;
+    }
+
+    public void setLastRunAt(Instant lastRunAt)
+    {
+        this.lastRunAt = lastRunAt;
+    }
+
+    public String getLastError()
+    {
+        return lastError;
+    }
+
+    public void setLastError(String lastError)
+    {
+        this.lastError = lastError;
+    }
+
+    public int getConsecutiveFailures()
+    {
+        return consecutiveFailures;
+    }
+
+    public void setConsecutiveFailures(int consecutiveFailures)
+    {
+        this.consecutiveFailures = consecutiveFailures;
+    }
 }

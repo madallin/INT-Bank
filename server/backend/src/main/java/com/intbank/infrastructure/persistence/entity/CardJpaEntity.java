@@ -23,9 +23,6 @@ public class CardJpaEntity
     @Column(name = "numar_card", nullable = false)
     private String numarCard;
 
-    @Column(nullable = true)
-    private String cvv;
-
     @Column(name = "data_expirare", nullable = false)
     private String dataExpirare;
 
@@ -37,6 +34,26 @@ public class CardJpaEntity
 
     @Column(name = "created_at")
     private Instant createdAt;
+
+    /** ACTIVE or FROZEN. A frozen card must be declined for every authorization. */
+    @Column(nullable = false, length = 16)
+    private String status = STATUS_ACTIVE;
+
+    @Column(name = "spending_limit", nullable = false, precision = 15, scale = 2)
+    private java.math.BigDecimal spendingLimit = DEFAULT_SPENDING_LIMIT;
+
+    @Column(name = "online_payments_enabled", nullable = false)
+    private boolean onlinePaymentsEnabled = true;
+
+    @Column(name = "contactless_enabled", nullable = false)
+    private boolean contactlessEnabled = true;
+
+    @Column(name = "status_changed_at")
+    private Instant statusChangedAt;
+
+    public static final String STATUS_ACTIVE = "ACTIVE";
+    public static final String STATUS_FROZEN = "FROZEN";
+    public static final java.math.BigDecimal DEFAULT_SPENDING_LIMIT = new java.math.BigDecimal("5000.00");
 
     public Long getId()
     {
@@ -88,16 +105,6 @@ public class CardJpaEntity
         this.numarCard = numarCard;
     }
 
-    public String getCvv()
-    {
-        return cvv;
-    }
-
-    public void setCvv(String cvv)
-    {
-        this.cvv = cvv;
-    }
-
     public String getDataExpirare()
     {
         return dataExpirare;
@@ -136,6 +143,61 @@ public class CardJpaEntity
     public void setCreatedAt(Instant createdAt)
     {
         this.createdAt = createdAt;
+    }
+
+    public String getStatus()
+    {
+        return status;
+    }
+
+    public void setStatus(String status)
+    {
+        this.status = status;
+    }
+
+    public boolean isFrozen()
+    {
+        return STATUS_FROZEN.equals(status);
+    }
+
+    public java.math.BigDecimal getSpendingLimit()
+    {
+        return spendingLimit;
+    }
+
+    public void setSpendingLimit(java.math.BigDecimal spendingLimit)
+    {
+        this.spendingLimit = spendingLimit;
+    }
+
+    public boolean isOnlinePaymentsEnabled()
+    {
+        return onlinePaymentsEnabled;
+    }
+
+    public void setOnlinePaymentsEnabled(boolean onlinePaymentsEnabled)
+    {
+        this.onlinePaymentsEnabled = onlinePaymentsEnabled;
+    }
+
+    public boolean isContactlessEnabled()
+    {
+        return contactlessEnabled;
+    }
+
+    public void setContactlessEnabled(boolean contactlessEnabled)
+    {
+        this.contactlessEnabled = contactlessEnabled;
+    }
+
+    public Instant getStatusChangedAt()
+    {
+        return statusChangedAt;
+    }
+
+    public void setStatusChangedAt(Instant statusChangedAt)
+    {
+        this.statusChangedAt = statusChangedAt;
     }
 
     @PrePersist

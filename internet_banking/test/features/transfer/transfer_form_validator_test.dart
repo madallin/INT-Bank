@@ -3,10 +3,10 @@ import 'package:internet_banking/features/transfer/transfer_form_validator.dart'
 
 void main() {
   group('TransferFormValidator.iban', () {
-    test('accepts valid external IBANs from Romania and abroad', () {
-      expect(TransferFormValidator.iban('RO49 AAAA 1B31 0075 9384 0000'), isNull);
-      expect(TransferFormValidator.iban('DE89370400440532013000'), isNull);
-      expect(TransferFormValidator.iban('gb82 west 1234 5698 7654 32'), isNull);
+    test('explains that valid IBANs of other banks cannot receive transfers', () {
+      expect(TransferFormValidator.iban('RO49 AAAA 1B31 0075 9384 0000'), contains('INTBank'));
+      expect(TransferFormValidator.iban('DE89370400440532013000'), contains('INTBank'));
+      expect(TransferFormValidator.iban('gb82 west 1234 5698 7654 32'), contains('INTBank'));
     });
 
     test('rejects typos through the checksum', () {
@@ -19,7 +19,13 @@ void main() {
       expect(TransferFormValidator.iban('RO49AAAA1B3100759384'), contains('24 de caractere'));
     });
 
-    test('accepts INT Bank IBANs the backend issues today', () {
+    test('accepts standard INTBank IBANs and still catches their typos', () {
+      expect(TransferFormValidator.iban('RO26 INTB RON0 0000 0000 0001'), isNull);
+      expect(TransferFormValidator.iban('RO35INTBEUR0000000000003'), isNull);
+      expect(TransferFormValidator.iban('RO26INTBRON0000000000002'), contains('nu este valid'));
+    });
+
+    test('accepts legacy INTBank IBANs issued before the 24-character format', () {
       // Primary account (20 chars) and currency sub-account (fixed check value).
       expect(TransferFormValidator.iban('RO57INTB1234RON12345'), isNull);
       expect(TransferFormValidator.iban('RO49INTB0001EUR3F9A01BC'), isNull);

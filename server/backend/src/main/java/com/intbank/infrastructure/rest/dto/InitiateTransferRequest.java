@@ -12,7 +12,9 @@ public class InitiateTransferRequest
     private String toIban;
 
     @DecimalMin("0.01")
-    private double amount;
+    @jakarta.validation.constraints.NotNull
+    @jakarta.validation.constraints.Digits(integer = 13, fraction = 2)
+    private java.math.BigDecimal amount; // exact decimal; JSON numbers are parsed without binary rounding
 
     @NotBlank
     private String currency;
@@ -27,6 +29,11 @@ public class InitiateTransferRequest
     @NotBlank
     private String senderName;
 
+    /** Step-up proof for payments at or above the SCA threshold (see StrongCustomerAuthService). */
+    private String scaChallengeId;
+
+    private String scaPin;
+
     public String getFromIban() { return fromIban; }
 
     public void setFromIban(String fromIban) { this.fromIban = fromIban; }
@@ -35,9 +42,9 @@ public class InitiateTransferRequest
 
     public void setToIban(String toIban) { this.toIban = toIban; }
 
-    public double getAmount() { return amount; }
+    public java.math.BigDecimal getAmount() { return amount; }
 
-    public void setAmount(double amount) { this.amount = amount; }
+    public void setAmount(java.math.BigDecimal amount) { this.amount = amount; }
 
     public String getCurrency() { return currency; }
 
@@ -52,6 +59,14 @@ public class InitiateTransferRequest
     public void setBeneficiaryName(String beneficiaryName) { this.beneficiaryName = beneficiaryName; }
 
     public String getSenderName() { return senderName; }
+
+    public String getScaChallengeId() { return scaChallengeId; }
+
+    public void setScaChallengeId(String scaChallengeId) { this.scaChallengeId = scaChallengeId; }
+
+    public String getScaPin() { return scaPin; }
+
+    public void setScaPin(String scaPin) { this.scaPin = scaPin; }
 
     public void setSenderName(String senderName) { this.senderName = senderName; }
 }

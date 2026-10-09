@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_tokens.dart';
+import 'formatters.dart';
 
 enum SnackBarTone { error, success, info }
 
@@ -73,11 +74,13 @@ String countryCodeToEmoji(String countryCode)
   return String.fromCharCodes([codePoint1, codePoint2]);
 }
 
-double? parseRomanianNumber(String text)
+/// Reads an amount typed or shown in the active language (`1.234,56` or `1,234.56`).
+double? parseAmount(String text)
 {
+  final sep = numberSeparators;
   try
   {
-    return double.parse(text.replaceAll('.', '').replaceAll(',', '.'));
+    return double.parse(text.replaceAll(sep.group, '').replaceAll(sep.decimal, '.'));
   }
   catch(e)
 {

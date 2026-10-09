@@ -1,14 +1,9 @@
-import '../../../widgets/confirm_dialog.dart';
 import '../../../theme/app_tokens.dart';
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:dio/dio.dart';
 
 import '../../../core/utils/helpers.dart';
 import '../../../data/models/transaction_entry.dart';
@@ -21,7 +16,7 @@ import '../../../widgets/transaction_list_item.dart';
 import '../../transfer/screens/transfer_screen.dart';
 import '../../transactions/screens/transaction_history_screen.dart';
 import '../../exchange/screens/exchange_screen.dart';
-import '../../welcome/welcome_screen.dart';
+import '../../shell/app_shell.dart';
 import '../../statement/screens/statement_screen.dart';
 import '../../cards/screens/card_settings_screen.dart';
 import '../../vaults/screens/vaults_screen.dart';
@@ -35,18 +30,35 @@ import '../../analytics/screens/spending_analytics_screen.dart';
 import '../../../widgets/shimmer_loading.dart';
 import '../../../core/utils/haptic_feedback_helper.dart';
 import '../../../core/services/privacy_mode_service.dart';
+import '../widgets/home_action_buttons.dart';
+import '../widgets/home_card.dart';
+import '../widgets/home_exchange_preview.dart';
+import '../widgets/home_vaults_banner.dart';
 import '../../../l10n/l10n.dart';
+import '../../../core/utils/app_log.dart';
 
 class HomeScreen extends StatefulWidget {
   final int userId;
   const HomeScreen({super.key, required this.userId});
+
+  /// Card details stay visible this long, then the card turns back by itself.
+  static const cardRevealDuration = Duration(seconds: 60);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver, ReloadWhenTabShown {
+  @override
+  AppTab get tab => AppTab.home;
+
+  @override
+  void onTabShown() {
+    _fetchCardsAndAccounts();
+    _fetchUnreadNotifications();
+  }
+
   final DioClient _client = DioClient();
   final List<CardModel> _cardList = [];
   CardModel? _selectedCard;
@@ -61,14 +73,10 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _flipController;
   bool _cardShowingBack = false;
   Timer? _cardRevealTimer;
-  int _revealCountdown = 60;
 
   late AnimationController _pageController;
   late Animation<Offset> _pageAnimation;
 
-  String? clientToken;
-  String? refreshToken;
-  String _deviceId = 'dev-device';
 
   Timer? _refreshTimer;
 
@@ -78,6 +86,7 @@ class _HomeScreenState extends State<HomeScreen>
   int _unreadNotifications = 0;
   String? _currentIban;
   String _currentCurrency = 'RON';
+  String? _firstName;
 
   @override
   void initState() {
@@ -111,9 +120,8 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _initialize() async {
-    await _initDeviceId();
     await _initPushNotifications();
-    await _getClientToken();
+    _fetchFirstName();
     await _fetchCardsAndAccounts();
     await _fetchUnreadNotifications();
     await CurrencyService.instance.fetchRates();
@@ -141,74 +149,36 @@ class _HomeScreenState extends State<HomeScreen>
         },
       );
     } catch (e) {
-      debugPrint('Error initializing push notifications: $e');
+      AppLog.debug('Error initializing push notifications', e);
     }
   }
 
-  Future<void> _initDeviceId() async {
-    final deviceInfo = DeviceInfoPlugin();
+  /// Only used for the greeting; Home works without it.
+  Future<void> _fetchFirstName() async {
     try {
-      if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        _deviceId = androidInfo.id;
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        _deviceId = iosInfo.identifierForVendor ?? 'dev-device';
+      final response = await _client.get('/users/${widget.userId}');
+      final name = (response.data as Map<String, dynamic>)['prenume']?.toString().trim();
+      if (mounted && name != null && name.isNotEmpty) {
+        setState(() => _firstName = toTitleCase(name.split(RegExp(r'\s+')).first));
       }
-    } catch (_) {
-      _deviceId = 'dev-device';
-    }
+    } catch (_) {}
   }
 
-  Future<void> _getClientToken() async {
-    try {
-      final response = await _client.post(
-        '/auth/get-client-token',
-        data: {'deviceId': _deviceId},
-      );
-
-      if (response.statusCode == 200) {
-        final data = response.data as Map<String, dynamic>;
-        clientToken = data['client_token'];
-        refreshToken = data['refresh_token'];
-      }
-    } catch (e) {
-      debugPrint('Error getting client token: $e');
-    }
-  }
-
-  Future<bool> _refreshClientToken() async {
-    if (refreshToken == null) return false;
-    try {
-      final response = await _client.post(
-        '/auth/refresh-client-token',
-        data: {'deviceId': _deviceId, 'refreshToken': refreshToken},
-      );
-
-      if (response.statusCode == 200) {
-        final data = response.data as Map<String, dynamic>;
-        if (mounted) setState(() => clientToken = data['client_token']);
-        return true;
-      }
-      return false;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Options _authOptions() {
-    return Options(
-      headers: clientToken != null
-          ? {'Authorization': 'Bearer $clientToken'}
-          : null,
-    );
+  String _greeting() {
+    final l10n = context.l10n;
+    final hour = DateTime.now().hour;
+    final hello = hour < 5 || hour >= 18
+        ? l10n.homeGreetEvening
+        : hour < 12
+            ? l10n.homeGreetMorning
+            : l10n.homeGreetAfternoon;
+    return _firstName == null ? l10n.homeBunVenit : '$hello, $_firstName';
   }
 
   Future<void> _fetchCardsAndAccounts() async {
     try {
       final response = await _client.get(
         '/users/${widget.userId}/cards',
-        options: _authOptions(),
       );
 
       if (response.statusCode == 200 && response.data != null) {
@@ -226,12 +196,9 @@ class _HomeScreenState extends State<HomeScreen>
             }
           });
         }
-      } else if (response.statusCode == 401) {
-        final refreshed = await _refreshClientToken();
-        if (refreshed) await _fetchCardsAndAccounts();
       }
     } catch (e) {
-      debugPrint('Error fetching cards: $e');
+      AppLog.debug('Error fetching cards', e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -242,11 +209,6 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _fetchBalance() async {
-    if (clientToken == null) {
-      setState(() => _loadingBalance = false);
-      return;
-    }
-
     int? accountId = _currentAccountId;
     if (_balanceAccountId == null || _balanceAccountId != accountId) {
       setState(() => _loadingBalance = true);
@@ -256,8 +218,7 @@ class _HomeScreenState extends State<HomeScreen>
       try {
         final resp = await _client.get(
           '/users/${widget.userId}/cards',
-          options: _authOptions(),
-        );
+          );
 
         if (resp.statusCode == 200) {
           final data = resp.data as Map<String, dynamic>;
@@ -277,7 +238,6 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final response = await _client.get(
         '/users/${widget.userId}/accounts/$accountId',
-        options: _authOptions(),
       );
 
       if (response.statusCode == 200) {
@@ -300,19 +260,16 @@ class _HomeScreenState extends State<HomeScreen>
             _balanceAccountId = accountId;
           });
         }
-      } else if (response.statusCode == 401) {
-        final refreshed = await _refreshClientToken();
-        if (refreshed) await _fetchBalance();
       }
     } catch (e) {
-      debugPrint('Error fetching balance: $e');
+      AppLog.debug('Error fetching balance', e);
     } finally {
       if (mounted) setState(() => _loadingBalance = false);
     }
   }
 
   Future<void> _fetchRecentTransactions() async {
-    if (_currentAccountId == null || clientToken == null) return;
+    if (_currentAccountId == null) return;
     final accountId = _currentAccountId;
     if (_transactionsAccountId != accountId) {
       setState(() => _loadingTransactions = true);
@@ -320,7 +277,6 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final response = await _client.get(
         '/users/${widget.userId}/accounts/$_currentAccountId/transactions',
-        options: _authOptions(),
       );
 
       if (response.statusCode == 200 && response.data != null) {
@@ -337,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen>
         }
       }
     } catch (e) {
-      debugPrint('Error fetching recent transactions: $e');
+      AppLog.debug('Error fetching recent transactions', e);
     } finally {
       if (mounted) setState(() => _loadingTransactions = false);
     }
@@ -394,10 +350,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _cancelCardReveal() {
     _cardRevealTimer?.cancel();
-    setState(() {
-      _revealCountdown = 60;
-      _cardShowingBack = false;
-    });
+    setState(() => _cardShowingBack = false);
     _flipController.value = 0;
   }
 
@@ -405,10 +358,7 @@ class _HomeScreenState extends State<HomeScreen>
     if (_flipController.isAnimating) return;
     if (_cardShowingBack) {
       _cardRevealTimer?.cancel();
-      setState(() {
-        _revealCountdown = 60;
-        _cardShowingBack = false;
-      });
+      setState(() => _cardShowingBack = false);
       await _flipController.animateTo(0,
           duration: const Duration(milliseconds: 600),
           curve: Curves.easeInOut);
@@ -422,25 +372,16 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  // One timer for the whole reveal: nothing on screen counts down, so there is no
+  // reason to rebuild Home every second while the details are shown.
   void _startRevealTimer() {
     _cardRevealTimer?.cancel();
-    setState(() => _revealCountdown = 60);
-    _cardRevealTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        _revealCountdown--;
-        if (_revealCountdown <= 0) {
-          timer.cancel();
-          _revealCountdown = 60;
-          _cardShowingBack = false;
-          _flipController.animateTo(0,
-              duration: const Duration(milliseconds: 600),
-              curve: Curves.easeInOut);
-        }
-      });
+    _cardRevealTimer = Timer(HomeScreen.cardRevealDuration, () {
+      if (!mounted) return;
+      setState(() => _cardShowingBack = false);
+      _flipController.animateTo(0,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut);
     });
   }
 
@@ -500,6 +441,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _goToVaults() {
+    if (AppShell.selectTab(context, AppTab.savings)) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -592,28 +534,6 @@ class _HomeScreenState extends State<HomeScreen>
     } catch (_) {}
   }
 
-  Future<void> _confirmLogout() async {
-    final confirmed = await showConfirmDialog(
-      context,
-      title: context.l10n.homeDeconectezi,
-      message: context.l10n.homeVaTrebuiSaAutentifici,
-      confirmLabel: context.l10n.homeDeconecteazaMa,
-    );
-    if (confirmed) _logout();
-  }
-
-  Future<void> _logout() async {
-    PushNotificationListener().stop();
-    const storage = FlutterSecureStorage();
-    await storage.delete(key: 'loggedUserIdKey');
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-      (route) => false,
-    );
-  }
-
   String _txAmount(TransactionEntry entry) {
     final currency = entry.currency ?? _currentCurrency;
     if (PrivacyModeService().isPrivacyModeEnabled.value) {
@@ -651,11 +571,11 @@ class _HomeScreenState extends State<HomeScreen>
                         const SizedBox(height: 20),
                         _buildBalanceRow(),
                         const SizedBox(height: 24),
-                        _buildActionButtons(),
+                        HomeActionButtons(onTransfer: _goToTransfer, onHistory: _goToHistory, onExchange: _goToExchange, onAnalytics: _goToAnalytics),
                         const SizedBox(height: 20),
-                        _buildVaultsBanner(),
+                        HomeVaultsBanner(onTap: _goToVaults),
                         const SizedBox(height: 20),
-                        _buildExchangePreview(),
+                        const HomeExchangePreview(),
                         const SizedBox(height: 20),
                         _buildRecentTransactions(),
                         const SizedBox(height: 36),
@@ -678,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen>
             height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: context.colors.brand.withOpacity(0.12),
+              color: context.colors.brand.withValues(alpha: 0.12),
             ),
             child: Icon(Icons.account_balance_rounded,
                 color: context.colors.brand, size: 22),
@@ -688,13 +608,13 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('INT Bank',
+                Text('INTBank',
                     style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: context.colors.textPrimary,
                         letterSpacing: -0.3)),
-                Text(context.l10n.homeBunVenit,
+                Text(_greeting(),
                     style: GoogleFonts.inter(
                         fontSize: 12,
                         color: context.colors.textMuted,
@@ -724,12 +644,6 @@ class _HomeScreenState extends State<HomeScreen>
               await NotificationCenterBottomSheet.show(context, userId: widget.userId);
               _fetchUnreadNotifications();
             },
-          ),
-          const SizedBox(width: 4),
-          _HeaderIconButton(
-            icon: Icons.logout_rounded,
-            tooltip: context.l10n.homeDeconectare,
-            onTap: _confirmLogout,
           ),
         ],
       ),
@@ -780,9 +694,9 @@ class _HomeScreenState extends State<HomeScreen>
                   ? Transform(
                       alignment: Alignment.center,
                       transform: Matrix4.identity()..rotateY(math.pi),
-                      child: _buildCardBack(),
+                      child: HomeCardBack(card: _selectedCard!, onToggleReveal: _onToggleCardReveal),
                     )
-                  : _buildCardFront();
+                  : HomeCardFront(card: _selectedCard!, onToggleReveal: _onToggleCardReveal, onOpenSettings: _goToCardSettings);
 
               return Transform(
                 alignment: Alignment.center,
@@ -840,331 +754,6 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildCardFront() {
-    if (_selectedCard == null) return const SizedBox();
-    return Container(
-      key: const ValueKey('front'),
-      width: double.infinity,
-      // Grows with large text instead of clipping; 200 at normal size.
-      constraints: const BoxConstraints(minHeight: 200),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [context.colors.cardGradientStart, context.colors.cardGradientEnd],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0D9488).withOpacity(0.5),
-            blurRadius: 32,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -28,
-            top: -28,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.07),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 24,
-            bottom: -18,
-            child: Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.05),
-              ),
-            ),
-          ),
-          Padding(
-            // Vertical padding leaves room for the 48dp settings target.
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('INT Bank',
-                        style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 0.3)),
-                    Row(
-                      children: [
-                        Semantics(
-                          button: true,
-                          label: context.l10n.homeSetariCard,
-                          excludeSemantics: true,
-                          child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: _goToCardSettings,
-                          child: Container(
-                            width: kMinTapTarget,
-                            height: kMinTapTarget,
-                            alignment: Alignment.center,
-                            child: Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.18),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.tune_rounded, color: Colors.white, size: 16),
-                          ),
-                          ),
-                        ),
-                        ),
-                        const SizedBox(width: 8),
-                        Image.asset('assets/images/visa.png', height: 22),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  width: 38,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.22),
-                    borderRadius: BorderRadius.circular(5),
-                    border: Border.all(
-                        color: Colors.white.withOpacity(0.35), width: 1),
-                  ),
-                  child: const Icon(Icons.memory_rounded,
-                      color: Colors.white, size: 16),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '**** **** **** ${_selectedCard!.last4}',
-                  style: GoogleFonts.spaceMono(
-                      fontSize: 15,
-                      color: Colors.white,
-                      letterSpacing: 2.5,
-                      fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(context.l10n.homeTitular,
-                            style: GoogleFonts.inter(
-                                fontSize: 9,
-                                color: Colors.white,
-                                letterSpacing: 1.5)),
-                        const SizedBox(height: 3),
-                        Text(
-                            _selectedCard!.detinator.toUpperCase(),
-                            style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(context.l10n.homeExpira,
-                            style: GoogleFonts.inter(
-                                fontSize: 9,
-                                color: Colors.white,
-                                letterSpacing: 1.5)),
-                        const SizedBox(height: 3),
-                        Text(_selectedCard!.expiry,
-                            style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCardBack() {
-    if (_selectedCard == null) return const SizedBox();
-    final pan = _selectedCard!.fullNumber;
-    final cvv = _selectedCard!.cvv;
-    final expiry = _selectedCard!.expiry;
-
-    return Container(
-      key: const ValueKey('back'),
-      width: double.infinity,
-      // Grows with large text instead of clipping; 200 at normal size.
-      constraints: const BoxConstraints(minHeight: 200),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [context.colors.cardGradientEnd, context.colors.cardGradientStart],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0D9488).withOpacity(0.5),
-            blurRadius: 32,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 42,
-            margin: const EdgeInsets.only(top: 24),
-            color: Colors.black54,
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(context.l10n.homePan,
-                        style: GoogleFonts.inter(
-                            fontSize: 10,
-                            color: Colors.white,
-                            letterSpacing: 1.5)),
-                    Text(
-                      groupInFours(pan),
-                      style: GoogleFonts.spaceMono(
-                          fontSize: 14,
-                          color: Colors.white,
-                          letterSpacing: 1.8,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(5),
-                                    bottomLeft: Radius.circular(5),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10),
-                              child: Text(
-                                cvv,
-                                style: GoogleFonts.spaceMono(
-                                    fontSize: 15,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(context.l10n.homeCvv,
-                            style: GoogleFonts.inter(
-                                fontSize: 9,
-                                color: Colors.white,
-                                letterSpacing: 1.5)),
-                        const SizedBox(height: 2),
-                        Text(cvv,
-                            style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(context.l10n.homeExp(expiry),
-                        style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500)),
-                    Semantics(
-                      button: true,
-                      label: context.l10n.homeAscundeDateleCardului,
-                      excludeSemantics: true,
-                      child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _onToggleCardReveal,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.lock_outline,
-                                size: 12,
-                                color: Colors.white),
-                            const SizedBox(width: 4),
-                            Text(context.l10n.homeAscunde,
-                                style: GoogleFonts.inter(
-                                    fontSize: 11,
-                                    color: Colors.white)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBalanceRow() {
     final hidden = PrivacyModeService().isPrivacyModeEnabled.value;
     return Padding(
@@ -1176,7 +765,7 @@ class _HomeScreenState extends State<HomeScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),
@@ -1253,7 +842,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildBalanceAction(
       IconData icon, String label, VoidCallback onTap) {
     return Material(
-      color: context.colors.brand.withOpacity(0.08),
+      color: context.colors.brand.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -1275,258 +864,6 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Expanded(
-              child: _buildActionCard(
-                  Icons.send_rounded, context.l10n.commonTransfer, _goToTransfer)),
-          const SizedBox(width: 8),
-          Expanded(
-              child: _buildActionCard(Icons.receipt_long_rounded,
-                  context.l10n.homeIstoric, _goToHistory)),
-          const SizedBox(width: 8),
-          Expanded(
-              child: _buildActionCard(Icons.currency_exchange_rounded,
-                  context.l10n.homeSchimb, _goToExchange)),
-          const SizedBox(width: 8),
-          Expanded(
-              child: _buildActionCard(Icons.pie_chart_outline_rounded,
-                  context.l10n.homeStatistici, _goToAnalytics)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionCard(
-      IconData icon, String label, VoidCallback onTap) {
-    return Semantics(
-      button: true,
-      container: true,
-      child: GestureDetector(
-      onTap: () {
-        HapticFeedbackHelper.buttonTap();
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 22),
-        decoration: BoxDecoration(
-          color: context.colors.surface,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: context.colors.brand
-                    .withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon,
-                  color: context.colors.brand,
-                  size: 22),
-            ),
-            const SizedBox(height: 10),
-            Text(label,
-                style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: context.colors.textPrimary)),
-          ],
-        ),
-      ),
-    ),
-    );
-  }
-
-  Widget _buildVaultsBanner() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Semantics(
-        button: true,
-        container: true,
-        child: GestureDetector(
-        onTap: () {
-          HapticFeedbackHelper.buttonTap();
-          _goToVaults();
-        },
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: context.colors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: context.colors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [context.colors.heroStart, context.colors.heroEnd],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.savings_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                          context.l10n.homeSeifuriRoundUp,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: context.colors.textPrimary,
-                          ),
-                        ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: context.colors.brand.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            context.l10n.homeNou,
-                            style: GoogleFonts.inter(
-                              color: context.colors.brand,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      context.l10n.homeEconomisesteAutomatMaruntisulTranzactiilor,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: context.colors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: context.colors.textMuted),
-            ],
-          ),
-        ),
-      ),
-    ),
-    );
-  }
-
-  Widget _buildExchangePreview() {
-    final rates = CurrencyService.instance;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              context.colors.brand.withOpacity(0.08),
-              context.colors.brandStrong.withOpacity(0.04),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color:
-                  context.colors.brand.withOpacity(0.15)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.trending_up_rounded,
-                    size: 18, color: context.colors.brand),
-                const SizedBox(width: 8),
-                Text(context.l10n.homeCursValutar,
-                    style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: context.colors.textPrimary)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (!rates.hasRates)
-              Center(
-                child: Text(context.l10n.homeSeIncarca,
-                    style: GoogleFonts.inter(
-                        fontSize: 12, color: context.colors.textMuted)),
-              )
-            else
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Expanded(child: _buildRateTile('EUR', rates.getRate('EUR', 'RON'))),
-                  Expanded(child: _buildRateTile('USD', rates.getRate('USD', 'RON'))),
-                  Expanded(child: _buildRateTile('GBP', rates.getRate('GBP', 'RON'))),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRateTile(String currency, double? rate) {
-    return Column(
-      children: [
-        Text(currency,
-            style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: context.colors.textPrimary)),
-        const SizedBox(height: 4),
-        Text(
-          rate != null ? formatRate(rate) : '---',
-          style: GoogleFonts.spaceMono(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: context.colors.brand),
-        ),
-      ],
     );
   }
 
@@ -1586,6 +923,7 @@ class _HomeScreenState extends State<HomeScreen>
                     date: parsed.date == null ? '' : formatDate(parsed.date!),
                     amount: _txAmount(parsed),
                     isPositive: parsed.isIncoming,
+                    category: parsed.category,
                   ),
                 ),
               );

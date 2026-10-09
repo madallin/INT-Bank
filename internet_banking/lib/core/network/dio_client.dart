@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../config/app_config.dart';
+import 'transport_security.dart';
+import 'pinned_adapter_stub.dart' if (dart.library.io) 'pinned_adapter_io.dart';
 import '../../data/models/auth_response.dart';
 
 class _PendingRequest
@@ -119,6 +121,23 @@ class DioClient
       ),
     );
 
+    // Certificate pinning (CERT_SHA256_PINS): both clients only complete TLS handshakes
+    // with the pinned server certificate. A release build without pins sends nothing.
+    switch(TransportPolicy.mode)
+    {
+      case TransportSecurity.pinned:
+        final policy = TransportPolicy.pinPolicy(Uri.parse(AppConfig.baseUrl).host);
+        final adapter = pinnedHttpClientAdapter(policy);
+        if(adapter != null) _dio.httpClientAdapter = adapter;
+        final refreshAdapter = pinnedHttpClientAdapter(policy);
+        if(refreshAdapter != null) _refreshDio.httpClientAdapter = refreshAdapter;
+      case TransportSecurity.misconfigured:
+        _dio.httpClientAdapter = RefusingHttpClientAdapter();
+        _refreshDio.httpClientAdapter = RefusingHttpClientAdapter();
+      case TransportSecurity.systemTrust:
+        break;
+    }
+
     // Add retry interceptor FIRST so it wraps around all other interceptors.
     // It uses the _dio instance so retried requests also go through the auth interceptor.
     _dio.interceptors.add(_RetryInterceptor(_dio));
@@ -128,8 +147,10 @@ class DioClient
         onRequest: (options, handler) async
         {
           options.headers['X-Correlation-ID'] = 'mbl-${DateTime.now().millisecondsSinceEpoch}-${options.path.hashCode.abs()}';
+          // A request that brings its own token (e.g. onboarding after the SMS code) keeps it;
+          // otherwise a stored session, possibly of another customer, would replace it.
           final token = await _storage.read(key: _accessTokenKey);
-          if(token != null && token.isNotEmpty)
+          if(token != null && token.isNotEmpty && !options.headers.containsKey('Authorization'))
           {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -143,7 +164,9 @@ class DioClient
             return;
           }
 
-          if(error.requestOptions.path.contains('/auth-session/refresh'))
+          // Sign-in, refresh and logout answer 401 for a wrong PIN or a dead session:
+          // never try to "refresh" those.
+          if(error.requestOptions.path.contains('/auth-session/'))
 {
             handler.next(error);
             return;

@@ -1,3 +1,12 @@
+import 'package:internet_banking/data/models/bank_account.dart';
+import 'package:internet_banking/features/accounts/screens/account_detail_screen.dart';
+import 'package:internet_banking/features/accounts/screens/accounts_screen.dart';
+import 'package:internet_banking/features/payments/screens/payments_screen.dart';
+import 'package:internet_banking/features/profile/screens/change_pin_screen.dart';
+import 'package:internet_banking/features/profile/screens/profile_screen.dart';
+import 'package:internet_banking/features/shell/app_shell.dart';
+import 'package:internet_banking/features/vaults/screens/vaults_screen.dart';
+import 'package:internet_banking/features/transfer/widgets/sca_pin_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:internet_banking/data/models/card_model.dart';
 import 'package:internet_banking/features/analytics/screens/spending_analytics_screen.dart';
@@ -43,6 +52,15 @@ final Map<String, Widget Function()> appScreens = {
   'pin': () => const PinScreen(userId: 1, set: false),
   'two_factor': () => const TwoFactorScreen(phoneNumber: '+40712345678', userId: 1),
   'home': () => const HomeScreen(userId: 1),
+  'shell': () => const AppShell(userId: 1),
+  'accounts': () => const AccountsScreen(userId: 1),
+  'account_detail': () => const AccountDetailScreen(
+        userId: 1,
+        account: BankAccount(id: 101, iban: 'RO49INTB0001RON0000000001', currency: 'RON', balance: 12345.67),
+      ),
+  'payments': () => const PaymentsScreen(userId: 1),
+  'profile': () => const ProfileScreen(userId: 1),
+  'change_pin': () => const ChangePinScreen(userId: 1),
   'history': () => const TransactionHistoryScreen(userId: 1, accountId: 101),
   'transfer': () => const TransferScreen(
         userId: 1,
@@ -54,7 +72,7 @@ final Map<String, Widget Function()> appScreens = {
           alignment: Alignment.bottomCenter,
           child: TransferConfirmationBottomSheet(
             beneficiaryName: 'ION POPESCU',
-            toIban: 'RO49AAAA1B31007593840000',
+            toIban: 'RO96INTBRON0000000000002',
             fromIban: 'RO49INTB0001RON0000000001',
             amount: 1250,
             reason: 'Chirie octombrie',
@@ -67,7 +85,7 @@ final Map<String, Widget Function()> appScreens = {
           amount: 1250,
           currency: 'RON',
           beneficiaryName: 'ION POPESCU',
-          toIban: 'RO49AAAA1B31007593840000',
+          toIban: 'RO96INTBRON0000000000002',
           fromIban: 'RO49INTB0001RON0000000001',
           reason: 'Chirie octombrie',
           createdAt: DateTime(2026, 10, 2, 14, 5),
@@ -85,6 +103,17 @@ final Map<String, Widget Function()> appScreens = {
         currency: 'RON',
       ),
   'card_settings': () => const CardSettingsScreen(userId: 1, card: _card),
+  'vaults': () => const VaultsScreen(userId: 1),
+  'sca_sheet': () => Scaffold(
+        body: Align(
+          alignment: Alignment.bottomCenter,
+          child: ScaPinSheet(
+            challenge: const ScaChallenge(challengeId: 'sca-1', amount: 1500, currency: 'RON', toIban: 'RO26INTBRON0000000000001'),
+            beneficiaryName: 'ION POPESCU',
+            onSubmit: (_) async => null,
+          ),
+        ),
+      ),
   'error': () => ErrorScreen(
         errorMessage: 'Nu s-a putut realiza conexiunea cu serverul. Așteptăm conexiunea...',
         onConnectionRestored: (_) {},
@@ -107,6 +136,6 @@ final Map<String, Widget Function()> appScreens = {
         'date': '2026-10-01T09:30:00',
         'status': 'COMPLETED',
         'fromIban': 'RO49INTB0001RON0000000001',
-        'toIban': 'RO49AAAA1B31007593840000',
+        'toIban': 'RO96INTBRON0000000000002',
       })),
 };

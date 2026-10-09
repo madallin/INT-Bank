@@ -65,11 +65,11 @@ void main() {
       await tester.pumpWidget(transfer());
       await tapText(tester, 'Transferă acum');
 
-      await tester.enterText(fieldFor('IBAN destinatar'), 'RO49AAAA1B31007593840001');
+      await tester.enterText(fieldFor('IBAN destinatar'), 'RO26INTBRON0000000000002');
       await tester.pump();
       expect(find.textContaining('IBAN-ul nu este valid'), findsOneWidget);
 
-      await tester.enterText(fieldFor('IBAN destinatar'), 'RO49AAAA1B31007593840000');
+      await tester.enterText(fieldFor('IBAN destinatar'), 'RO26INTBRON0000000000001');
       await tester.pump();
       expect(find.textContaining('IBAN-ul nu este valid'), findsNothing);
 
@@ -80,7 +80,7 @@ void main() {
 
     testWidgets('a valid form opens the confirmation with the source account', (tester) async {
       await tester.pumpWidget(transfer());
-      await tester.enterText(fieldFor('IBAN destinatar'), 'RO49AAAA1B31007593840000');
+      await tester.enterText(fieldFor('IBAN destinatar'), 'RO26INTBRON0000000000001');
       await tester.enterText(fieldFor('Nume beneficiar'), 'Ștefan Țurcanu');
       await tester.enterText(fieldFor('Suma (RON)'), '125,5');
       await tester.enterText(fieldFor('Motiv transfer'), 'chirie');
@@ -100,7 +100,7 @@ void main() {
           amount: 1250,
           currency: 'RON',
           beneficiaryName: 'ION POPESCU',
-          toIban: 'RO49AAAA1B31007593840000',
+          toIban: 'RO26INTBRON0000000000001',
           fromIban: 'RO49INTB0001RON0000000001',
           reason: 'Chirie',
           createdAt: DateTime(2026, 10, 2, 14, 5),

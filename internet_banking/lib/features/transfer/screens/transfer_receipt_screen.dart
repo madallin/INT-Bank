@@ -5,6 +5,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../theme/app_tokens.dart';
 import '../../../widgets/app_button.dart';
+import '../../../widgets/success_badge.dart';
 import '../../../l10n/l10n.dart';
 
 /// What the user chose on the receipt; the transfer screen acts on it.
@@ -107,14 +108,17 @@ class TransferReceiptScreen extends StatelessWidget
                   padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xxl, AppSpacing.xl, AppSpacing.md),
                   child: Column(
                     children: [
-                      ExcludeSemantics(
-                        child: Container(
-                          width: 76,
-                          height: 76,
-                          decoration: BoxDecoration(color: c.brandSurface, shape: BoxShape.circle),
-                          child: Icon(icon, size: 40, color: c.brand),
+                      if(r.isScheduled || r.isCompleted)
+                        SuccessBadge(icon: r.isScheduled ? icon : null)
+                      else
+                        ExcludeSemantics(
+                          child: Container(
+                            width: 88,
+                            height: 88,
+                            decoration: BoxDecoration(color: c.brandSurface, shape: BoxShape.circle),
+                            child: Icon(icon, size: 44, color: c.brand),
+                          ),
                         ),
-                      ),
                       const SizedBox(height: AppSpacing.md),
                       Semantics(
                         header: true,

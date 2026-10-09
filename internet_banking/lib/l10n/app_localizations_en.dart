@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'INT Bank';
+  String get appTitle => 'INTBank';
 
   @override
   String get errorsAparutEroareNeasteptataIncearca =>
@@ -451,10 +451,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonAnuleaza => 'Cancel';
 
   @override
-  String get exchangeSchimbValutarRealizatSucces =>
-      'Currency exchanged successfully!';
-
-  @override
   String get exchangeSchimbulValutarPututFi =>
       'The currency exchange couldn\'t be completed.';
 
@@ -462,17 +458,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exchangeSchimbValutar => 'Currency exchange';
 
   @override
-  String get exchangeSchimbaIntreDiferiteValute =>
-      'Exchange between currencies at today\'s rate';
-
-  @override
-  String get exchangeValuta => 'From currency';
-
-  @override
   String get exchangeInverseazaValutele => 'Swap currencies';
-
-  @override
-  String get exchangeValuta2 => 'To currency';
 
   @override
   String get exchangeCursulValutarEsteDisponibil =>
@@ -597,14 +583,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeStatistici => 'Insights';
 
   @override
-  String get homeSeifuriRoundUp => 'Vaults & Round-Up';
+  String get homeSeifuriRoundUp => 'Savings vaults';
 
   @override
   String get homeNou => 'NEW';
 
   @override
   String get homeEconomisesteAutomatMaruntisulTranzactiilor =>
-      'Automatically save the spare change from your payments.';
+      'Set money aside for your goals.';
 
   @override
   String get homeCursValutar => 'Exchange rates';
@@ -774,11 +760,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosToateConturileDeschiseInt =>
-      'All accounts opened with INT Bank must be registered with real and correct details.';
+      'All accounts opened with INTBank must be registered with real and correct details.';
 
   @override
   String get tosFiecareClientPoateDetine =>
-      'Each customer may hold only one personal account with INT Bank.';
+      'Each customer may hold only one personal account with INTBank.';
 
   @override
   String get tosConturileInactiveMaiMult =>
@@ -794,7 +780,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateSolicita =>
-      'INT Bank may request additional documents for verification.';
+      'INTBank may request additional documents for verification.';
 
   @override
   String get tosTranzactiileEfectuatePrinCont =>
@@ -810,7 +796,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosConturileNeregulatePotFi =>
-      'Irregular accounts may be closed by INT Bank without prior notice.';
+      'Irregular accounts may be closed by INTBank without prior notice.';
 
   @override
   String get tosClientulTrebuieSaRespecte =>
@@ -818,7 +804,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosModificareaDatelorPersonaleTrebuie =>
-      'Changes to personal details must be reported to INT Bank immediately.';
+      'Changes to personal details must be reported to INTBank immediately.';
 
   @override
   String get tosDateleContuluiTrebuiePastrate =>
@@ -830,7 +816,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankRaspundePierderi =>
-      'INT Bank is not liable for losses caused by the customer\'s negligence.';
+      'INTBank is not liable for losses caused by the customer\'s negligence.';
 
   @override
   String get tosSuspendareaContuluiPoateFi =>
@@ -846,11 +832,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankVaSolicita =>
-      'INT Bank will never ask for passwords by email or phone.';
+      'INTBank will never ask for passwords by email or phone.';
 
   @override
   String get tosRaportatiImediatOriceActivitate =>
-      'Report any suspicious activity to INT Bank immediately.';
+      'Report any suspicious activity to INTBank immediately.';
 
   @override
   String get tosDispozitiveleFolositeAccesCont =>
@@ -862,7 +848,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosDatelePersonaleSuntProcesate =>
-      'Personal data is processed in line with the INT Bank privacy policy.';
+      'Personal data is processed in line with the INTBank privacy policy.';
 
   @override
   String get tosEsteInterzisaDistribuireaMalware =>
@@ -870,7 +856,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosClientiiTrebuieSaFoloseasca =>
-      'Customers must use only official INT Bank channels.';
+      'Customers must use only official INTBank channels.';
 
   @override
   String get tosMonitorizareaActivitatiiContuluiSe =>
@@ -878,7 +864,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateIntroduce =>
-      'INT Bank may introduce additional authentication for protection.';
+      'INTBank may introduce additional authentication for protection.';
 
   @override
   String get tosCazIncalcareSecuritatiiContul =>
@@ -901,11 +887,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateAudita =>
-      'INT Bank may audit account security to prevent fraud.';
+      'INTBank may audit account security to prevent fraud.';
 
   @override
   String get tosPlatileEfectuatePrinInt =>
-      'Payments made through INT Bank are final and irreversible without the bank\'s agreement.';
+      'Payments made through INTBank are final and irreversible without the bank\'s agreement.';
 
   @override
   String get tosClientulTrebuieSaVerifice =>
@@ -917,7 +903,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateRefuza =>
-      'INT Bank may decline suspicious transactions without notice.';
+      'INTBank may decline suspicious transactions without notice.';
 
   @override
   String get tosClientiiTrebuieSaRespecte =>
@@ -937,7 +923,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosPlatileAutomateTrebuieConfigurate =>
-      'Automatic payments must be set up correctly following INT Bank\'s instructions.';
+      'Automatic payments must be set up correctly following INTBank\'s instructions.';
 
   @override
   String get tosTranzactiileFrauduloaseTrebuieRaportate =>
@@ -957,7 +943,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateSuspenda =>
-      'INT Bank may suspend transactions if irregularities are detected.';
+      'INTBank may suspend transactions if irregularities are detected.';
 
   @override
   String get tosModificareaDatelorBancareTrebuie =>
@@ -965,7 +951,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateModifica =>
-      'INT Bank may change these terms and conditions at any time.';
+      'INTBank may change these terms and conditions at any time.';
 
   @override
   String get tosNotificarileOficialeSuntComunicate =>
@@ -997,7 +983,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateSchimba =>
-      'INT Bank may change the fees and charges it applies.';
+      'INTBank may change the fees and charges it applies.';
 
   @override
   String get tosActualizarileVorFiAfisate =>
@@ -1053,7 +1039,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankGaranteazaDisponibilitatea =>
-      'INT Bank does not guarantee uninterrupted availability of its services.';
+      'INTBank does not guarantee uninterrupted availability of its services.';
 
   @override
   String get tosClientulTrebuieSaRespecte2 =>
@@ -1065,7 +1051,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosRespectareaLimitelorRetragereTransfer =>
-      'Respecting the withdrawal and transfer limits set by INT Bank is mandatory.';
+      'Respecting the withdrawal and transfer limits set by INTBank is mandatory.';
 
   @override
   String get tosVerificareaCorectitudiniiDatelorAplicatie =>
@@ -1073,7 +1059,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosProtejareaDispozitivelorAplicatieiInt =>
-      'Protecting your devices and the INT Bank app is mandatory.';
+      'Protecting your devices and the INTBank app is mandatory.';
 
   @override
   String get tosEsteInterzisaFolosireaConturilor =>
@@ -1085,11 +1071,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankColecteazaProceseaza =>
-      'INT Bank collects and processes personal data in accordance with the law.';
+      'INTBank collects and processes personal data in accordance with the law.';
 
   @override
   String get tosClientulTrebuieSaAccepte2 =>
-      'The customer must accept the INT Bank privacy policy.';
+      'The customer must accept the INTBank privacy policy.';
 
   @override
   String get tosDateleSensibileTrebuieDistribuite =>
@@ -1113,7 +1099,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateProcesa =>
-      'INT Bank may process anonymised data for internal statistics.';
+      'INTBank may process anonymised data for internal statistics.';
 
   @override
   String get tosFolosireaDatelorAltorClienti =>
@@ -1137,7 +1123,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateBloca =>
-      'INT Bank may block the account if the data policy is breached.';
+      'INTBank may block the account if the data policy is breached.';
 
   @override
   String get tosClientiiTrebuieSaMentina =>
@@ -1145,7 +1131,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankEsteResponsabila =>
-      'INT Bank is not liable for losses caused by customer errors.';
+      'INTBank is not liable for losses caused by customer errors.';
 
   @override
   String get tosSeGaranteazaDisponibilitateaNeintrerupta =>
@@ -1153,7 +1139,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankRaspundeIntarzieri =>
-      'INT Bank is not liable for delays caused by third parties.';
+      'INTBank is not liable for delays caused by third parties.';
 
   @override
   String get tosClientiiSuntResponsabiliProtectia =>
@@ -1169,7 +1155,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankRaspundePierderi2 =>
-      'INT Bank is not liable for losses caused by external fraud.';
+      'INTBank is not liable for losses caused by external fraud.';
 
   @override
   String get tosServiciileSuntFurnizateAsa =>
@@ -1177,7 +1163,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankGaranteazaExactitatea =>
-      'INT Bank does not guarantee the accuracy of third-party information.';
+      'INTBank does not guarantee the accuracy of third-party information.';
 
   @override
   String get tosClientiiTrebuieSaVerifice =>
@@ -1193,7 +1179,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateAjusta =>
-      'INT Bank may adjust the liability terms by giving notice.';
+      'INTBank may adjust the liability terms by giving notice.';
 
   @override
   String get tosClientiiTrebuieSaAccepte3 =>
@@ -1201,7 +1187,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateSuspenda2 =>
-      'INT Bank may suspend or restrict accounts that breach the terms.';
+      'INTBank may suspend or restrict accounts that breach the terms.';
 
   @override
   String get tosConturileTrebuieSaRespecte =>
@@ -1209,11 +1195,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankEsteResponsabil =>
-      'INT Bank is not liable for losses caused by third parties.';
+      'INTBank is not liable for losses caused by third parties.';
 
   @override
   String get tosClientiiTrebuieSaUtilizeze =>
-      'Customers must use only official INT Bank channels.';
+      'Customers must use only official INTBank channels.';
 
   @override
   String get tosDisputePrivindTranzactiileVor =>
@@ -1229,11 +1215,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosFolosireaAplicatieiImplicaAcordul =>
-      'Using the app means agreeing to all INT Bank rules.';
+      'Using the app means agreeing to all INTBank rules.';
 
   @override
   String get tosIntBankPoateIntroduce2 =>
-      'INT Bank may introduce new features and services.';
+      'INTBank may introduce new features and services.';
 
   @override
   String get tosNerespectareaTermenilorPoateDuce =>
@@ -1241,7 +1227,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosClientiiTrebuieSaRespecte4 =>
-      'Customers must follow all notices from INT Bank.';
+      'Customers must follow all notices from INTBank.';
 
   @override
   String get tosModificarileLegislativePotInfluenta =>
@@ -1253,7 +1239,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateModifica2 =>
-      'INT Bank may change the terms to protect customers.';
+      'INTBank may change the terms to protect customers.';
 
   @override
   String get tosClientiiSuntResponsabiliRespectarea =>
@@ -1265,7 +1251,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateModifica3 =>
-      'INT Bank may change its charges with prior notice.';
+      'INTBank may change its charges with prior notice.';
 
   @override
   String get tosTaxeleTranzactiileInternationalePot =>
@@ -1281,7 +1267,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateSuspenda3 =>
-      'INT Bank may suspend the account if applicable fees are not paid.';
+      'INTBank may suspend the account if applicable fees are not paid.';
 
   @override
   String get tosClientiiTrebuieSaConsulte =>
@@ -1289,7 +1275,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosReduceriPromotiiPotFi =>
-      'Discounts and promotions may only be applied according to INT Bank\'s rules.';
+      'Discounts and promotions may only be applied according to INTBank\'s rules.';
 
   @override
   String get tosTaxelePerceputeTertiTransferuri =>
@@ -1305,7 +1291,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateAjusta2 =>
-      'INT Bank may adjust fee limits depending on the account.';
+      'INTBank may adjust fee limits depending on the account.';
 
   @override
   String get tosTaxeleSuplimentareTranzactiiUrgente =>
@@ -1321,7 +1307,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateRezilia =>
-      'INT Bank may terminate the account if the terms are breached.';
+      'INTBank may terminate the account if the terms are breached.';
 
   @override
   String get tosSuspendareaContuluiPoateFi2 =>
@@ -1337,7 +1323,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateInchide =>
-      'INT Bank may close the account for illegal activities.';
+      'INTBank may close the account for illegal activities.';
 
   @override
   String get tosSuspendareaContuluiSePoate =>
@@ -1357,7 +1343,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tosIntBankPoateSuspenda4 =>
-      'INT Bank may suspend services if there is a security risk.';
+      'INTBank may suspend services if there is a security risk.';
 
   @override
   String get tosReactivareaContuluiPoateFi =>
@@ -1621,7 +1607,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String receiptIntBank(Object title) {
-    return 'INT Bank - $title';
+    return 'INTBank - $title';
   }
 
   @override
@@ -1912,44 +1898,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transferConfirmModificaDetaliile => 'Edit details';
 
   @override
-  String get welcomeSalutBineVenitInt => 'Hello, and welcome to INT Bank!';
-
-  @override
-  String get welcomeEstiDejaClient => 'Already a customer of ';
-
-  @override
-  String get welcomeContinua => '? Continue with ';
-
-  @override
-  String get welcomeConecteaza => 'Sign in';
-
-  @override
-  String get welcomeDacaCont => '.\n\nIf you don\'t have an account, ';
-
-  @override
-  String get welcomePotiDeveniClientDirect =>
-      'you can become a customer right here in the app';
-
-  @override
-  String get welcomeEste => '.\n\nIt\'s ';
-
-  @override
-  String get welcomeRapidSigur => 'quick and secure';
-
-  @override
-  String get welcomeIarTuVeiAvea =>
-      ', and you\'ll have access to all your bank account features ';
-
-  @override
-  String get welcomeInstantDistanta => 'instantly and remotely';
-
-  @override
-  String get welcomeInregistreaza => 'Sign up';
-
-  @override
-  String get welcomeDejaCont => 'Already have an account? ';
-
-  @override
   String get routerPaginaSolicitataFostGasita =>
       'The page you asked for wasn\'t found. Taking you to the home screen...';
 
@@ -2094,4 +2042,590 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return 'Payment: $beneficiary, $date, $amount';
   }
+
+  @override
+  String get errorsCodeCurrencyMismatch =>
+      'The recipient\'s account is in a different currency. Use currency exchange or an account in the same currency.';
+
+  @override
+  String get errorsCodeInsufficientFunds =>
+      'Insufficient funds in the source account.';
+
+  @override
+  String get errorsCodeAccountNotOwned =>
+      'That account doesn\'t belong to you.';
+
+  @override
+  String get errorsCodeSameAccount => 'Choose two different accounts.';
+
+  @override
+  String get errorsCodeUnsupportedPair =>
+      'Exchange between these currencies isn\'t available.';
+
+  @override
+  String get errorsCodeInvalidAmount =>
+      'The amount isn\'t valid or is too small.';
+
+  @override
+  String get scaTitle => 'Confirm payment';
+
+  @override
+  String get scaSubtitle =>
+      'For large payments, enter your PIN to authorize exactly this payment.';
+
+  @override
+  String get scaCancel => 'Cancel';
+
+  @override
+  String scaPinProgress(int entered, int total) {
+    return '$entered of $total digits entered';
+  }
+
+  @override
+  String errorsCodeScaPinInvalid(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Incorrect PIN. $count attempts left.',
+      one: 'Incorrect PIN. 1 attempt left.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get errorsCodeScaLocked =>
+      'Your PIN is temporarily locked after too many attempts. Try again in 15 minutes.';
+
+  @override
+  String get errorsCodeScaChallengeInvalid =>
+      'The confirmation expired or the payment changed. Send the payment again.';
+
+  @override
+  String get transferValidationOnlyIntBank =>
+      'You can only send money to INTBank accounts (IBANs with bank code INTB).';
+
+  @override
+  String get errorsCodeDestinationNotFound =>
+      'There\'s no INTBank account with this IBAN. Check the recipient\'s IBAN.';
+
+  @override
+  String get scheduledStatusFailed => 'Not paid';
+
+  @override
+  String get scheduledStatusPaused => 'Paused';
+
+  @override
+  String get scheduledStatusCompleted => 'Paid';
+
+  @override
+  String scheduledLastError(String reason) {
+    return 'Last attempt: $reason';
+  }
+
+  @override
+  String get vaultsTitle => 'Savings vaults';
+
+  @override
+  String get vaultsTotalSaved => 'Total saved';
+
+  @override
+  String get vaultsNoInterestNote =>
+      'Money in vaults stays yours; vaults do not earn interest.';
+
+  @override
+  String get vaultsEmptyTitle => 'No vaults yet';
+
+  @override
+  String get vaultsEmptyBody =>
+      'Set money aside for a goal. You can take it out of a flexible vault at any time.';
+
+  @override
+  String get vaultsNew => 'New vault';
+
+  @override
+  String get vaultsLoadError => 'Couldn\'t load your vaults.';
+
+  @override
+  String vaultsProgress(String saved, String target) {
+    return '$saved of $target';
+  }
+
+  @override
+  String get vaultsFlexible => 'Flexible';
+
+  @override
+  String vaultsLockedUntil(String date) {
+    return 'Locked until $date';
+  }
+
+  @override
+  String vaultsTargetBy(String date) {
+    return 'Target: $date';
+  }
+
+  @override
+  String get vaultsGoalReached => 'Goal reached';
+
+  @override
+  String get vaultsDeposit => 'Add money';
+
+  @override
+  String get vaultsWithdraw => 'Withdraw';
+
+  @override
+  String vaultsMoreActions(String name) {
+    return 'More actions for “$name”';
+  }
+
+  @override
+  String get vaultsClose => 'Close vault';
+
+  @override
+  String vaultsCloseTitle(String name) {
+    return 'Close “$name”?';
+  }
+
+  @override
+  String vaultsCloseMessage(String amount, String account) {
+    return '$amount moves to your account $account. The vault is removed from the list.';
+  }
+
+  @override
+  String vaultsDepositTitle(String name) {
+    return 'Add money to “$name”';
+  }
+
+  @override
+  String vaultsWithdrawTitle(String name) {
+    return 'Withdraw from “$name”';
+  }
+
+  @override
+  String get vaultsFromAccount => 'From account';
+
+  @override
+  String get vaultsToAccount => 'To account';
+
+  @override
+  String vaultsAvailable(String amount) {
+    return 'Available: $amount';
+  }
+
+  @override
+  String vaultsAmount(String currency) {
+    return 'Amount ($currency)';
+  }
+
+  @override
+  String get vaultsAmountInvalid => 'Enter an amount above 0.';
+
+  @override
+  String vaultsAmountTooHigh(String amount) {
+    return 'The amount is more than $amount.';
+  }
+
+  @override
+  String get vaultsConfirm => 'Confirm';
+
+  @override
+  String vaultsDeposited(String amount, String name) {
+    return 'Added $amount to “$name”.';
+  }
+
+  @override
+  String vaultsWithdrawn(String amount, String name) {
+    return 'Withdrew $amount from “$name”.';
+  }
+
+  @override
+  String vaultsClosed(String name) {
+    return '“$name” was closed.';
+  }
+
+  @override
+  String vaultsCreated(String name) {
+    return '“$name” was created.';
+  }
+
+  @override
+  String get vaultsNameLabel => 'Vault name';
+
+  @override
+  String get vaultsNameHint => 'e.g. Holiday';
+
+  @override
+  String get vaultsNameInvalid => 'Enter a name of up to 60 characters.';
+
+  @override
+  String vaultsTargetLabel(String currency) {
+    return 'Target amount ($currency)';
+  }
+
+  @override
+  String get vaultsTargetDateLabel => 'Target date';
+
+  @override
+  String get vaultsTargetDateNone => 'Choose a date (optional)';
+
+  @override
+  String get vaultsTargetDateRequired => 'A locked vault needs a target date.';
+
+  @override
+  String get vaultsTypeFlexible => 'Flexible';
+
+  @override
+  String get vaultsTypeLocked => 'Locked';
+
+  @override
+  String get vaultsTypeFlexibleHint =>
+      'You can take the money out at any time.';
+
+  @override
+  String get vaultsTypeLockedHint =>
+      'The money stays in the vault until the target date.';
+
+  @override
+  String get vaultsCreate => 'Create vault';
+
+  @override
+  String vaultsNoAccount(String currency) {
+    return 'You need a current account in $currency.';
+  }
+
+  @override
+  String get errorsCodeVaultLocked =>
+      'This vault is locked until its target date.';
+
+  @override
+  String get errorsCodeVaultNotFound => 'This vault no longer exists.';
+
+  @override
+  String get errorsCodeVaultInvalid => 'Check the vault details.';
+
+  @override
+  String get exchangeQuoteValidity =>
+      'The rate and amounts are guaranteed for 60 seconds.';
+
+  @override
+  String get errorsCodeQuoteExpired =>
+      'The quoted rate expired. Try again for a new rate.';
+
+  @override
+  String get sessionLockedTitle => 'Session ended';
+
+  @override
+  String get sessionLockedBody =>
+      'To keep your money safe, you were signed out after a few minutes without activity. Enter your PIN to continue.';
+
+  @override
+  String get sessionLockedAction => 'Enter your PIN';
+
+  @override
+  String get privacyVeilLabel => 'INTBank • Privacy protection';
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navAccounts => 'Accounts';
+
+  @override
+  String get navPayments => 'Payments';
+
+  @override
+  String get navSavings => 'Savings';
+
+  @override
+  String get navProfile => 'Profile';
+
+  @override
+  String get accountsTitle => 'My accounts';
+
+  @override
+  String accountsCurrentAccount(String currency) {
+    return '$currency current account';
+  }
+
+  @override
+  String get accountsEmpty => 'You don\'t have a current account yet.';
+
+  @override
+  String get accountsLoadError => 'Couldn\'t load your accounts.';
+
+  @override
+  String get accountsOpenCurrency => 'Open a currency account';
+
+  @override
+  String get accountsCopyIban => 'Copy IBAN';
+
+  @override
+  String get accountsIbanCopied => 'IBAN copied';
+
+  @override
+  String get paymentsTitle => 'Payments';
+
+  @override
+  String get paymentsFrom => 'Pay from';
+
+  @override
+  String get paymentsTransferTitle => 'Transfer to an INTBank account';
+
+  @override
+  String get paymentsTransferBody => 'Instant, to any INTBank IBAN.';
+
+  @override
+  String get paymentsExchangeTitle => 'Exchange currency';
+
+  @override
+  String get paymentsExchangeBody =>
+      'Between your own accounts, at a rate held for 60 seconds.';
+
+  @override
+  String get paymentsScheduledTitle => 'Scheduled payments';
+
+  @override
+  String get paymentsScheduledBody =>
+      'Transfers that go out automatically on the dates you choose.';
+
+  @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get profileLoadError => 'Couldn\'t load your details.';
+
+  @override
+  String get profilePersonalDetails => 'Personal details';
+
+  @override
+  String get profileEmail => 'Email';
+
+  @override
+  String get profileAddress => 'Address';
+
+  @override
+  String get profileBirthDate => 'Date of birth';
+
+  @override
+  String get profileDetailsNote =>
+      'To change your personal details, contact INTBank.';
+
+  @override
+  String get settingsSecurity => 'Security';
+
+  @override
+  String get settingsChangePin => 'Change PIN';
+
+  @override
+  String get settingsChangePinBody =>
+      'The PIN you sign in and confirm payments with.';
+
+  @override
+  String get settingsAutoLock => 'Auto-lock';
+
+  @override
+  String settingsAutoLockMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'After $minutes minutes without activity',
+      one: 'After 1 minute without activity',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHideAmounts => 'Hide amounts';
+
+  @override
+  String get settingsHideAmountsBody =>
+      'Balances and amounts show as •••• until you reveal them.';
+
+  @override
+  String get settingsPreferences => 'Preferences';
+
+  @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsThemeSystem => 'Same as phone';
+
+  @override
+  String get settingsThemeLight => 'Light';
+
+  @override
+  String get settingsThemeDark => 'Dark';
+
+  @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get settingsLanguageSystem => 'Phone language';
+
+  @override
+  String get settingsAbout => 'About';
+
+  @override
+  String get settingsVersion => 'Version';
+
+  @override
+  String get settingsLicences => 'Open-source licences';
+
+  @override
+  String get changePinCurrentTitle => 'Enter your current PIN';
+
+  @override
+  String get changePinCurrentBody =>
+      'For your safety, first confirm it\'s you.';
+
+  @override
+  String get changePinNewTitle => 'Choose a new PIN';
+
+  @override
+  String get changePinNewBody => '6 digits you don\'t use anywhere else.';
+
+  @override
+  String get changePinConfirmTitle => 'Confirm your new PIN';
+
+  @override
+  String get changePinConfirmBody => 'Enter the new PIN again.';
+
+  @override
+  String changePinStep(int step) {
+    return 'Step $step of 3';
+  }
+
+  @override
+  String get changePinSameAsOld =>
+      'The new PIN must be different from the current one.';
+
+  @override
+  String get changePinDone => 'Your PIN was changed.';
+
+  @override
+  String get changePinFailed => 'Couldn\'t change your PIN. Try again.';
+
+  @override
+  String get dayToday => 'Today';
+
+  @override
+  String get dayYesterday => 'Yesterday';
+
+  @override
+  String get homeGreetMorning => 'Good morning';
+
+  @override
+  String get homeGreetAfternoon => 'Good afternoon';
+
+  @override
+  String get homeGreetEvening => 'Good evening';
+
+  @override
+  String get transferSavedRecipients => 'Saved recipients';
+
+  @override
+  String transferToRecipient(String name) {
+    return 'Transfer to $name';
+  }
+
+  @override
+  String get categoryGroceries => 'Groceries';
+
+  @override
+  String get categoryBills => 'Bills & utilities';
+
+  @override
+  String get categoryRestaurants => 'Restaurants & cafés';
+
+  @override
+  String get categoryTransport => 'Transport & fuel';
+
+  @override
+  String get categoryEntertainment => 'Entertainment & subscriptions';
+
+  @override
+  String get categoryOther => 'Transfers & other';
+
+  @override
+  String get categoryIncoming => 'Money received';
+
+  @override
+  String get categoryOwnAccounts => 'Between your accounts';
+
+  @override
+  String get txDetailsCategory => 'Category';
+
+  @override
+  String get exchangeSell => 'You sell';
+
+  @override
+  String get exchangeBuy => 'You buy';
+
+  @override
+  String exchangeBalance(String amount) {
+    return 'Balance: $amount';
+  }
+
+  @override
+  String exchangeNoAccount(String currency) {
+    return 'No $currency account';
+  }
+
+  @override
+  String get exchangeAll => 'All';
+
+  @override
+  String get exchangeNoFee => 'No fee';
+
+  @override
+  String get exchangeChooseCurrency => 'Choose a currency';
+
+  @override
+  String get exchangeEstimateNote =>
+      'You\'ll see the exact amount before you confirm.';
+
+  @override
+  String get exchangeDone => 'Exchange done';
+
+  @override
+  String get currencyRon => 'Romanian leu';
+
+  @override
+  String get welcomeHeadline => 'Your bank, always with you';
+
+  @override
+  String get welcomeSubtitle =>
+      'Manage your money simply and safely, from anywhere.';
+
+  @override
+  String get welcomeFeatureTransfers => 'Instant transfers';
+
+  @override
+  String get welcomeFeatureTransfersBody =>
+      'Between INTBank accounts, at any hour.';
+
+  @override
+  String get welcomeFeatureSavings => 'Savings vaults';
+
+  @override
+  String get welcomeFeatureSavingsBody => 'Set money aside for your goals.';
+
+  @override
+  String get welcomeFeatureSecurity => 'Security at every step';
+
+  @override
+  String get welcomeFeatureSecurityBody =>
+      'PIN, payment confirmation and auto-lock.';
+
+  @override
+  String get welcomeOpenAccount => 'Open an account';
+
+  @override
+  String get welcomeHaveAccount => 'I already have an account';
+
+  @override
+  String get setupErrorTitle => 'The app isn\'t set up';
+
+  @override
+  String get setupErrorBody =>
+      'This build has no secure connection to the bank configured, so it won\'t connect to the server. Install an official build of the app.';
 }

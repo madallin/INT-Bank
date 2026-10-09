@@ -1,14 +1,12 @@
 package com.intbank.infrastructure.rest;
 
-import com.intbank.infrastructure.persistence.entity.AccountJpaEntity;
-import com.intbank.infrastructure.persistence.repository.AccountJpaRepository;
+import com.intbank.core.domain.exception.BusinessRuleException;
 import com.intbank.service.AuditLogService;
+import com.intbank.service.CurrencyExchangeService;
 import com.intbank.service.CurrencyService;
 import com.intbank.service.ExchangeRateCacheService;
 import com.intbank.service.NotificationService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -24,21 +22,21 @@ public class CurrencyController
 
     private final CurrencyService currencyService;
     private final ExchangeRateCacheService rateCache;
-    private final AccountJpaRepository accountRepo;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    private final CurrencyExchangeService exchangeService;
 
     public CurrencyController(CurrencyService currencyService,
                               ExchangeRateCacheService rateCache,
-                              AccountJpaRepository accountRepo,
                               AuditLogService auditLogService,
-                              NotificationService notificationService)
+                              NotificationService notificationService,
+                              CurrencyExchangeService exchangeService)
     {
         this.currencyService = currencyService;
         this.rateCache = rateCache;
-        this.accountRepo = accountRepo;
         this.auditLogService = auditLogService;
         this.notificationService = notificationService;
+        this.exchangeService = exchangeService;
     }
 
     @GetMapping("/exchange-rates")
@@ -63,6 +61,8 @@ public class CurrencyController
         return ResponseEntity.ok(Map.of(
                 "base", base,
                 "rates", rates,
+                // The bank charges no exchange fee; the app shows this instead of assuming one.
+                "commission_percent", 0,
                 "timestamp", System.currentTimeMillis()
         ));
     }
@@ -72,123 +72,98 @@ public class CurrencyController
     {
         String from = (String) body.getOrDefault("from", "RON");
         String to = (String) body.getOrDefault("to", "EUR");
-        Number amountNum = (Number) body.getOrDefault("amount", 1);
-        double amount = amountNum.doubleValue();
+        BigDecimal amount = parseAmount(body.getOrDefault("amount", 1));
+        if (amount == null)
+        {
+            return ResponseEntity.badRequest().body(Map.of("code", BusinessRuleException.INVALID_AMOUNT, "error", "Suma invalida"));
+        }
 
-        try
-        {
-            double result = currencyService.convertCurrency(amount, from, to);
-            double rate = amount > 0 ? result / amount : 1.0;
-            return ResponseEntity.ok(Map.of(
-                    "from", from,
-                    "to", to,
-                    "amount", amount,
-                    "result", result,
-                    "rate", rate
-            ));
-        }
-        catch (Exception e)
-        {
-            double fallbackRate = getFallbackRate(from, to);
-            double result = Math.round(amount * fallbackRate * 100.0) / 100.0;
-            return ResponseEntity.ok(Map.of(
-                    "from", from,
-                    "to", to,
-                    "amount", amount,
-                    "result", result,
-                    "rate", fallbackRate
-            ));
-        }
+        BigDecimal rate = currencyService.getRate(from, to);
+        BigDecimal result = amount.multiply(rate).setScale(2, RoundingMode.DOWN);
+        return ResponseEntity.ok(Map.of(
+                "from", from,
+                "to", to,
+                "amount", amount,
+                "result", result,
+                "rate", rate
+        ));
     }
 
-    @PostMapping("/users/{userId}/exchange/internal")
-    @Transactional
-    public ResponseEntity<Map<String, Object>> executeInternalExchange(
+    /**
+     * Prices an exchange between two of the caller's own accounts (no money moves). The quote is
+     * honoured for {@link CurrencyExchangeService#QUOTE_TTL}. {@code UserScopeAuthorizationFilter}
+     * rejects any {userId} other than the token's.
+     */
+    @PostMapping("/users/{userId}/exchange/quote")
+    public ResponseEntity<Map<String, Object>> quoteExchange(
             @PathVariable("userId") Long userId,
             @RequestBody Map<String, Object> body)
     {
         Number fromAccountIdNum = (Number) body.get("fromAccountId");
         Number toAccountIdNum = (Number) body.get("toAccountId");
-        Number amountNum = (Number) body.get("amount");
-
-        if (fromAccountIdNum == null || toAccountIdNum == null || amountNum == null)
+        BigDecimal amount = parseAmount(body.get("amount"));
+        if (fromAccountIdNum == null || toAccountIdNum == null || amount == null)
         {
             return ResponseEntity.badRequest().body(Map.of("error", "Parametri lipsa"));
         }
-
-        Long fromAccountId = fromAccountIdNum.longValue();
-        Long toAccountId = toAccountIdNum.longValue();
-        BigDecimal sourceAmount = BigDecimal.valueOf(amountNum.doubleValue()).setScale(2, RoundingMode.HALF_EVEN);
-
-        if (sourceAmount.compareTo(BigDecimal.ZERO) <= 0)
-        {
-            return ResponseEntity.badRequest().body(Map.of("error", "Suma trebuie sa fie pozitiva"));
-        }
-
-        var fromOpt = accountRepo.findById(fromAccountId).filter(a -> a.getUserId() != null && a.getUserId().equals(userId));
-        var toOpt = accountRepo.findById(toAccountId).filter(a -> a.getUserId() != null && a.getUserId().equals(userId));
-
-        if (fromOpt.isEmpty() || toOpt.isEmpty())
-        {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Unul sau ambele conturi nu au fost gasite"));
-        }
-
-        AccountJpaEntity fromAccount = fromOpt.get();
-        AccountJpaEntity toAccount = toOpt.get();
-
-        if (fromAccount.getSold().compareTo(sourceAmount) < 0)
-        {
-            return ResponseEntity.badRequest().body(Map.of("error", "Fonduri insuficiente în contul sursa"));
-        }
-
-        double rate = 1.0;
-        try
-        {
-            double converted = currencyService.convertCurrency(sourceAmount.doubleValue(), fromAccount.getMoneda(), toAccount.getMoneda());
-            rate = converted / sourceAmount.doubleValue();
-        }
-        catch (Exception e)
-        {
-            rate = getFallbackRate(fromAccount.getMoneda(), toAccount.getMoneda());
-        }
-
-        BigDecimal destinationAmount = sourceAmount.multiply(BigDecimal.valueOf(rate)).setScale(2, RoundingMode.HALF_EVEN);
-
-        fromAccount.setSold(fromAccount.getSold().subtract(sourceAmount));
-        toAccount.setSold(toAccount.getSold().add(destinationAmount));
-
-        accountRepo.save(fromAccount);
-        accountRepo.save(toAccount);
-
-        auditLogService.log(userId, "INTERNAL_FX_EXCHANGE",
-                "Exchanged " + sourceAmount + " " + fromAccount.getMoneda() + " -> " + destinationAmount + " " + toAccount.getMoneda() + " (Rate: " + rate + ")", "127.0.0.1");
-
-        notificationService.notify(userId, "Schimb valutar finalizat",
-                "Ai schimbat " + sourceAmount + " " + fromAccount.getMoneda() + " în " + destinationAmount + " " + toAccount.getMoneda(), "TRANSFER_SENT");
-
+        var quote = exchangeService.quote(userId, fromAccountIdNum.longValue(), toAccountIdNum.longValue(), amount);
         return ResponseEntity.ok(Map.of(
-                "success", true,
-                "sourceAmount", sourceAmount,
-                "sourceCurrency", fromAccount.getMoneda(),
-                "destinationAmount", destinationAmount,
-                "destinationCurrency", toAccount.getMoneda(),
-                "rate", rate,
-                "fromAccountSold", fromAccount.getSold(),
-                "toAccountSold", toAccount.getSold()
+                "quoteId", quote.quoteId(),
+                "sourceAmount", quote.sourceAmount(),
+                "sourceCurrency", quote.sourceCurrency(),
+                "destinationAmount", quote.destinationAmount(),
+                "destinationCurrency", quote.destinationCurrency(),
+                "rate", quote.rate(),
+                "expiresAt", quote.expiresAt().toString()
         ));
     }
 
-    private double getFallbackRate(String from, String to)
+    /** Executes a quote. Safe to retry: the same quote never moves money twice. */
+    @PostMapping("/users/{userId}/exchange/internal")
+    public ResponseEntity<Map<String, Object>> executeInternalExchange(
+            @PathVariable("userId") Long userId,
+            @RequestBody Map<String, Object> body)
     {
-        if (from.equals(to)) return 1.0;
-        if ("RON".equals(from) && "EUR".equals(to)) return 0.201;
-        if ("RON".equals(from) && "USD".equals(to)) return 0.218;
-        if ("RON".equals(from) && "GBP".equals(to)) return 0.171;
-        if ("EUR".equals(from) && "RON".equals(to)) return 4.97;
-        if ("USD".equals(from) && "RON".equals(to)) return 4.58;
-        if ("GBP".equals(from) && "RON".equals(to)) return 5.85;
-        if ("EUR".equals(from) && "USD".equals(to)) return 1.08;
-        if ("USD".equals(from) && "EUR".equals(to)) return 0.92;
-        return 1.0;
+        var execution = exchangeService.execute(userId, body.get("quoteId") instanceof String id ? id : null);
+        var result = execution.result();
+
+        if (!execution.replayed())
+        {
+            auditLogService.log(userId, "INTERNAL_FX_EXCHANGE",
+                    "Exchanged " + result.sourceAmount() + " " + result.sourceCurrency() + " -> " + result.destinationAmount()
+                            + " " + result.destinationCurrency() + " (Rate: " + result.rate() + ", id " + result.exchangeId() + ")", null);
+            notificationService.notify(userId, "Schimb valutar finalizat",
+                    "Ai schimbat " + result.sourceAmount() + " " + result.sourceCurrency() + " în " + result.destinationAmount()
+                            + " " + result.destinationCurrency(), "TRANSFER_SENT");
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "exchangeId", result.exchangeId(),
+                "sourceAmount", result.sourceAmount(),
+                "sourceCurrency", result.sourceCurrency(),
+                "destinationAmount", result.destinationAmount(),
+                "destinationCurrency", result.destinationCurrency(),
+                "rate", result.rate(),
+                "fromAccountSold", result.fromAccountBalance(),
+                "toAccountSold", result.toAccountBalance()
+        ));
+    }
+
+    /** Parses a JSON number or numeric string without going through binary floating point. */
+    private static BigDecimal parseAmount(Object raw)
+    {
+        if (!(raw instanceof Number) && !(raw instanceof String))
+        {
+            return null;
+        }
+        try
+        {
+            return new BigDecimal(raw.toString().trim());
+        }
+        catch (NumberFormatException e)
+        {
+            return null;
+        }
     }
 }

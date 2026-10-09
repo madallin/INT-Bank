@@ -18,6 +18,23 @@ public class GlobalExceptionHandler
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(com.intbank.service.StrongCustomerAuthService.ScaRequiredException.class)
+    public ResponseEntity<Map<String, Object>> handleScaRequired(com.intbank.service.StrongCustomerAuthService.ScaRequiredException ex)
+    {
+        return ResponseEntity.status(HttpStatus.PRECONDITION_REQUIRED).body(ex.toBody());
+    }
+
+    @ExceptionHandler(com.intbank.core.domain.exception.BusinessRuleException.class)
+    public ResponseEntity<Map<String, Object>> handleBusinessRule(com.intbank.core.domain.exception.BusinessRuleException ex)
+    {
+        log.warn("Business rule {}: {}", ex.code(), ex.getMessage());
+        Map<String, Object> body = new java.util.LinkedHashMap<>(ex.toBody());
+        HttpStatus status = com.intbank.core.domain.exception.BusinessRuleException.SCA_LOCKED.equals(ex.code())
+                ? HttpStatus.LOCKED : HttpStatus.BAD_REQUEST;
+        body.put("status", status.value());
+        return ResponseEntity.status(status).body(body);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex)
     {

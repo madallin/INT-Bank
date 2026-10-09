@@ -18,6 +18,8 @@ _$CardModelImpl _$$CardModelImplFromJson(Map<String, dynamic> json) =>
       spendingLimit: (json['spendingLimit'] as num?)?.toDouble() ?? 0,
       isBlocked: json['isBlocked'] as bool? ?? false,
       status: json['status'] as String? ?? 'active',
+      onlinePayments: json['onlinePayments'] as bool? ?? true,
+      contactless: json['contactless'] as bool? ?? true,
       pin: json['pin'] as String?,
     );
 
@@ -33,5 +35,7 @@ Map<String, dynamic> _$$CardModelImplToJson(_$CardModelImpl instance) =>
       'spendingLimit': instance.spendingLimit,
       'isBlocked': instance.isBlocked,
       'status': instance.status,
+      'onlinePayments': instance.onlinePayments,
+      'contactless': instance.contactless,
       'pin': instance.pin,
     };

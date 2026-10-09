@@ -13,6 +13,10 @@ import java.time.Instant;
 public interface TransferJpaRepository extends JpaRepository<TransferJpaEntity, String>
 {
 
+    /** Every transfer into or out of one account, newest first; uses the from/to account indexes. */
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"fromAccount", "toAccount"})
+    java.util.List<TransferJpaEntity> findByFromAccount_IdOrToAccount_IdOrderByInitiatedAtDesc(Long fromAccountId, Long toAccountId);
+
     @Modifying
     @Query("UPDATE TransferJpaEntity t SET t.status = :status, t.completedAt = :completedAt WHERE t.id = :id")
     void updateStatus(@Param("id") String id, @Param("status") String status, @Param("completedAt") Instant completedAt);

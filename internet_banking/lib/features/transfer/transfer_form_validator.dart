@@ -6,7 +6,7 @@ import '../../l10n/l10n.dart';
 /// for the field, or null when the value is valid.
 abstract final class TransferFormValidator
 {
-  /// Bank code of INT Bank's own accounts (`RO..INTB....`).
+  /// Bank code of INTBank's own accounts (`RO..INTB....`).
   static const internalBankCode = 'INTB';
 
   /// SEPA limit for the beneficiary name.
@@ -15,11 +15,11 @@ abstract final class TransferFormValidator
 
   static String normalizeIban(String raw) => raw.replaceAll(RegExp(r'\s'), '').toUpperCase();
 
-  /// True for IBANs issued by INT Bank itself.
+  /// True for IBANs issued by INTBank itself (bank code `INTB`).
   ///
-  /// The current backend issues these with a non-standard length and, for
-  /// currency sub-accounts, a fixed `49` check value, so they cannot pass the
-  /// ISO 13616 checks. The server resolves them by exact lookup instead.
+  /// The server now issues standard 24-character IBANs; accounts opened before
+  /// that keep a shorter legacy number with a fixed `49` check value, which the
+  /// server resolves by exact lookup, so those are not checksum-validated.
   static bool isInternalIban(String iban)
   {
     final c = normalizeIban(iban);
@@ -58,7 +58,7 @@ abstract final class TransferFormValidator
     {
       return AppL10n.current.transferValidationAcestaEsteContulCare;
     }
-    if(isInternalIban(c)) return null;
+    if(isInternalIban(c) && c.length != 24) return null; // legacy INTBank number
     if(c.startsWith('RO'))
     {
       if(c.length != 24)
@@ -69,12 +69,13 @@ abstract final class TransferFormValidator
       {
         return AppL10n.current.transferValidationIbanUlEsteValid;
       }
-      return null;
     }
-    if(!hasValidChecksum(c))
+    else if(!hasValidChecksum(c))
     {
       return AppL10n.current.transferValidationIbanUlEsteValid;
     }
+    // A real IBAN, but transfers only move money between INTBank accounts.
+    if(!isInternalIban(c)) return AppL10n.current.transferValidationOnlyIntBank;
     return null;
   }
 

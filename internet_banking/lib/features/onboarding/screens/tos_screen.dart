@@ -1,24 +1,26 @@
 import 'dart:convert' show jsonDecode;
-import 'dart:io' show Platform;
 
-import 'package:device_info_plus/device_info_plus.dart' show DeviceInfoPlugin;
 import '../../../widgets/app_logo.dart';
 import '../../../theme/app_tokens.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+
+import '../../auth/onboarding_session.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/utils/helpers.dart';
 import '../../../core/network/dio_client.dart';
-import 'approval_screen.dart';
 import '../../auth/screens/login_screen.dart';
-import '../../welcome/welcome_screen.dart';
 import '../../../l10n/l10n.dart';
 
 class TosScreen extends StatefulWidget
 {
   final int userId;
-  const TosScreen({super.key, required this.userId});
+
+  /// Set after the SMS code was verified; without it the customer must sign in first.
+  final OnboardingSession? session;
+
+  const TosScreen({super.key, required this.userId, this.session});
 
   @override
   State<TosScreen> createState() => _TosScreenState();
@@ -30,21 +32,6 @@ class _TosScreenState extends State<TosScreen>
   bool _canAccept = false;
   bool _loading = false;
 
-  Future<String> getDeviceId() async
-  {
-    final deviceInfo = DeviceInfoPlugin();
-    if(Platform.isAndroid)
-    {
-      final androidInfo = await deviceInfo.androidInfo;
-      return androidInfo.id;
-    }
-    else if(Platform.isIOS)
-    {
-      final iosInfo = await deviceInfo.iosInfo;
-      return iosInfo.identifierForVendor!;
-    }
-    return 'unknown-device';
-  }
 
   Future<void> _acceptTerms() async
   {
@@ -53,95 +40,50 @@ class _TosScreenState extends State<TosScreen>
 
     try
     {
-      final deviceId = await getDeviceId();
-      final tokenResponse = await DioClient().post(
-        '/auth/get-client-token',
-        data: {'deviceId': deviceId},
-      );
+      final session = widget.session;
+      if(session == null)
+      {
+        // Terms can only be accepted after the phone was verified by SMS.
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+        return;
+      }
+      final authOptions = Options(headers: session.authHeader);
 
-      if(!mounted) return;
-      final tokenData = tokenResponse.data is Map<String, dynamic>
-          ? tokenResponse.data as Map<String, dynamic>
-          : jsonDecode(tokenResponse.data.toString()) as Map<String, dynamic>;
-      final clientToken = tokenData['client_token'];
-      final authOptions = Options(headers: {'Authorization': 'Bearer $clientToken'});
-
-      final tosResponse = await DioClient().get(
-        '/users/${widget.userId}/has-tos',
+      final putResponse = await DioClient().put(
+        '/users/${widget.userId}/accept-tos',
         options: authOptions,
       );
-
       if(!mounted) return;
-      if(tosResponse.statusCode != 200)
+      if(putResponse.statusCode != 200)
       {
-        showErrorSnackBar(context, context.l10n.tosEroareVerificareaTos);
+        showErrorSnackBar(context, context.l10n.tosEroareActualizareaTos);
         return;
       }
 
-      final tosData = tosResponse.data is Map<String, dynamic>
-          ? tosResponse.data as Map<String, dynamic>
-          : jsonDecode(tosResponse.data.toString()) as Map<String, dynamic>;
-      final acceptedTerms = tosData['termeniAcceptati'] ?? false;
-
-      if(!acceptedTerms)
-      {
-        final putResponse = await DioClient().put(
-          '/users/${widget.userId}/accept-tos',
-          options: authOptions,
-        );
-        if(!mounted) return;
-        if(putResponse.statusCode != 200)
-        {
-          showErrorSnackBar(context, context.l10n.tosEroareActualizareaTos);
-          return;
-        }
-      }
-
       final approvedResponse = await DioClient().get(
-        '/users/${widget.userId}/has-approved/',
+        '/users/${widget.userId}/has-approved',
         options: authOptions,
       );
-
       if(!mounted) return;
       if(approvedResponse.statusCode != 200)
       {
         showErrorSnackBar(context, context.l10n.tosEroareVerificareaContului);
         return;
       }
-
       final approvedData = approvedResponse.data is Map<String, dynamic>
           ? approvedResponse.data as Map<String, dynamic>
           : jsonDecode(approvedResponse.data.toString()) as Map<String, dynamic>;
-      final isApproved = approvedData['contaprobat'] ?? false;
+      final next = session.copyWith(acceptedTerms: true, approved: approvedData['contaprobat'] == true);
 
-      if(!isApproved)
-      {
-        if(mounted)
-        {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ApprovalScreen(userId: widget.userId),
-            ),
-            (route) => false,
-          );
-        }
-      }
-      else
-      {
-        if(mounted)
-        {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-            (route) => false,
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
-          );
-        }
-      }
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => next.nextScreen()),
+        (route) => false,
+      );
     }
     catch (e)
     {
@@ -375,7 +317,7 @@ class _TosScreenState extends State<TosScreen>
   {
     String letter = String.fromCharCode(97 + index);
     List<TextSpan> spans = [];
-    final exp = RegExp(r'\b(INT Bank|cont|tranzacții|confidențialitate|securitate)\b');
+    final exp = RegExp(r'\b(INTBank|cont|tranzacții|confidențialitate|securitate)\b');
     int start = 0;
 
     for(final match in exp.allMatches(rule))
@@ -445,7 +387,7 @@ class _TosScreenState extends State<TosScreen>
             const SizedBox(height: 16),
             const AppLogo(height: 80),
             const SizedBox(height: 16),
-            Text(context.l10n.tosTermeniConditii, style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
+            Text(context.l10n.tosTermeniConditii, style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: context.colors.textPrimary)),
             const SizedBox(height: 16),
             Expanded(
               child: Scrollbar(

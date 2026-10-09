@@ -197,6 +197,11 @@ public class SagaOrchestrator
                         {
                             var receiver = accountRepository.findByIdWithLock(ctx.toAccountId())
                                     .orElseThrow(() -> new RuntimeException("Receiver account " + ctx.toAccountId() + " not found"));
+                            if (!receiver.moneda().equals(ctx.currency()))
+                            {
+                                // Never credit another currency 1:1 (see CrossCurrencyTransferTest).
+                                throw new RuntimeException("Currency mismatch: receiver " + receiver.moneda() + " vs " + ctx.currency());
+                            }
                             BigDecimal newBalance = receiver.sold().add(ctx.amount()).setScale(2, java.math.RoundingMode.HALF_EVEN);
                             accountRepository.updateBalance(ctx.toAccountId(), newBalance);
                             ctx.metadata().put("previousReceiverBalance", receiver.sold());

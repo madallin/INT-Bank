@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import '../utils/app_log.dart';
 
 /// Banking screen defense against screen recorders, mirroring, and multitasking snapshots.
 class ScreenSecurityService
@@ -19,7 +20,7 @@ class ScreenSecurityService
     }
     catch (e)
     {
-      debugPrint('Screen security not supported or failed: ');
+      AppLog.debug('Screen security not supported or failed', e);
     }
   }
 
@@ -33,7 +34,7 @@ class ScreenSecurityService
     }
     catch (e)
     {
-      debugPrint('Disable screen security failed: ');
+      AppLog.debug('Disable screen security failed', e);
     }
   }
 }

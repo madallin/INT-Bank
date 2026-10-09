@@ -1,0 +1,24 @@
+# Weekly update PRs, so the dependency scan in CI has fixes to apply.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /server/backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: pub
+    directory: /internet_banking
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /server/backend
+    schedule:
+      interval: weekly

@@ -576,12 +576,13 @@ class _TransferScreenState extends State<TransferScreen>
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
 
-                Container(
-                  decoration: BoxDecoration(
-                    color: context.colors.surfaceMuted,
+                Material(
+                  color: context.colors.surfaceMuted,
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: context.colors.surfaceMuted),
+                    side: BorderSide(color: context.colors.surfaceMuted),
                   ),
+                  clipBehavior: Clip.antiAlias,
                   child: Theme(
                     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(

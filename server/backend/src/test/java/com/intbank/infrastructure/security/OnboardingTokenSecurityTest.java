@@ -20,8 +20,8 @@ import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
@@ -55,16 +55,16 @@ class OnboardingTokenSecurityTest
     @Autowired private MockMvc mvc;
     @Autowired private RsaKeyProvider keys;
 
-    @MockBean private TokenBlacklistService tokenBlacklistService;
-    @MockBean private UserJpaRepository userRepo;
-    @MockBean private BankingService bankingService;
-    @MockBean private PinVerificationService pinVerification;
-    @MockBean private AccountJpaRepository accountRepo;
-    @MockBean private AuditLogService auditLogService;
-    @MockBean private NotificationService notificationService;
-    @MockBean private TransferUseCase transferUseCase;
-    @MockBean private TransferJpaRepository transferRepo;
-    @MockBean private StrongCustomerAuthService strongCustomerAuth;
+    @MockitoBean private TokenBlacklistService tokenBlacklistService;
+    @MockitoBean private UserJpaRepository userRepo;
+    @MockitoBean private BankingService bankingService;
+    @MockitoBean private PinVerificationService pinVerification;
+    @MockitoBean private AccountJpaRepository accountRepo;
+    @MockitoBean private AuditLogService auditLogService;
+    @MockitoBean private NotificationService notificationService;
+    @MockitoBean private TransferUseCase transferUseCase;
+    @MockitoBean private TransferJpaRepository transferRepo;
+    @MockitoBean private StrongCustomerAuthService strongCustomerAuth;
 
     private UserJpaEntity customer;
 

@@ -12,16 +12,15 @@ COPY backend/src ./src
 RUN mvn -B -e clean package -DskipTests
 
 # ---- Stage 2: minimal runtime image ----
-FROM eclipse-temurin:21-jre
+# Alpine has a smaller runtime footprint and avoids the Ubuntu pebble Go binary.
+FROM eclipse-temurin:21-jre-alpine
 
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/urandom"
 
-# dumb-init forwards signals (SIGTERM) to the JVM for clean graceful shutdown;
-# curl is used only by the container healthcheck.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends dumb-init curl ca-certificates \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd -r app && useradd -r -u 10001 -g app app
+# Retain PID 1 signal handling and the existing healthcheck without apt/Ubuntu.
+RUN apk add --no-cache dumb-init curl ca-certificates \
+    && addgroup -S app \
+    && adduser -S -D -H -u 10001 -G app app
 
 WORKDIR /app
 

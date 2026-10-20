@@ -22,6 +22,8 @@
         <!-- Override transitive releases flagged by the image vulnerability gate. -->
         <tomcat.version>11.0.25</tomcat.version>
         <netty.version>4.2.17.Final</netty.version>
+        <!-- Spring Boot 4's Jackson 3 BOM: patch known DoS vulnerabilities. -->
+        <jackson-bom.version>3.1.7</jackson-bom.version>
         <!-- Fix CVE-2026-42198; Spring Boot's managed pgJDBC must be >= 42.7.12. -->
         <postgresql.version>42.7.12</postgresql.version>
         <!-- Line-coverage floor enforced by `mvn verify` (JaCoCo). Raise it as tests are added. -->

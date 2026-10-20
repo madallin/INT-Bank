@@ -18,7 +18,9 @@ FROM eclipse-temurin:21-jre-alpine
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/urandom"
 
 # Retain PID 1 signal handling and the existing healthcheck without apt/Ubuntu.
-RUN apk add --no-cache dumb-init curl ca-certificates \
+# Upgrade preinstalled packages (including libexpat) before adding runtime tools.
+RUN apk upgrade --no-cache \
+    && apk add --no-cache dumb-init curl ca-certificates \
     && addgroup -S app \
     && adduser -S -D -H -u 10001 -G app app
 

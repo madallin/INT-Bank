@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.16</version>
+        <version>4.1.1</version>
         <relativePath/>
     </parent>
 
@@ -19,17 +19,43 @@
 
     <properties>
         <java.version>21</java.version>
+        <!-- Override transitive releases flagged by the image vulnerability gate. -->
+        <tomcat.version>11.0.25</tomcat.version>
+        <netty.version>4.2.17.Final</netty.version>
+        <!-- Spring Boot 4's Jackson 3 BOM: patch known DoS vulnerabilities. -->
+        <jackson-bom.version>3.1.7</jackson-bom.version>
         <!-- Fix CVE-2026-42198; Spring Boot's managed pgJDBC must be >= 42.7.12. -->
         <postgresql.version>42.7.12</postgresql.version>
         <!-- Line-coverage floor enforced by `mvn verify` (JaCoCo). Raise it as tests are added. -->
         <coverage.minimum>0.65</coverage.minimum>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Jackson 2 remains transitive alongside Spring Boot 4's Jackson 3. -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>2.21.7</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.21.7</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.20.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -77,10 +103,10 @@
             <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
 
-        <!-- Flyway database migrations -->
+        <!-- Spring Boot 4 requires its Flyway starter for auto-configuration. -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -130,12 +156,12 @@
         <!-- Resilience4j Circuit Breakers -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <artifactId>spring-boot-starter-aspectj</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-spring-boot3</artifactId>
-            <version>2.2.0</version>
+            <artifactId>resilience4j-spring-boot4</artifactId>
+            <version>2.4.0</version>
         </dependency>
 
         <!-- OpenPDF for Bank Statement PDF generation -->
@@ -159,10 +185,27 @@
             <version>7.4</version>
         </dependency>
 
-        <!-- Test -->
+        <!-- Patched libraries needed by transitive Kafka/Twilio/JWT consumers. -->
+        <dependency>
+            <groupId>at.yawk.lz4</groupId>
+            <artifactId>lz4-java</artifactId>
+            <version>1.11.4</version>
+        </dependency>
+
+        <!-- Test: Boot 4 split MVC and security test auto-configuration into modules. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
+            <artifactId>spring-boot-starter-test-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

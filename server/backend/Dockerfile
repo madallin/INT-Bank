@@ -13,7 +13,7 @@ RUN mvn -B -e clean package -DskipTests
 
 # ---- Stage 2: minimal runtime image ----
 # Alpine has a smaller runtime footprint and avoids the Ubuntu pebble Go binary.
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:24-jre-alpine
 
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/urandom"
 

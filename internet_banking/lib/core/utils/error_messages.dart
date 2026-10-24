@@ -18,6 +18,8 @@ String friendlyErrorMessage(
   switch(error.type)
   {
     case DioExceptionType.connectionTimeout:
+    case DioExceptionType.transformTimeout:
+      return AppL10n.current.errorsServerulRaspundeIncearcaNou;
     case DioExceptionType.sendTimeout:
     case DioExceptionType.receiveTimeout:
       return AppL10n.current.errorsServerulRaspundeIncearcaNou;

@@ -22,7 +22,7 @@ dependencies:
   crypto: ^3.0.6
   flutter_secure_storage: ^9.2.4
   flutter_libphonenumber: ^2.5.1
-  flutter_native_splash: ^2.4.7
+  flutter_native_splash: ^2.4.8
   shared_preferences: ^2.5.3
   rename_app: ^1.6.5
   flutter_launcher_icons: ^0.14.4

@@ -63,7 +63,7 @@ jobs:
 
       - name: Upload coverage report and SBOM
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: backend-reports
           path: |
@@ -121,7 +121,7 @@ jobs:
 
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: flutter-coverage
           path: internet_banking/coverage/lcov.info
@@ -189,7 +189,7 @@ jobs:
 
       - name: Upload image scan report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: trivy-image-report
           path: trivy-image.sarif

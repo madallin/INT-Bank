@@ -29,7 +29,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
 
 
-  freezed_annotation: ^2.4.1
+  freezed_annotation: ^3.1.0
   flutter_local_notifications: ^22.3.1
 
 
@@ -38,7 +38,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  freezed: ^2.5.2
+  freezed: ^3.1.0
   json_serializable: ^6.8.0
   build_runner: ^2.4.9
 
